@@ -1,0 +1,40 @@
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+.env.development
+.env.production
+.env.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Build output
+dist/
+build/
+out/
+.output/
+
+# Docker volumes
+mongodb-data/
+
+# IDE files
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+terraform.tfvars

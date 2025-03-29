@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "chrome",
+        "request": "launch",
+        "name": "Launch Chrome against localhost",
+        "url": "http://localhost:4200",
+        "webRoot": "${workspaceFolder}/frontend"
+      },
+      {
+        "type": "node",
+        "request": "attach",
+        "name": "Attach to API Gateway",
+        "port": 9229,
+        "restart": true,
+        "sourceMaps": true
+      }
+    ]
+  }

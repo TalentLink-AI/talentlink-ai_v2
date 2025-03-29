@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm start
+
+  # API Gateway - Entry point for all API requests
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/api-gateway:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/talentlink
+      - USER_SERVICE_URL=http://user-service:3001
+    depends_on:
+      - mongodb
+      - user-service
+
+  # User Service - Initial service to handle authentication
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/user-service:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/talentlink-users
+      - JWT_SECRET=your_development_jwt_secret
+      - JWT_EXPIRES_IN=1h
+      - REFRESH_TOKEN_SECRET=your_development_refresh_token_secret
+      - REFRESH_TOKEN_EXPIRES_IN=7d
+      - MFA_SECRET=your_development_mfa_secret
+    depends_on:
+      - mongodb
+
+  # MongoDB - Database
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=talentlink
+
+volumes:
+  mongodb-data:
