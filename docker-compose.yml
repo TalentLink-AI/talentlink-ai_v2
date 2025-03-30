@@ -9,10 +9,16 @@ services:
     ports:
       - "4200:4200"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
+      - angular_cache:/app/.angular/cache
+      - ./frontend:/app:cached
     environment:
       - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/talentlink-users
+      - JWT_SECRET=fdsjklafjdlkajfkldasjfaldksjlkfads
+      - AUTH0_ISSUER=dev-zxuicoohweme0r55.us.auth0.com
+      - AUTH0_AUDIENCE=https://dev-zxuicoohweme0r55.us.auth0.com/api/v2/
     command: npm start
 
   # API Gateway - Entry point for all API requests
@@ -65,6 +71,8 @@ services:
       - mongodb-data:/data/db
     environment:
       - MONGO_INITDB_DATABASE=talentlink
-
+      
 volumes:
   mongodb-data:
+  node_modules:
+  angular_cache:

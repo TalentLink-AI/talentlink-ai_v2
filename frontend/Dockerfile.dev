@@ -4,10 +4,12 @@ WORKDIR /app
 
 # Copy package files and install dependencies first for caching benefits
 COPY package*.json ./
-RUN npm install
+# Clean install without relying on package-lock.json
+RUN npm install --force
 
 # Copy the rest of your application code
 COPY . .
+
 
 # Expose the Angular dev server port
 EXPOSE 4200

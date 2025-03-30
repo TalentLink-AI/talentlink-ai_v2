@@ -125,8 +125,8 @@ if (process.env.AUTH0_AUDIENCE && process.env.AUTH0_ISSUER_BASE_URL) {
 app.use("/webhooks", webhookRoutes);
 
 // Protected routes
-app.use("/api/users", checkJwt, userRoutes);
-app.use("/api/profiles", checkJwt, profileRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/profiles", profileRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
