@@ -5,7 +5,6 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const winston = require("winston");
-const { auth } = require("express-oauth2-jwt-bearer");
 const rateLimit = require("express-rate-limit");
 
 // Import routes
@@ -88,11 +87,39 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK", timestamp: new Date() });
 });
 
-// Configure Auth0 JWT middleware
-const checkJwt = auth({
-  audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-});
+// Development mode auth middleware for local testing
+const developmentAuth = (req, res, next) => {
+  if (process.env.NODE_ENV === "development") {
+    // Add a mock auth object for development
+    req.auth = {
+      sub: "mock-auth0-id",
+      email: "dev@example.com",
+    };
+    return next();
+  }
+  // In production, this would use the real auth middleware
+  return res.status(401).json({ message: "Authentication not configured" });
+};
+
+// Configure Auth0 JWT middleware conditionally
+let checkJwt = developmentAuth;
+
+// Only set up real Auth0 validation if the environment variables are present
+if (process.env.AUTH0_AUDIENCE && process.env.AUTH0_ISSUER_BASE_URL) {
+  try {
+    const { auth } = require("express-oauth2-jwt-bearer");
+    checkJwt = auth({
+      audience: process.env.AUTH0_AUDIENCE,
+      issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+    });
+    logger.info("Auth0 authentication configured successfully");
+  } catch (error) {
+    logger.warn(
+      "Auth0 configuration error, using development auth mode:",
+      error.message
+    );
+  }
+}
 
 // Public routes
 app.use("/webhooks", webhookRoutes);

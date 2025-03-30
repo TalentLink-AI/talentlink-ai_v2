@@ -2,17 +2,15 @@ FROM node:18
 
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package files and install dependencies first for caching benefits
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application
+# Copy the rest of your application code
 COPY . .
 
-# Expose port 4200 for the development server
+# Expose the Angular dev server port
 EXPOSE 4200
 
-# Start the Angular development server with the host set to 0.0.0.0 to make it accessible outside the container
-CMD ["npm", "start", "--", "--host", "0.0.0.0", "--disable-host-check"]
+# Start the Angular dev server with options to listen on all interfaces
+CMD ["npm", "start"]
