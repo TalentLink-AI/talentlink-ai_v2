@@ -9,7 +9,6 @@ import { routes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideAuth0 } from '@auth0/auth0-angular';
 import { environment } from '../environments/environment';
-import { authInterceptorProvider } from './core/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,6 +23,5 @@ export const appConfig: ApplicationConfig = {
         redirect_uri: window.location.origin,
       },
     }),
-    authInterceptorProvider,
   ],
 };

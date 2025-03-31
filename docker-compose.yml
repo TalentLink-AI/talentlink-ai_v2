@@ -15,7 +15,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3001
-      - MONGODB_URI=mongodb://mongodb:27017/talentlink-users
+      - MONGODB_URI=mongodb://mongodb:27017/talentlink
       - JWT_SECRET=fdsjklafjdlkajfkldasjfaldksjlkfads
       - AUTH0_ISSUER=dev-zxuicoohweme0r55.us.auth0.com
       - AUTH0_AUDIENCE=https://dev-zxuicoohweme0r55.us.auth0.com/api/v2/
@@ -51,14 +51,14 @@ services:
       - ./backend/user-service:/app
       - /app/node_modules
     environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - MONGODB_URI=mongodb://mongodb:27017/talentlink-users
-      - JWT_SECRET=your_development_jwt_secret
-      - JWT_EXPIRES_IN=1h
-      - REFRESH_TOKEN_SECRET=your_development_refresh_token_secret
-      - REFRESH_TOKEN_EXPIRES_IN=7d
-      - MFA_SECRET=your_development_mfa_secret
+    - NODE_ENV=development
+    - PORT=3001
+    - MONGODB_URI=mongodb://mongodb:27017/talentlink
+    - AUTH0_DOMAIN=dev-zxuicoohweme0r55.us.auth0.com
+    - AUTH0_AUDIENCE=https://api.talentlink.com
+    - AUTH0_CLIENT_ID=773kVrTY9AIUUAhL8sptPJccA9lkHszI
+    - AUTH0_CLIENT_SECRET=v_e1gClNsSKg7SXQGhdkQQflT6Juj8R30UdcoLfYHBty3Gd157snDsQpxipcfRCr
+    - AUTH0_ISSUER_BASE_URL=https://dev-zxuicoohweme0r55.us.auth0.com
     depends_on:
       - mongodb
 

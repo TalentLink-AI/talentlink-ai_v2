@@ -8,9 +8,6 @@ const winston = require("winston");
 const rateLimit = require("express-rate-limit");
 
 // Import routes
-const userRoutes = require("./routes/userRoutes");
-const profileRoutes = require("./routes/profileRoutes");
-const webhookRoutes = require("./routes/webhookRoutes");
 
 // Initialize Express app
 const app = express();
@@ -66,13 +63,10 @@ app.use("/api/", limiter);
 
 // Connect to MongoDB
 mongoose
-  .connect(
-    process.env.MONGODB_URI || "mongodb://mongodb:27017/talentlink-users",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
-  )
+  .connect(process.env.MONGODB_URI || "mongodb://mongodb:27017/talentlink", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
     logger.info("Connected to MongoDB");
     console.log("Connected to MongoDB");
@@ -120,13 +114,6 @@ if (process.env.AUTH0_AUDIENCE && process.env.AUTH0_ISSUER_BASE_URL) {
     );
   }
 }
-
-// Public routes
-app.use("/webhooks", webhookRoutes);
-
-// Protected routes
-app.use("/api/users", userRoutes);
-app.use("/api/profiles", profileRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

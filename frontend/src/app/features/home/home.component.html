@@ -1,0 +1,24 @@
+<ng-container *ngIf="auth.isAuthenticated$ | async; else loggedOut">
+  <button
+    (click)="
+      auth.logout({ logoutParams: { returnTo: document.location.origin } })
+    "
+  >
+    Log out
+  </button>
+</ng-container>
+
+<ng-template #loggedOut>
+  <button (click)="auth.loginWithRedirect()">Log in</button>
+</ng-template>
+
+<ng-container *ngIf="auth.user$ | async as user">
+  <img
+    [src]="user.picture"
+    alt="Profile picture"
+    class="nav-user-profile rounded-circle"
+    style="width: 75px"
+  />
+  <h1>{{ user.name }}</h1>
+  <a routerLink="/profile" class="dropdown-item dropdown-profile"> Profile </a>
+</ng-container>
