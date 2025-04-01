@@ -1,0 +1,447 @@
+// frontend/src/styles/layouts.scss
+@use 'sass:math';
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// Main container
+.container {
+  @include container;
+}
+
+.container-fluid {
+  width: 100%;
+  padding-right: $spacing-4;
+  padding-left: $spacing-4;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+// Grid system (simplified)
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -$spacing-4;
+  margin-left: -$spacing-4;
+}
+
+// Generate column classes
+@mixin make-col($size, $columns: 12) {
+  flex: 0 0 math.percentage(math.div($size, $columns));
+  max-width: math.percentage(math.div($size, $columns));
+}
+
+// Column classes
+.col {
+  flex-basis: 0;
+  flex-grow: 1;
+  max-width: 100%;
+  padding-right: $spacing-4;
+  padding-left: $spacing-4;
+}
+
+@for $i from 1 through 12 {
+  .col-#{$i} {
+    @include make-col($i);
+    padding-right: $spacing-4;
+    padding-left: $spacing-4;
+  }
+}
+
+// Responsive column classes
+@each $breakpoint in (sm, md, lg, xl, 2xl) {
+  @include respond-to($breakpoint) {
+    .col-#{$breakpoint} {
+      flex-basis: 0;
+      flex-grow: 1;
+      max-width: 100%;
+    }
+    
+    @for $i from 1 through 12 {
+      .col-#{$breakpoint}-#{$i} {
+        @include make-col($i);
+        padding-right: $spacing-4;
+        padding-left: $spacing-4;
+      }
+    }
+  }
+}
+
+// Card layouts
+.card {
+  @include card;
+  margin-bottom: $spacing-6;
+  
+  &-header {
+    padding-bottom: $spacing-4;
+    margin-bottom: $spacing-4;
+    border-bottom: $border-width-default solid $color-gray-200;
+  }
+  
+  &-title {
+    @include heading-3;
+    margin-bottom: $spacing-2;
+  }
+  
+  &-subtitle {
+    color: $color-text-muted;
+    margin-top: -$spacing-2;
+    margin-bottom: $spacing-4;
+  }
+  
+  &-body {
+    flex: 1 1 auto;
+  }
+  
+  &-footer {
+    padding-top: $spacing-4;
+    margin-top: $spacing-4;
+    border-top: $border-width-default solid $color-gray-200;
+  }
+}
+
+// Page layout
+.page {
+  &-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  &-content {
+    flex: 1;
+    padding: $spacing-8 0;
+    
+    @include respond-to(md) {
+      padding: $spacing-12 0;
+    }
+  }
+  
+  &-header {
+    padding: $spacing-6 0;
+    background-color: $color-white;
+    box-shadow: $shadow-sm;
+    
+    &-container {
+      @include container;
+      @include flex-between;
+    }
+  }
+  
+  &-footer {
+    padding: $spacing-8 0;
+    background-color: $color-gray-100;
+    border-top: $border-width-default solid $color-gray-200;
+    
+    &-container {
+      @include container;
+    }
+  }
+}
+
+// Section layouts
+.section {
+  padding: $spacing-12 0;
+  
+  &-sm {
+    padding: $spacing-6 0;
+  }
+  
+  &-lg {
+    padding: $spacing-20 0;
+  }
+  
+  &-container {
+    @include container;
+  }
+  
+  &-header {
+    text-align: center;
+    margin-bottom: $spacing-12;
+    
+    &-title {
+      @include heading-2;
+      margin-bottom: $spacing-4;
+    }
+    
+    &-subtitle {
+      color: $color-text-muted;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  }
+}
+
+// Form layouts
+.form-container {
+  max-width: $container-sm;
+  margin: 0 auto;
+  padding: $spacing-6;
+  
+  @include respond-to(md) {
+    padding: $spacing-8;
+  }
+  
+  &-card {
+    @include card;
+    padding: $spacing-6;
+    
+    @include respond-to(md) {
+      padding: $spacing-8;
+    }
+  }
+}
+
+// Modal layout
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: $z-index-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba($color-black, 0.5);
+    z-index: $z-index-modal-backdrop;
+  }
+  
+  &-container {
+    background-color: $color-white;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-xl;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    z-index: $z-index-modal;
+    
+    @include respond-to(md) {
+      max-width: 600px;
+    }
+  }
+  
+  &-header {
+    @include flex-between;
+    padding: $spacing-6;
+    border-bottom: $border-width-default solid $color-gray-200;
+  }
+  
+  &-title {
+    @include heading-3;
+    margin: 0;
+  }
+  
+  &-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: $spacing-2;
+    margin: -$spacing-2;
+    color: $color-text-muted;
+    
+    &:hover, &:focus {
+      color: $color-text;
+    }
+  }
+  
+  &-body {
+    padding: $spacing-6;
+  }
+  
+  &-footer {
+    @include flex-between;
+    padding: $spacing-6;
+    border-top: $border-width-default solid $color-gray-200;
+  }
+}
+
+// Sidebar layout
+.sidebar-layout {
+  display: flex;
+  flex-direction: column;
+  
+  @include respond-to(lg) {
+    flex-direction: row;
+  }
+  
+  &-sidebar {
+    width: 100%;
+    
+    @include respond-to(lg) {
+      width: 280px;
+      flex-shrink: 0;
+    }
+  }
+  
+  &-content {
+    flex-grow: 1;
+    padding: $spacing-6;
+    
+    @include respond-to(lg) {
+      padding: $spacing-8;
+    }
+  }
+}
+
+// List layouts
+.list-group {
+  display: flex;
+  flex-direction: column;
+  padding-left: 0;
+  margin-bottom: 0;
+  border-radius: $border-radius-md;
+  overflow: hidden;
+  
+  &-item {
+    position: relative;
+    display: block;
+    padding: $spacing-4 $spacing-6;
+    background-color: $color-white;
+    border: $border-width-default solid $color-gray-200;
+    
+    &:first-child {
+      border-top-left-radius: inherit;
+      border-top-right-radius: inherit;
+    }
+    
+    &:last-child {
+      border-bottom-left-radius: inherit;
+      border-bottom-right-radius: inherit;
+    }
+    
+    &:not(:first-child) {
+      border-top: 0;
+    }
+    
+    &.active {
+      background-color: $color-primary;
+      border-color: $color-primary;
+      color: $color-white;
+    }
+    
+    &.disabled {
+      color: $color-text-muted;
+      pointer-events: none;
+      background-color: $color-white;
+    }
+  }
+}
+
+// Tab navigation layouts
+.nav-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: $border-width-default solid $color-gray-200;
+  margin-bottom: $spacing-6;
+  
+  .nav-item {
+    margin-bottom: -$border-width-default;
+  }
+  
+  .nav-link {
+    display: block;
+    padding: $spacing-3 $spacing-6;
+    margin-right: $spacing-2;
+    color: $color-text-muted;
+    text-decoration: none;
+    background-color: transparent;
+    border: $border-width-default solid transparent;
+    border-top-left-radius: $border-radius-md;
+    border-top-right-radius: $border-radius-md;
+    
+    &:hover, &:focus {
+      color: $color-primary;
+      border-color: $color-gray-200 $color-gray-200 transparent;
+    }
+    
+    &.active {
+      color: $color-text;
+      background-color: $color-white;
+      border-color: $color-gray-200 $color-gray-200 $color-white;
+    }
+    
+    &.disabled {
+      color: $color-text-muted;
+      pointer-events: none;
+      background-color: transparent;
+      border-color: transparent;
+    }
+  }
+}
+
+// Step progress layout for onboarding
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: $spacing-8;
+  position: relative;
+  
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: $border-width-medium;
+    background-color: $color-gray-300;
+    z-index: 1;
+  }
+  
+  .step {
+    position: relative;
+    z-index: 2;
+    background-color: $color-white;
+    border: $border-width-medium solid $color-gray-300;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $font-weight-bold;
+    
+    &-label {
+      position: absolute;
+      white-space: nowrap;
+      text-align: center;
+      font-size: $font-size-sm;
+      color: $color-text-muted;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: $spacing-2;
+    }
+    
+    &.active {
+      border-color: $color-primary;
+      background-color: $color-primary;
+      color: $color-white;
+      
+      .step-label {
+        color: $color-primary;
+        font-weight: $font-weight-medium;
+      }
+    }
+    
+    &.completed {
+      border-color: $color-success;
+      background-color: $color-success;
+      color: $color-white;
+      
+      .step-label {
+        color: $color-success;
+      }
+    }
+  }
+}

@@ -1,0 +1,139 @@
+// frontend/src/styles/components.scss
+@use 'sass:math';
+@use 'sass:color';
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// Button Components
+.btn {
+  @include button-base;
+  
+  &-primary {
+    @include button-primary;
+  }
+  
+  &-secondary {
+    @include button-secondary;
+  }
+  
+  &-success {
+    @include button-success;
+  }
+  
+  &-danger {
+    @include button-danger;
+  }
+  
+  // Button sizes
+  &-sm {
+    padding: $spacing-2 $spacing-4;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+  }
+  
+  &-lg {
+    padding: $spacing-4 $spacing-8;
+    font-size: $font-size-lg;
+    border-radius: $border-radius-lg;
+  }
+  
+  &-block {
+    display: block;
+    width: 100%;
+  }
+}
+
+// Form Components
+.form {
+  &-group {
+    margin-bottom: $spacing-6;
+  }
+  
+  &-label {
+    @include form-label;
+  }
+  
+  &-control {
+    @include form-control;
+    
+    &-sm {
+      @include form-control;
+      padding: $spacing-2 $spacing-3;
+      font-size: $font-size-sm;
+    }
+    
+    &-lg {
+      @include form-control;
+      padding: $spacing-4 $spacing-5;
+      font-size: $font-size-lg;
+    }
+  }
+  
+  &-error {
+    @include form-error;
+  }
+  
+  &-text {
+    display: block;
+    margin-top: $spacing-1;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+  
+  textarea.form-control {
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  &-check {
+    position: relative;
+    display: block;
+    padding-left: $spacing-6;
+    margin-bottom: $spacing-2;
+    
+    &-input {
+      position: absolute;
+      margin-top: 0.25rem;
+      margin-left: -$spacing-6;
+    }
+    
+    &-label {
+      margin-bottom: 0;
+    }
+    
+    &-inline {
+      display: inline-flex;
+      align-items: center;
+      padding-left: 0;
+      margin-right: $spacing-4;
+      
+      .form-check-input {
+        position: static;
+        margin-top: 0;
+        margin-right: $spacing-2;
+        margin-left: 0;
+      }
+    }
+  }
+  
+  &-switch {
+    padding-left: $spacing-10;
+    
+    .form-check-input {
+      width: $spacing-8;
+      margin-left: -$spacing-10;
+      background-color: $color-gray-300;
+      border-radius: $border-radius-full;
+      transition: background-position $transition-base ease-in-out;
+      
+      &:checked {
+        background-color: $color-primary;
+      }
+    }
+  }
+  
+  &-actions {
+    @include flex-between;
+    margin-top: $spacing-8;
+  }
+}

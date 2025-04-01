@@ -1,0 +1,263 @@
+<!-- frontend/src/app/features/onboarding/onboarding.component.html -->
+<div class="onboarding-container">
+  <div class="onboarding-header">
+    <h1>Complete Your Profile</h1>
+    <p>Let's set up your TalentLink profile to help you get started.</p>
+  </div>
+
+  <div class="onboarding-progress">
+    <div class="progress-steps">
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 'basic-info'"
+        [class.completed]="stepsCompleted['basic-info']"
+        data-title="Basic Info"
+      >
+        1
+      </div>
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 'skills'"
+        [class.completed]="stepsCompleted['skills']"
+        data-title="Skills"
+      >
+        2
+      </div>
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 'preferences'"
+        [class.completed]="stepsCompleted['preferences']"
+        data-title="Preferences"
+      >
+        3
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <!-- Basic Info Step -->
+  <div
+    *ngIf="currentStep === 'initial' || currentStep === 'basic-info'"
+    class="onboarding-step"
+  >
+    <h2>Tell us about yourself</h2>
+
+    <form [formGroup]="basicInfoForm" (ngSubmit)="onBasicInfoSubmit()">
+      <div class="form-group">
+        <label for="name">Name *</label>
+        <input
+          type="text"
+          id="name"
+          formControlName="name"
+          class="form-control"
+          placeholder="Your full name"
+        />
+        <div
+          *ngIf="
+            basicInfoForm.get('name')?.invalid &&
+            basicInfoForm.get('name')?.touched
+          "
+          class="error-text"
+        >
+          Name is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="title">Professional Title *</label>
+        <input
+          type="text"
+          id="title"
+          formControlName="title"
+          class="form-control"
+          placeholder="e.g. Frontend Developer"
+        />
+        <div
+          *ngIf="
+            basicInfoForm.get('title')?.invalid &&
+            basicInfoForm.get('title')?.touched
+          "
+          class="error-text"
+        >
+          Professional title is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="location">Location *</label>
+        <input
+          type="text"
+          id="location"
+          formControlName="location"
+          class="form-control"
+          placeholder="City, Country"
+        />
+        <div
+          *ngIf="
+            basicInfoForm.get('location')?.invalid &&
+            basicInfoForm.get('location')?.touched
+          "
+          class="error-text"
+        >
+          Location is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bio">Professional Bio</label>
+        <textarea
+          id="bio"
+          formControlName="bio"
+          class="form-control"
+          rows="4"
+          placeholder="Tell us about your background and experience"
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="skipStep()">
+          Skip for now
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="basicInfoForm.invalid || loading"
+        >
+          <span *ngIf="loading" class="loading-spinner mr-2"></span>
+          <span *ngIf="!loading">Continue</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Skills Step -->
+  <div *ngIf="currentStep === 'skills'" class="onboarding-step">
+    <h2>What are your skills?</h2>
+
+    <form [formGroup]="skillsForm" (ngSubmit)="onSkillsSubmit()">
+      <div class="form-group">
+        <label for="skills">Your Skills *</label>
+        <input
+          type="text"
+          id="skills"
+          formControlName="skills"
+          class="form-control"
+          placeholder="e.g. JavaScript, Angular, UI Design (comma separated)"
+        />
+        <div
+          *ngIf="
+            skillsForm.get('skills')?.invalid &&
+            skillsForm.get('skills')?.touched
+          "
+          class="error-text"
+        >
+          At least one skill is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="linkedin">LinkedIn Profile</label>
+        <input
+          type="text"
+          id="linkedin"
+          formControlName="linkedin"
+          class="form-control"
+          placeholder="https://linkedin.com/in/your-profile"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="github">GitHub Profile</label>
+        <input
+          type="text"
+          id="github"
+          formControlName="github"
+          class="form-control"
+          placeholder="https://github.com/your-username"
+        />
+      </div>
+
+      <div class="form-actions">
+        <div>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="goToStep('basic-info')"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary ml-2"
+            (click)="skipStep()"
+          >
+            Skip for now
+          </button>
+        </div>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="skillsForm.invalid || loading"
+        >
+          <span *ngIf="loading" class="loading-spinner mr-2"></span>
+          <span *ngIf="!loading">Continue</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Preferences Step -->
+  <div *ngIf="currentStep === 'preferences'" class="onboarding-step">
+    <h2>Additional Information</h2>
+
+    <form [formGroup]="preferencesForm" (ngSubmit)="onPreferencesSubmit()">
+      <div class="form-group">
+        <label for="phoneNumber">Phone Number</label>
+        <input
+          type="tel"
+          id="phoneNumber"
+          formControlName="phoneNumber"
+          class="form-control"
+          placeholder="Your contact number"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="website">Personal Website</label>
+        <input
+          type="text"
+          id="website"
+          formControlName="website"
+          class="form-control"
+          placeholder="https://your-website.com"
+        />
+      </div>
+
+      <div class="form-actions">
+        <div>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="goToStep('skills')"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary ml-2"
+            (click)="skipStep()"
+          >
+            Skip for now
+          </button>
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          <span *ngIf="loading" class="loading-spinner mr-2"></span>
+          <span *ngIf="!loading">Complete Setup</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

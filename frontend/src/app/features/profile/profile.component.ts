@@ -1,5 +1,6 @@
-// profile.component.ts
+// frontend/src/app/features/profile/profile.component.ts
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
 import { UserService, UserProfile } from '../../services/user.service';
 import { CommonModule } from '@angular/common';
@@ -17,7 +18,11 @@ export class ProfileComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
-  constructor(public auth: AuthService, private userService: UserService) {}
+  constructor(
+    public auth: AuthService,
+    private userService: UserService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.auth.isAuthenticated$
@@ -33,9 +38,14 @@ export class ProfileComponent implements OnInit {
     this.error = null;
     return this.userService.getCurrentUser().pipe(
       switchMap((profile) => {
-        console.log('User profile:', profile);
         this.userProfile = profile;
         this.loading = false;
+
+        // Check if the user needs to complete onboarding
+        if (profile.needsOnboarding) {
+          this.router.navigate(['/onboarding']);
+        }
+
         return this.auth.user$;
       })
     );

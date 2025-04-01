@@ -1,1 +1,199 @@
-/* You can add global styles to this file, and also import other style files */
+// Import Sass modules directly
+@use 'sass:math';
+@use 'sass:color';
+
+/* Import base style files directly */
+@use './styles/variables' as vars;
+@use './styles/mixins' as mixins;
+@use './styles/reset';
+@use './styles/utilities';
+@use './styles/components';
+@use './styles/layouts';
+
+// Base styles
+body {
+  font-family: vars.$font-family-base;
+  font-size: vars.$font-size-base;
+  font-weight: vars.$font-weight-normal;
+  line-height: vars.$line-height-base;
+  color: vars.$color-text;
+  background-color: vars.$color-background-alt;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Typography
+h1, .h1 {
+  @include mixins.heading-1;
+  margin-bottom: vars.$spacing-6;
+}
+
+h2, .h2 {
+  @include mixins.heading-2;
+  margin-bottom: vars.$spacing-5;
+}
+
+h3, .h3 {
+  @include mixins.heading-3;
+  margin-bottom: vars.$spacing-4;
+}
+
+h4, .h4 {
+  font-size: vars.$font-size-lg;
+  font-weight: vars.$font-weight-bold;
+  line-height: vars.$line-height-tight;
+  margin-bottom: vars.$spacing-3;
+}
+
+h5, .h5 {
+  font-size: vars.$font-size-base;
+  font-weight: vars.$font-weight-bold;
+  line-height: vars.$line-height-tight;
+  margin-bottom: vars.$spacing-2;
+}
+
+h6, .h6 {
+  font-size: vars.$font-size-sm;
+  font-weight: vars.$font-weight-bold;
+  line-height: vars.$line-height-tight;
+  margin-bottom: vars.$spacing-2;
+}
+
+p {
+  margin-bottom: vars.$spacing-4;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+a {
+  color: vars.$color-primary;
+  text-decoration: none;
+  transition: color vars.$transition-fast ease-in-out;
+
+  &:hover, &:focus {
+    color: vars.$color-primary-dark;
+    text-decoration: underline;
+  }
+}
+
+// Lists
+ul, ol {
+  margin-top: 0;
+  margin-bottom: vars.$spacing-4;
+  padding-left: vars.$spacing-8;
+}
+
+// Code blocks
+pre {
+  display: block;
+  font-family: vars.$font-family-monospace;
+  color: vars.$color-text;
+  padding: vars.$spacing-4;
+  margin-bottom: vars.$spacing-4;
+  font-size: vars.$font-size-sm;
+  line-height: vars.$line-height-base;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: vars.$color-gray-100;
+  border: vars.$border-width-default solid vars.$color-gray-200;
+  border-radius: vars.$border-radius-md;
+  overflow: auto;
+}
+
+code {
+  font-family: vars.$font-family-monospace;
+  font-size: 0.875em;
+  color: vars.$color-text;
+  word-wrap: break-word;
+  padding: vars.$spacing-1 vars.$spacing-2;
+  background-color: vars.$color-gray-100;
+  border-radius: vars.$border-radius-sm;
+}
+
+// Focus styles
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: vars.$border-width-medium solid vars.$color-primary;
+  outline-offset: 2px;
+}
+
+// TalentLink custom styles
+.brand {
+  font-weight: vars.$font-weight-bold;
+  color: vars.$color-primary;
+}
+
+// Animation classes
+.fade-in {
+  @include mixins.fade-in();
+}
+
+.slide-in-up {
+  @include mixins.slide-in-up();
+}
+
+// App-specific layout elements
+.auth-container {
+  @include mixins.flex-center;
+  min-height: 100vh;
+  padding: vars.$spacing-6;
+
+  .auth-form {
+    @include mixins.card;
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+// Error messages
+.error-message {
+  background-color: rgba(vars.$color-danger, 0.1);
+  color: vars.$color-danger;
+  padding: vars.$spacing-4;
+  border-radius: vars.$border-radius-md;
+  margin-bottom: vars.$spacing-6;
+}
+
+// Success messages
+.success-message {
+  background-color: rgba(vars.$color-success, 0.1);
+  color: vars.$color-success;
+  padding: vars.$spacing-4;
+  border-radius: vars.$border-radius-md;
+  margin-bottom: vars.$spacing-6;
+}
+
+// Loading states
+.loading {
+  &-spinner {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 0.25rem solid rgba(vars.$color-gray-300, 0.25);
+    border-right-color: vars.$color-primary;
+    border-radius: 50%;
+    animation: spinner 1s linear infinite;
+
+    @keyframes spinner {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  }
+
+  &-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(vars.$color-white, 0.7);
+    @include mixins.flex-center;
+    z-index: vars.$z-index-modal - 10;
+  }
+}

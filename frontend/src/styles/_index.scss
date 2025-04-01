@@ -1,0 +1,10 @@
+// frontend/src/styles/_index.scss
+
+// Re-export only the foundational style modules
+@forward 'variables';
+@forward 'mixins';
+@forward 'reset';
+@forward 'utilities';
+
+// Do NOT forward main.scss or anything that imports main.scss
+// to avoid circular dependencies

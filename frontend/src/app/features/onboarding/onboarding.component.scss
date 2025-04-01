@@ -1,0 +1,147 @@
+/* Onboarding component styles */
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+.onboarding-container {
+  max-width: $container-md;
+  margin: 0 auto;
+  padding: $spacing-8 $spacing-4;
+  
+  @include mixins.respond-to(md) {
+    padding: $spacing-12 $spacing-6;
+  }
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: $spacing-8;
+  
+  h1 {
+    margin-bottom: $spacing-4;
+  }
+  
+  p {
+    color: $color-text-muted;
+    font-size: $font-size-lg;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+.onboarding-progress {
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: $spacing-8;
+    position: relative;
+    
+    &::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 15%;
+      right: 15%;
+      height: $border-width-medium;
+      background-color: $color-gray-300;
+      z-index: 1;
+    }
+  }
+  
+  .progress-step {
+    position: relative;
+    z-index: 2;
+    background-color: $color-white;
+    border: $border-width-medium solid $color-gray-300;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $font-weight-bold;
+    transition: all $transition-base;
+    
+    &::after {
+      content: attr(data-title);
+      position: absolute;
+      white-space: nowrap;
+      text-align: center;
+      font-size: $font-size-sm;
+      color: $color-text-muted;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: $spacing-2;
+    }
+    
+    &.active {
+      border-color: $color-primary;
+      background-color: $color-primary;
+      color: $color-white;
+      
+      &::after {
+        color: $color-primary;
+        font-weight: $font-weight-medium;
+      }
+    }
+    
+    &.completed {
+      border-color: $color-success;
+      background-color: $color-success;
+      color: $color-white;
+      
+      &::after {
+        color: $color-success;
+      }
+    }
+  }
+}
+
+.onboarding-step {
+  // Move this declaration before any nested rules to fix the warning
+  margin-top: $spacing-8;
+  
+  @include mixins.card;
+  @include mixins.slide-in-up($transition-base);
+  
+  h2 {
+    @include mixins.heading-3;
+    margin-bottom: $spacing-6;
+  }
+}
+
+.form-group {
+  margin-bottom: $spacing-6;
+  
+  label {
+    @include mixins.form-label;
+  }
+  
+  .form-control {
+    @include mixins.form-control;
+  }
+  
+  // Fix the & selector syntax - this is the correct way
+  textarea.form-control {
+    min-height: 100px;
+  }
+  
+  .error-text {
+    @include mixins.form-error;
+  }
+}
+
+.form-actions {
+  @include mixins.flex-between;
+  margin-top: $spacing-8;
+  
+  .btn {
+    &-primary {
+      @include mixins.button-primary;
+    }
+    
+    &-secondary {
+      @include mixins.button-secondary;
+    }
+  }
+}
