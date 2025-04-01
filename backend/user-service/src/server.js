@@ -8,6 +8,7 @@ const winston = require("winston");
 const rateLimit = require("express-rate-limit");
 
 // Import routes
+const userRoutes = require("./routes/user.routes");
 
 // Initialize Express app
 const app = express();
@@ -105,6 +106,7 @@ if (process.env.AUTH0_AUDIENCE && process.env.AUTH0_ISSUER_BASE_URL) {
     checkJwt = auth({
       audience: process.env.AUTH0_AUDIENCE,
       issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+      tokenSigningAlg: "RS256",
     });
     logger.info("Auth0 authentication configured successfully");
   } catch (error) {
@@ -131,6 +133,8 @@ app.use((err, req, res, next) => {
         : err.message,
   });
 });
+
+app.use("/api/users", checkJwt, userRoutes);
 
 // Start the server
 app.listen(PORT, () => {

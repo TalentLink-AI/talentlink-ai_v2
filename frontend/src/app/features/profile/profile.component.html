@@ -1,5 +1,43 @@
-<p>profile works!</p>
-<ul *If="auth.user$ | async as user">
-  <li>{{ user.name }}</li>
-  <li>{{ user.email }}</li>
-</ul>
+<!-- profile.component.html -->
+<div *ngIf="loading">Loading profile...</div>
+
+<div *ngIf="error" class="error-message">
+  {{ error }}
+</div>
+<div class="profile-container">
+  <h2 id="profile-name">Name Placeholder</h2>
+  <p>Email: <span id="profile-email">Email Placeholder</span></p>
+  <p>Last Login: <span id="profile-last-login">Last Login Placeholder</span></p>
+  <ul id="profile-roles">
+    <!-- Roles will populate here -->
+  </ul>
+</div>
+
+<div *ngIf="userProfile && !loading">
+  <h2>Your Profile</h2>
+
+  <div class="profile-info">
+    <img
+      *ngIf="userProfile.profile.picture"
+      [src]="userProfile.profile.picture"
+      alt="Profile picture"
+      class="profile-picture"
+    />
+
+    <div class="profile-details">
+      <h3>{{ userProfile.profile.name || "No name provided" }}</h3>
+      <p>{{ this.auth.user$ }}</p>
+      <p *ngIf="userProfile.metadata?.lastLogin">
+        Last login: {{ userProfile.metadata.lastLogin | date : "medium" }}
+      </p>
+      <p><strong>Roles:</strong> {{ userProfile.roles.join(", ") }}</p>
+    </div>
+  </div>
+
+  <button (click)="updateProfile({ name: 'New Name' })">Update Name</button>
+</div>
+
+<div *ngIf="!userProfile && !loading">
+  <p>Please log in to view your profile.</p>
+  <button (click)="auth.loginWithRedirect()">Log in</button>
+</div>

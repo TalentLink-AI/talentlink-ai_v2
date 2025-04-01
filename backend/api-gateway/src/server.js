@@ -67,7 +67,7 @@ app.get("/health", (req, res) => {
 // Service routes
 const serviceRoutes = [
   {
-    path: "/users",
+    path: "/api/users",
     target: process.env.USER_SERVICE_URL || "http://user-service:3001",
   },
 ];
