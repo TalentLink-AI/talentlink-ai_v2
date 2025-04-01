@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-const winston = require("winston");
+const logger = require("../logger");
 const rateLimit = require("express-rate-limit");
 
 // Import routes
@@ -14,39 +14,6 @@ const adminRoutes = require("./routes/admin.routes");
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Configure logger
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  defaultMeta: { service: "user-service" },
-  transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      ),
-    }),
-  ],
-});
-
-// Add file transports in production
-if (process.env.NODE_ENV === "production") {
-  logger.add(
-    new winston.transports.File({
-      filename: "logs/error.log",
-      level: "error",
-    })
-  );
-  logger.add(
-    new winston.transports.File({
-      filename: "logs/combined.log",
-    })
-  );
-}
 
 // Middleware
 app.use(cors());

@@ -1,18 +1,21 @@
-// backend/user-service/src/routes/admin.routes.js
 const express = require("express");
 const User = require("../models/user.model");
 const TalentProfile = require("../models/talent-profile.model");
 const ClientProfile = require("../models/client-profile.model");
 const router = express.Router();
 const Joi = require("joi");
+const logger = require("../../logger"); // adjust the path as needed
 
 // Middleware to check if user is admin
 const isAdmin = async (req, res, next) => {
   try {
-    // Get roles from the Auth0 token
+    // Get roles from the Auth0 token payload
     const roles = req.auth.payload["https://talentlink.com/roles"] || [];
 
     if (!roles.includes("admin")) {
+      logger.warn(
+        `Forbidden admin access attempt by user: ${req.auth.payload.sub}`
+      );
       return res
         .status(403)
         .json({ message: "Forbidden: Admin access required" });
@@ -20,7 +23,10 @@ const isAdmin = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Admin authorization error:", error);
+    logger.error("Admin authorization error", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Admin authorization error" });
   }
 };
@@ -66,8 +72,10 @@ router.get("/dashboard/stats", async (req, res) => {
       joined: user.createdAt,
     }));
 
-    // For this example, we'll just return static data for the other statistics
-    // In a real app, you would compute these from your database
+    logger.info(
+      `Dashboard stats fetched by admin user: ${req.auth.payload.sub}`
+    );
+
     res.json({
       usersCount: totalUsers,
       activeJobsCount: 267,
@@ -117,7 +125,10 @@ router.get("/dashboard/stats", async (req, res) => {
       ],
     });
   } catch (error) {
-    console.error("Error fetching dashboard stats:", error);
+    logger.error("Error fetching dashboard stats", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Error fetching dashboard statistics" });
   }
 });
@@ -149,6 +160,8 @@ router.get("/users", async (req, res) => {
     // Get total count for pagination
     const total = await User.countDocuments(query);
 
+    logger.info(`Admin ${req.auth.payload.sub} fetched users page ${page}`);
+
     res.json({
       users,
       pagination: {
@@ -159,7 +172,10 @@ router.get("/users", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching users:", error);
+    logger.error("Error fetching users", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Error fetching users" });
   }
 });
@@ -172,6 +188,9 @@ router.get("/users/:userId", async (req, res) => {
     // Find user
     const user = await User.findById(userId);
     if (!user) {
+      logger.warn(
+        `User ${userId} not found. Requested by admin ${req.auth.payload.sub}`
+      );
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -183,9 +202,14 @@ router.get("/users/:userId", async (req, res) => {
       profile = await ClientProfile.findOne({ userId });
     }
 
+    logger.info(`Admin ${req.auth.payload.sub} fetched user ${userId}`);
+
     res.json({ user, profile });
   } catch (error) {
-    console.error("Error fetching user:", error);
+    logger.error("Error fetching user", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Error fetching user details" });
   }
 });
@@ -209,12 +233,20 @@ router.put("/users/:userId", async (req, res) => {
       { new: true }
     );
     if (!user) {
+      logger.warn(
+        `User ${userId} not found during update. Requested by admin ${req.auth.payload.sub}`
+      );
       return res.status(404).json({ message: "User not found" });
     }
 
+    logger.info(`User ${userId} updated by admin ${req.auth.payload.sub}`);
+
     res.json({ user });
   } catch (error) {
-    console.error("Error updating user:", error);
+    logger.error("Error updating user", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Error updating user" });
   }
 });
@@ -227,19 +259,31 @@ router.put("/users/:userId/role", async (req, res) => {
 
     // Validate role
     if (!["talent", "client", "admin"].includes(role)) {
+      logger.warn(
+        `Invalid role update attempt for user ${userId} by admin ${req.auth.payload.sub}`
+      );
       return res.status(400).json({ message: "Invalid role" });
     }
 
     // Update user role
     const user = await User.findByIdAndUpdate(userId, { role }, { new: true });
-
     if (!user) {
+      logger.warn(
+        `User ${userId} not found for role update. Requested by admin ${req.auth.payload.sub}`
+      );
       return res.status(404).json({ message: "User not found" });
     }
 
+    logger.info(
+      `User ${userId} role updated to ${role} by admin ${req.auth.payload.sub}`
+    );
+
     res.json({ user });
   } catch (error) {
-    console.error("Error updating user role:", error);
+    logger.error("Error updating user role", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Error updating user role" });
   }
 });
@@ -251,6 +295,9 @@ router.patch("/users/:userId/status", async (req, res) => {
     const { isActive } = req.body;
 
     if (typeof isActive !== "boolean") {
+      logger.warn(
+        `Invalid isActive value provided by admin ${req.auth.payload.sub} for user ${userId}`
+      );
       return res.status(400).json({ message: "isActive must be a boolean" });
     }
 
@@ -260,18 +307,25 @@ router.patch("/users/:userId/status", async (req, res) => {
       { isActive },
       { new: true }
     );
-
     if (!user) {
+      logger.warn(
+        `User ${userId} not found during status toggle by admin ${req.auth.payload.sub}`
+      );
       return res.status(404).json({ message: "User not found" });
     }
 
+    logger.info(
+      `User ${userId} status toggled to ${isActive} by admin ${req.auth.payload.sub}`
+    );
+
     res.json({ user });
   } catch (error) {
-    console.error("Error toggling user status:", error);
+    logger.error("Error toggling user status", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Error toggling user status" });
   }
 });
-
-// Add routes for other admin functions (jobs, payments, reports, etc.)
 
 module.exports = router;
