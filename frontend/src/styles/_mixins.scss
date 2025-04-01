@@ -100,11 +100,11 @@
   border-radius: $border-radius-md;
   transition: all $transition-fast ease-in-out;
   cursor: pointer;
-  
+
   &:focus, &:active {
     outline: none;
   }
-  
+
   &:disabled {
     cursor: not-allowed;
     opacity: 0.65;
@@ -115,11 +115,11 @@
   @include button-base;
   background-color: $color-primary;
   color: $color-white;
-  
+
   &:hover, &:focus {
     background-color: $color-primary-dark;
   }
-  
+
   &:disabled {
     background-color: $color-primary-light;
   }
@@ -130,7 +130,7 @@
   background-color: transparent;
   border-color: $color-secondary;
   color: $color-secondary;
-  
+
   &:hover, &:focus {
     background-color: $color-gray-100;
   }
@@ -140,7 +140,7 @@
   @include button-base;
   background-color: $color-danger;
   color: $color-white;
-  
+
   &:hover, &:focus {
     background-color: color.adjust($color-danger, $lightness: -10%);
   }
@@ -150,7 +150,7 @@
   @include button-base;
   background-color: $color-success;
   color: $color-white;
-  
+
   &:hover, &:focus {
     background-color: color.adjust($color-success, $lightness: -10%);
   }
@@ -177,18 +177,18 @@
   border: $border-width-default solid $color-border;
   border-radius: $border-radius-md;
   transition: border-color $transition-fast ease-in-out, box-shadow $transition-fast ease-in-out;
-  
+
   &:focus {
     border-color: $color-primary;
     outline: 0;
     box-shadow: 0 0 0 0.25rem rgba($color-primary, 0.25);
   }
-  
+
   &::placeholder {
     color: $color-text-muted;
     opacity: 1;
   }
-  
+
   &:disabled {
     background-color: $color-gray-200;
     opacity: 1;

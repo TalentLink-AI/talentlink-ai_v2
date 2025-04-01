@@ -16,30 +16,36 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    profile: {
-      name: String,
-      picture: String,
-      // Add additional profile fields needed for onboarding
-      title: String,
-      bio: String,
-      location: String,
-      skills: [String],
-      phoneNumber: String,
-      website: String,
-      linkedin: String,
-      github: String,
+    role: {
+      type: String,
+      enum: ["client", "talent", "admin"],
+      required: true,
+      default: "talent", // Default role
+    },
+    firstName: String,
+    lastName: String,
+    profilePicture: String,
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     metadata: {
       lastLogin: { type: Date, default: Date.now },
       onboardingCompleted: { type: Boolean, default: false },
       onboardingStep: {
         type: String,
-        enum: ["initial", "basic-info", "skills", "preferences", "completed"],
+        enum: [
+          "initial",
+          "basic-info",
+          "profile-type",
+          "profile-details",
+          "completed",
+        ],
         default: "initial",
       },
     },
-    roles: [String],
-    projects: [String],
+    stripeCustomerId: String,
+    stripeConnectedAccountId: String,
   },
   { timestamps: true }
 );

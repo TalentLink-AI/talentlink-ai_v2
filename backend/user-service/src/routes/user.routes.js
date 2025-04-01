@@ -1,6 +1,8 @@
 // backend/user-service/src/routes/user.routes.js
 const express = require("express");
 const User = require("../models/user.model");
+const TalentProfile = require("../models/talent-profile.model");
+const ClientProfile = require("../models/client-profile.model");
 const router = express.Router();
 const axios = require("axios");
 
@@ -12,7 +14,7 @@ router.get("/me", async (req, res) => {
 
     // Fetch from Auth0 UserInfo endpoint
     const { data: userInfo } = await axios.get(
-      `https://dev-zxuicoohweme0r55.us.auth0.com/userinfo`,
+      `${process.env.AUTH0_ISSUER_BASE_URL}/userinfo`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
@@ -25,26 +27,46 @@ router.get("/me", async (req, res) => {
         .json({ message: "Incomplete user data from token." });
     }
 
-    // Upsert operation: update existing or create new user
-    const user = await User.findOneAndUpdate(
-      { auth0Id },
-      {
-        $setOnInsert: {
-          email,
-          "metadata.onboardingCompleted": false,
-          "metadata.onboardingStep": "initial",
-        },
-        $set: { "metadata.lastLogin": new Date() },
-      },
-      { new: true, upsert: true }
-    );
+    // Find or create base user
+    let user = await User.findOne({ auth0Id });
 
-    // Check if onboarding is needed and include a flag in the response
-    // This helps the frontend determine if it should show onboarding screens
-    const needsOnboarding = !user.metadata.onboardingCompleted;
+    if (!user) {
+      // Create new user
+      user = new User({
+        auth0Id,
+        email,
+        firstName: userInfo.given_name || "",
+        lastName: userInfo.family_name || "",
+        profilePicture: userInfo.picture || "",
+        role: "talent", // Default role
+        metadata: {
+          lastLogin: new Date(),
+          onboardingCompleted: false,
+          onboardingStep: "initial",
+        },
+      });
+
+      await user.save();
+    } else {
+      // Update last login
+      user.metadata.lastLogin = new Date();
+      await user.save();
+    }
+
+    // Get the appropriate profile based on role
+    let profile = null;
+    if (user.role === "talent") {
+      profile = await TalentProfile.findOne({ userId: user._id });
+    } else if (user.role === "client") {
+      profile = await ClientProfile.findOne({ userId: user._id });
+    }
+
+    // Check if onboarding is needed
+    const needsOnboarding = !user.metadata.onboardingCompleted || !profile;
 
     res.json({
-      ...user.toObject(),
+      user,
+      profile,
       needsOnboarding,
       currentOnboardingStep: user.metadata.onboardingStep,
     });
@@ -65,12 +87,21 @@ router.put("/me", async (req, res) => {
         .json({ message: "auth0Id missing from authentication payload." });
     }
 
-    const { profile, onboardingStep } = req.body;
+    const { firstName, lastName, role, onboardingStep } = req.body;
     const updateData = {};
 
-    // Update profile if provided
-    if (profile) {
-      updateData["profile"] = profile;
+    // Update basic info if provided
+    if (firstName !== undefined) {
+      updateData["firstName"] = firstName;
+    }
+
+    if (lastName !== undefined) {
+      updateData["lastName"] = lastName;
+    }
+
+    // Update role if provided
+    if (role !== undefined) {
+      updateData["role"] = role;
     }
 
     // Update onboarding step if provided
@@ -89,11 +120,25 @@ router.put("/me", async (req, res) => {
     const user = await User.findOneAndUpdate(
       { auth0Id },
       { $set: updateData },
-      { new: true, upsert: true }
+      { new: true }
     );
 
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get the appropriate profile based on role
+    let profile = null;
+    if (user.role === "talent") {
+      profile = await TalentProfile.findOne({ userId: user._id });
+    } else if (user.role === "client") {
+      profile = await ClientProfile.findOne({ userId: user._id });
+    }
+
     // Check if profile is complete based on required fields
-    const isProfileComplete = checkProfileCompleteness(user);
+    const isProfileComplete = profile
+      ? checkProfileCompleteness(profile, user.role)
+      : false;
 
     // If profile is complete but onboarding not marked as completed,
     // update the onboarding status
@@ -103,9 +148,13 @@ router.put("/me", async (req, res) => {
       await user.save();
     }
 
+    // Determine if onboarding is needed
+    const needsOnboarding = !user.metadata.onboardingCompleted || !profile;
+
     res.json({
-      ...user.toObject(),
-      needsOnboarding: !user.metadata.onboardingCompleted,
+      user,
+      profile,
+      needsOnboarding,
       currentOnboardingStep: user.metadata.onboardingStep,
     });
   } catch (error) {
@@ -114,11 +163,162 @@ router.put("/me", async (req, res) => {
   }
 });
 
-// Add a route to update just the onboarding step
-router.put("/me/onboarding", async (req, res) => {
+// Set user role (talent or client)
+router.post("/role", async (req, res) => {
   try {
     const auth0Id = req.auth.payload.sub;
-    const { step, profileData } = req.body;
+    const { role } = req.body;
+
+    if (!["talent", "client"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role specified" });
+    }
+
+    // Update user role
+    const user = await User.findOneAndUpdate(
+      { auth0Id },
+      {
+        $set: {
+          role,
+          "metadata.onboardingStep": "profile-details",
+        },
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get profile if it exists
+    let profile = null;
+    if (role === "talent") {
+      profile = await TalentProfile.findOne({ userId: user._id });
+    } else if (role === "client") {
+      profile = await ClientProfile.findOne({ userId: user._id });
+    }
+
+    // Determine if onboarding is needed
+    const needsOnboarding = !user.metadata.onboardingCompleted || !profile;
+
+    res.json({
+      user,
+      profile,
+      needsOnboarding,
+      currentOnboardingStep: user.metadata.onboardingStep,
+    });
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    res.status(500).json({ message: "Error updating user role" });
+  }
+});
+
+// Update talent profile
+router.post("/profile/talent", async (req, res) => {
+  try {
+    const auth0Id = req.auth.payload.sub;
+    const user = await User.findOne({ auth0Id });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.role !== "talent") {
+      return res.status(400).json({ message: "User is not a talent" });
+    }
+
+    // Find or create talent profile
+    let profile = await TalentProfile.findOne({ userId: user._id });
+
+    if (!profile) {
+      profile = new TalentProfile({
+        userId: user._id,
+        ...req.body,
+      });
+    } else {
+      // Update existing profile fields
+      Object.assign(profile, req.body);
+    }
+
+    await profile.save();
+
+    // Check if profile is complete based on required fields
+    const isProfileComplete = checkProfileCompleteness(profile, "talent");
+
+    // Mark onboarding as complete if all required fields are present
+    if (isProfileComplete) {
+      user.metadata.onboardingCompleted = true;
+      user.metadata.onboardingStep = "completed";
+      await user.save();
+    }
+
+    res.json({
+      user,
+      profile,
+      needsOnboarding: !isProfileComplete,
+      currentOnboardingStep: user.metadata.onboardingStep,
+    });
+  } catch (error) {
+    console.error("Error updating talent profile:", error);
+    res.status(500).json({ message: "Error updating talent profile" });
+  }
+});
+
+// Update client profile
+router.post("/profile/client", async (req, res) => {
+  try {
+    const auth0Id = req.auth.payload.sub;
+    const user = await User.findOne({ auth0Id });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.role !== "client") {
+      return res.status(400).json({ message: "User is not a client" });
+    }
+
+    // Find or create client profile
+    let profile = await ClientProfile.findOne({ userId: user._id });
+
+    if (!profile) {
+      profile = new ClientProfile({
+        userId: user._id,
+        ...req.body,
+      });
+    } else {
+      // Update existing profile
+      Object.assign(profile, req.body);
+    }
+
+    await profile.save();
+
+    // Check if profile is complete based on required fields
+    const isProfileComplete = checkProfileCompleteness(profile, "client");
+
+    // Mark onboarding as complete if all required fields are present
+    if (isProfileComplete) {
+      user.metadata.onboardingCompleted = true;
+      user.metadata.onboardingStep = "completed";
+      await user.save();
+    }
+
+    res.json({
+      user,
+      profile,
+      needsOnboarding: !isProfileComplete,
+      currentOnboardingStep: user.metadata.onboardingStep,
+    });
+  } catch (error) {
+    console.error("Error updating client profile:", error);
+    res.status(500).json({ message: "Error updating client profile" });
+  }
+});
+
+// Update just the onboarding step
+router.put("/onboarding-step", async (req, res) => {
+  try {
+    const auth0Id = req.auth.payload.sub;
+    const { step } = req.body;
 
     if (!auth0Id) {
       return res.status(400).json({ message: "Authentication error." });
@@ -133,21 +333,27 @@ router.put("/me/onboarding", async (req, res) => {
       updateData["metadata.onboardingCompleted"] = true;
     }
 
-    // If profile data is provided, update the relevant fields
-    if (profileData) {
-      Object.keys(profileData).forEach((key) => {
-        updateData[`profile.${key}`] = profileData[key];
-      });
-    }
-
     const user = await User.findOneAndUpdate(
       { auth0Id },
       { $set: updateData },
       { new: true }
     );
 
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get the appropriate profile
+    let profile = null;
+    if (user.role === "talent") {
+      profile = await TalentProfile.findOne({ userId: user._id });
+    } else if (user.role === "client") {
+      profile = await ClientProfile.findOne({ userId: user._id });
+    }
+
     res.json({
-      ...user.toObject(),
+      user,
+      profile,
       needsOnboarding: !user.metadata.onboardingCompleted,
       currentOnboardingStep: user.metadata.onboardingStep,
     });
@@ -158,17 +364,44 @@ router.put("/me/onboarding", async (req, res) => {
 });
 
 // Helper function to check if a profile is complete
-function checkProfileCompleteness(user) {
-  // Define required fields for a complete profile
-  const requiredFields = ["name", "title", "location", "skills"];
+function checkProfileCompleteness(profile, role) {
+  if (!profile) return false;
 
-  // Check if all required fields exist and are not empty
-  return requiredFields.every((field) => {
-    if (field === "skills") {
-      return user.profile.skills && user.profile.skills.length > 0;
-    }
-    return user.profile[field] && user.profile[field].trim().length > 0;
-  });
+  if (role === "talent") {
+    // Required fields for talent profile
+    return Boolean(
+      profile.title &&
+        profile.title.trim().length > 0 &&
+        profile.bio &&
+        profile.bio.trim().length > 0 &&
+        profile.skills &&
+        profile.skills.length > 0 &&
+        profile.location &&
+        profile.location.country &&
+        profile.location.country.trim().length > 0 &&
+        profile.location.city &&
+        profile.location.city.trim().length > 0
+    );
+  } else if (role === "client") {
+    // Required fields for client profile
+    return Boolean(
+      profile.companyName &&
+        profile.companyName.trim().length > 0 &&
+        profile.industry &&
+        profile.industry.trim().length > 0 &&
+        profile.description &&
+        profile.description.trim().length > 0 &&
+        profile.location &&
+        profile.location.country &&
+        profile.location.country.trim().length > 0 &&
+        profile.location.city &&
+        profile.location.city.trim().length > 0 &&
+        profile.contactEmail &&
+        profile.contactEmail.trim().length > 0
+    );
+  }
+
+  return false;
 }
 
 module.exports = router;

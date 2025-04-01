@@ -1,0 +1,357 @@
+/* frontend/src/app/features/profile/profile.component.scss */
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+.profile-container {
+  max-width: $container-lg;
+  margin: 0 auto;
+  padding: $spacing-8 $spacing-4;
+  
+  @include mixins.respond-to(md) {
+    padding: $spacing-12 $spacing-6;
+  }
+}
+
+.loading-container {
+  @include mixins.flex-center;
+  flex-direction: column;
+  min-height: 300px;
+  
+  .loading-spinner {
+    margin-bottom: $spacing-4;
+  }
+}
+
+.auth-message, 
+.onboarding-message {
+  text-align: center;
+  padding: $spacing-16;
+  background-color: $color-white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
+  
+  h2 {
+    margin-bottom: $spacing-4;
+  }
+  
+  p {
+    margin-bottom: $spacing-6;
+    color: $color-text-muted;
+  }
+}
+
+.profile-content {
+  background-color: $color-white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+}
+
+.profile-header {
+  padding: $spacing-6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-6;
+  border-bottom: $border-width-default solid $color-gray-200;
+  background-color: $color-gray-100;
+  
+  @include mixins.respond-to(md) {
+    flex-wrap: nowrap;
+    padding: $spacing-8;
+  }
+  
+  .profile-picture, 
+  .company-logo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: $border-width-medium solid $color-white;
+    box-shadow: $shadow-sm;
+    flex-shrink: 0;
+    
+    @include mixins.respond-to(md) {
+      width: 160px;
+      height: 160px;
+    }
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  .company-logo {
+    border-radius: $border-radius-lg;
+    background-color: $color-white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    img {
+      object-fit: contain;
+      max-width: 80%;
+      max-height: 80%;
+    }
+  }
+  
+  .profile-header-content {
+    flex: 1;
+    
+    h1 {
+      @include mixins.heading-1;
+      margin-bottom: $spacing-2;
+    }
+    
+    h2 {
+      color: $color-text-muted;
+      font-weight: $font-weight-medium;
+      margin-bottom: $spacing-4;
+    }
+    
+    .profile-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-4;
+      
+      span {
+        display: flex;
+        align-items: center;
+        color: $color-text-muted;
+        
+        i {
+          margin-right: $spacing-2;
+        }
+      }
+    }
+  }
+  
+  .profile-actions {
+    @include mixins.respond-to(md) {
+      margin-left: auto;
+      align-self: flex-start;
+    }
+  }
+}
+
+.company-header {
+  background-color: rgba($color-primary, 0.05);
+}
+
+.profile-body {
+  padding: $spacing-8;
+}
+
+.profile-section {
+  margin-bottom: $spacing-10;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+  
+  h3 {
+    @include mixins.heading-3;
+    margin-bottom: $spacing-4;
+    position: relative;
+    padding-bottom: $spacing-2;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background-color: $color-primary;
+    }
+  }
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-2;
+  
+  .skill-tag {
+    background-color: rgba($color-primary, 0.1);
+    color: $color-primary;
+    padding: $spacing-1 $spacing-3;
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.experience-item,
+.education-item {
+  margin-bottom: $spacing-6;
+  padding-bottom: $spacing-6;
+  border-bottom: $border-width-default solid $color-gray-200;
+  
+  &:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  
+  h4 {
+    font-weight: $font-weight-bold;
+    margin-bottom: $spacing-2;
+  }
+  
+  .experience-duration,
+  .education-duration,
+  .experience-location,
+  .education-institution {
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+    margin-bottom: $spacing-2;
+  }
+  
+  .experience-description {
+    margin-top: $spacing-3;
+  }
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $spacing-6;
+  
+  @include mixins.respond-to(md) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include mixins.respond-to(lg) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .portfolio-item {
+    border: $border-width-default solid $color-gray-200;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+    
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: $shadow-md;
+    }
+    
+    .portfolio-image {
+      height: 180px;
+      overflow: hidden;
+      
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+    
+    .portfolio-details {
+      padding: $spacing-4;
+      
+      h4 {
+        margin-bottom: $spacing-2;
+      }
+      
+      p {
+        color: $color-text-muted;
+        font-size: $font-size-sm;
+        margin-bottom: $spacing-3;
+      }
+      
+      .portfolio-technologies {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $spacing-1;
+        margin-bottom: $spacing-3;
+        
+        .tech-tag {
+          background-color: $color-gray-200;
+          font-size: $font-size-sm;
+          padding: $spacing-1 $spacing-2;
+          border-radius: $border-radius-sm;
+        }
+      }
+    }
+  }
+}
+
+.contact-links,
+.social-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  
+  li {
+    margin-bottom: $spacing-3;
+    display: flex;
+    align-items: center;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    i {
+      width: 24px;
+      margin-right: $spacing-3;
+      color: $color-primary;
+    }
+    
+    a {
+      color: $color-text;
+      text-decoration: none;
+      
+      &:hover {
+        color: $color-primary;
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-4;
+  
+  .stat-item {
+    flex: 1;
+    min-width: 120px;
+    padding: $spacing-4;
+    background-color: rgba($color-primary, 0.05);
+    border-radius: $border-radius-md;
+    text-align: center;
+    
+    .stat-value {
+      font-size: $font-size-2xl;
+      font-weight: $font-weight-bold;
+      color: $color-primary;
+    }
+    
+    .stat-label {
+      font-size: $font-size-sm;
+      color: $color-text-muted;
+      margin-top: $spacing-1;
+    }
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: $spacing-1 $spacing-2;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: $border-radius-full;
+  
+  &-primary {
+    background-color: $color-primary;
+    color: $color-white;
+  }
+}

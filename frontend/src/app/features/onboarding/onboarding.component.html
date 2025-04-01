@@ -1,8 +1,8 @@
 <!-- frontend/src/app/features/onboarding/onboarding.component.html -->
 <div class="onboarding-container">
   <div class="onboarding-header">
-    <h1>Complete Your Profile</h1>
-    <p>Let's set up your TalentLink profile to help you get started.</p>
+    <h1>Complete Your TalentLink Profile</h1>
+    <p>Let's set up your profile to help you get started with TalentLink.</p>
   </div>
 
   <div class="onboarding-progress">
@@ -17,17 +17,17 @@
       </div>
       <div
         class="progress-step"
-        [class.active]="currentStep === 'skills'"
-        [class.completed]="stepsCompleted['skills']"
-        data-title="Skills"
+        [class.active]="currentStep === 'profile-type'"
+        [class.completed]="stepsCompleted['profile-type']"
+        data-title="Account Type"
       >
         2
       </div>
       <div
         class="progress-step"
-        [class.active]="currentStep === 'preferences'"
-        [class.completed]="stepsCompleted['preferences']"
-        data-title="Preferences"
+        [class.active]="currentStep === 'profile-details'"
+        [class.completed]="stepsCompleted['profile-details']"
+        data-title="Profile Details"
       >
         3
       </div>
@@ -47,74 +47,43 @@
 
     <form [formGroup]="basicInfoForm" (ngSubmit)="onBasicInfoSubmit()">
       <div class="form-group">
-        <label for="name">Name *</label>
+        <label for="firstName">First Name *</label>
         <input
           type="text"
-          id="name"
-          formControlName="name"
+          id="firstName"
+          formControlName="firstName"
           class="form-control"
-          placeholder="Your full name"
+          placeholder="Your first name"
         />
         <div
           *ngIf="
-            basicInfoForm.get('name')?.invalid &&
-            basicInfoForm.get('name')?.touched
+            basicInfoForm.get('firstName')?.invalid &&
+            basicInfoForm.get('firstName')?.touched
           "
           class="error-text"
         >
-          Name is required
+          First name is required
         </div>
       </div>
 
       <div class="form-group">
-        <label for="title">Professional Title *</label>
+        <label for="lastName">Last Name *</label>
         <input
           type="text"
-          id="title"
-          formControlName="title"
+          id="lastName"
+          formControlName="lastName"
           class="form-control"
-          placeholder="e.g. Frontend Developer"
+          placeholder="Your last name"
         />
         <div
           *ngIf="
-            basicInfoForm.get('title')?.invalid &&
-            basicInfoForm.get('title')?.touched
+            basicInfoForm.get('lastName')?.invalid &&
+            basicInfoForm.get('lastName')?.touched
           "
           class="error-text"
         >
-          Professional title is required
+          Last name is required
         </div>
-      </div>
-
-      <div class="form-group">
-        <label for="location">Location *</label>
-        <input
-          type="text"
-          id="location"
-          formControlName="location"
-          class="form-control"
-          placeholder="City, Country"
-        />
-        <div
-          *ngIf="
-            basicInfoForm.get('location')?.invalid &&
-            basicInfoForm.get('location')?.touched
-          "
-          class="error-text"
-        >
-          Location is required
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="bio">Professional Bio</label>
-        <textarea
-          id="bio"
-          formControlName="bio"
-          class="form-control"
-          rows="4"
-          placeholder="Tell us about your background and experience"
-        ></textarea>
       </div>
 
       <div class="form-actions">
@@ -133,13 +102,108 @@
     </form>
   </div>
 
-  <!-- Skills Step -->
-  <div *ngIf="currentStep === 'skills'" class="onboarding-step">
-    <h2>What are your skills?</h2>
+  <!-- Profile Type Step -->
+  <div *ngIf="currentStep === 'profile-type'" class="onboarding-step">
+    <h2>What brings you to TalentLink?</h2>
+    <p class="step-description">
+      Select the account type that best fits your needs. This will determine how
+      we set up your profile.
+    </p>
 
-    <form [formGroup]="skillsForm" (ngSubmit)="onSkillsSubmit()">
+    <form [formGroup]="profileTypeForm" (ngSubmit)="onProfileTypeSubmit()">
+      <div class="profile-type-selection">
+        <div class="profile-type-option">
+          <input
+            type="radio"
+            id="talent"
+            formControlName="role"
+            value="talent"
+            class="profile-type-input"
+          />
+          <label for="talent" class="profile-type-label">
+            <div class="profile-type-icon">
+              <i class="icon-talent"></i>
+            </div>
+            <div class="profile-type-content">
+              <h3>I'm a Talent</h3>
+              <p>I want to offer my skills and find work opportunities</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="profile-type-option">
+          <input
+            type="radio"
+            id="client"
+            formControlName="role"
+            value="client"
+            class="profile-type-input"
+          />
+          <label for="client" class="profile-type-label">
+            <div class="profile-type-icon">
+              <i class="icon-client"></i>
+            </div>
+            <div class="profile-type-content">
+              <h3>I'm a Client</h3>
+              <p>I want to hire skilled professionals for my projects</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="goToStep('basic-info')"
+        >
+          Back
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="profileTypeForm.invalid || loading"
+        >
+          <span *ngIf="loading" class="loading-spinner mr-2"></span>
+          <span *ngIf="!loading">Continue</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Profile Details Step - Talent -->
+  <div
+    *ngIf="currentStep === 'profile-details' && getCurrentRole() === 'talent'"
+    class="onboarding-step"
+  >
+    <h2>Create your talent profile</h2>
+    <p class="step-description">
+      Showcase your skills and experience to potential clients.
+    </p>
+
+    <form [formGroup]="talentProfileForm" (ngSubmit)="onTalentProfileSubmit()">
       <div class="form-group">
-        <label for="skills">Your Skills *</label>
+        <label for="title">Professional Title *</label>
+        <input
+          type="text"
+          id="title"
+          formControlName="title"
+          class="form-control"
+          placeholder="e.g. Full Stack Developer"
+        />
+        <div
+          *ngIf="
+            talentProfileForm.get('title')?.invalid &&
+            talentProfileForm.get('title')?.touched
+          "
+          class="error-text"
+        >
+          Professional title is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="skills">Skills *</label>
         <input
           type="text"
           id="skills"
@@ -149,8 +213,8 @@
         />
         <div
           *ngIf="
-            skillsForm.get('skills')?.invalid &&
-            skillsForm.get('skills')?.touched
+            talentProfileForm.get('skills')?.invalid &&
+            talentProfileForm.get('skills')?.touched
           "
           class="error-text"
         >
@@ -158,6 +222,118 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="hourlyRate">Hourly Rate (USD) *</label>
+        <input
+          type="number"
+          id="hourlyRate"
+          formControlName="hourlyRate"
+          class="form-control"
+          placeholder="e.g. 50"
+          min="1"
+        />
+        <div
+          *ngIf="
+            talentProfileForm.get('hourlyRate')?.invalid &&
+            talentProfileForm.get('hourlyRate')?.touched
+          "
+          class="error-text"
+        >
+          Valid hourly rate is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="availability">Availability</label>
+        <select
+          id="availability"
+          formControlName="availability"
+          class="form-control"
+        >
+          <option value="full-time">Full-time</option>
+          <option value="part-time">Part-time</option>
+          <option value="contract">Contract</option>
+          <option value="freelance">Freelance</option>
+        </select>
+      </div>
+
+      <div formGroupName="location" class="form-row">
+        <div class="form-group col-md-6">
+          <label for="country">Country *</label>
+          <input
+            type="text"
+            id="country"
+            formControlName="country"
+            class="form-control"
+            placeholder="Your country"
+          />
+          <div
+            *ngIf="
+              talentProfileForm.get('location.country')?.invalid &&
+              talentProfileForm.get('location.country')?.touched
+            "
+            class="error-text"
+          >
+            Country is required
+          </div>
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="city">City *</label>
+          <input
+            type="text"
+            id="city"
+            formControlName="city"
+            class="form-control"
+            placeholder="Your city"
+          />
+          <div
+            *ngIf="
+              talentProfileForm.get('location.city')?.invalid &&
+              talentProfileForm.get('location.city')?.touched
+            "
+            class="error-text"
+          >
+            City is required
+          </div>
+        </div>
+
+        <div class="form-group col-12">
+          <div class="form-check">
+            <input
+              type="checkbox"
+              id="remote"
+              formControlName="remote"
+              class="form-check-input"
+            />
+            <label for="remote" class="form-check-label">
+              Available for remote work
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bio">Professional Bio *</label>
+        <textarea
+          id="bio"
+          formControlName="bio"
+          class="form-control"
+          rows="5"
+          placeholder="Describe your professional background, expertise, and what you bring to the table"
+        ></textarea>
+        <div
+          *ngIf="
+            talentProfileForm.get('bio')?.invalid &&
+            talentProfileForm.get('bio')?.touched
+          "
+          class="error-text"
+        >
+          Bio is required (at least 100 characters)
+        </div>
+      </div>
+
+      <h3 class="section-title">Online Presence</h3>
       <div class="form-group">
         <label for="linkedin">LinkedIn Profile</label>
         <input
@@ -180,51 +356,6 @@
         />
       </div>
 
-      <div class="form-actions">
-        <div>
-          <button
-            type="button"
-            class="btn btn-secondary"
-            (click)="goToStep('basic-info')"
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary ml-2"
-            (click)="skipStep()"
-          >
-            Skip for now
-          </button>
-        </div>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          [disabled]="skillsForm.invalid || loading"
-        >
-          <span *ngIf="loading" class="loading-spinner mr-2"></span>
-          <span *ngIf="!loading">Continue</span>
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Preferences Step -->
-  <div *ngIf="currentStep === 'preferences'" class="onboarding-step">
-    <h2>Additional Information</h2>
-
-    <form [formGroup]="preferencesForm" (ngSubmit)="onPreferencesSubmit()">
-      <div class="form-group">
-        <label for="phoneNumber">Phone Number</label>
-        <input
-          type="tel"
-          id="phoneNumber"
-          formControlName="phoneNumber"
-          class="form-control"
-          placeholder="Your contact number"
-        />
-      </div>
-
       <div class="form-group">
         <label for="website">Personal Website</label>
         <input
@@ -237,25 +368,261 @@
       </div>
 
       <div class="form-actions">
-        <div>
-          <button
-            type="button"
-            class="btn btn-secondary"
-            (click)="goToStep('skills')"
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary ml-2"
-            (click)="skipStep()"
-          >
-            Skip for now
-          </button>
-        </div>
-        <button type="submit" class="btn btn-primary" [disabled]="loading">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="goToStep('profile-type')"
+        >
+          Back
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="talentProfileForm.invalid || loading"
+        >
           <span *ngIf="loading" class="loading-spinner mr-2"></span>
-          <span *ngIf="!loading">Complete Setup</span>
+          <span *ngIf="!loading">Complete Profile</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Profile Details Step - Client -->
+  <div
+    *ngIf="currentStep === 'profile-details' && getCurrentRole() === 'client'"
+    class="onboarding-step"
+  >
+    <h2>Create your company profile</h2>
+    <p class="step-description">
+      Tell talents about your company and what you're looking for.
+    </p>
+
+    <form [formGroup]="clientProfileForm" (ngSubmit)="onClientProfileSubmit()">
+      <div class="form-group">
+        <label for="companyName">Company Name *</label>
+        <input
+          type="text"
+          id="companyName"
+          formControlName="companyName"
+          class="form-control"
+          placeholder="Your company name"
+        />
+        <div
+          *ngIf="
+            clientProfileForm.get('companyName')?.invalid &&
+            clientProfileForm.get('companyName')?.touched
+          "
+          class="error-text"
+        >
+          Company name is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="industry">Industry *</label>
+        <input
+          type="text"
+          id="industry"
+          formControlName="industry"
+          class="form-control"
+          placeholder="e.g. Software Development, E-commerce"
+        />
+        <div
+          *ngIf="
+            clientProfileForm.get('industry')?.invalid &&
+            clientProfileForm.get('industry')?.touched
+          "
+          class="error-text"
+        >
+          Industry is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="companySize">Company Size</label>
+        <select
+          id="companySize"
+          formControlName="companySize"
+          class="form-control"
+        >
+          <option value="1-10">1-10 employees</option>
+          <option value="11-50">11-50 employees</option>
+          <option value="51-200">51-200 employees</option>
+          <option value="201-500">201-500 employees</option>
+          <option value="501-1000">501-1000 employees</option>
+          <option value="1000+">1000+ employees</option>
+        </select>
+      </div>
+
+      <div formGroupName="location" class="form-row">
+        <div class="form-group col-md-6">
+          <label for="clientCountry">Country *</label>
+          <input
+            type="text"
+            id="clientCountry"
+            formControlName="country"
+            class="form-control"
+            placeholder="Company country"
+          />
+          <div
+            *ngIf="
+              clientProfileForm.get('location.country')?.invalid &&
+              clientProfileForm.get('location.country')?.touched
+            "
+            class="error-text"
+          >
+            Country is required
+          </div>
+        </div>
+
+        <div class="form-group col-md-6">
+          <label for="clientCity">City *</label>
+          <input
+            type="text"
+            id="clientCity"
+            formControlName="city"
+            class="form-control"
+            placeholder="Company city"
+          />
+          <div
+            *ngIf="
+              clientProfileForm.get('location.city')?.invalid &&
+              clientProfileForm.get('location.city')?.touched
+            "
+            class="error-text"
+          >
+            City is required
+          </div>
+        </div>
+
+        <div class="form-group col-12">
+          <label for="address">Address (Optional)</label>
+          <input
+            type="text"
+            id="address"
+            formControlName="address"
+            class="form-control"
+            placeholder="Company address"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Company Description *</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          class="form-control"
+          rows="5"
+          placeholder="Tell us about your company, what you do, and your company culture"
+        ></textarea>
+        <div
+          *ngIf="
+            clientProfileForm.get('description')?.invalid &&
+            clientProfileForm.get('description')?.touched
+          "
+          class="error-text"
+        >
+          Company description is required (at least 100 characters)
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contactEmail">Contact Email *</label>
+        <input
+          type="email"
+          id="contactEmail"
+          formControlName="contactEmail"
+          class="form-control"
+          placeholder="contact@yourcompany.com"
+        />
+        <div
+          *ngIf="
+            clientProfileForm.get('contactEmail')?.invalid &&
+            clientProfileForm.get('contactEmail')?.touched
+          "
+          class="error-text"
+        >
+          Valid contact email is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contactPhone">Contact Phone (Optional)</label>
+        <input
+          type="tel"
+          id="contactPhone"
+          formControlName="contactPhone"
+          class="form-control"
+          placeholder="+1 (123) 456-7890"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="website">Company Website (Optional)</label>
+        <input
+          type="text"
+          id="website"
+          formControlName="website"
+          class="form-control"
+          placeholder="https://yourcompany.com"
+        />
+      </div>
+
+      <h3 class="section-title">Talent Preferences</h3>
+      <div class="form-group">
+        <label for="preferredSkills">Preferred Skills (Optional)</label>
+        <input
+          type="text"
+          id="preferredSkills"
+          formControlName="preferredSkills"
+          class="form-control"
+          placeholder="e.g. React, Node.js, Python (comma separated)"
+        />
+        <small class="form-text text-muted">
+          These skills will be highlighted when searching for talent
+        </small>
+      </div>
+
+      <div formGroupName="socialMedia">
+        <h3 class="section-title">Social Media (Optional)</h3>
+        <div class="form-group">
+          <label for="linkedin">LinkedIn</label>
+          <input
+            type="text"
+            id="linkedin"
+            formControlName="linkedin"
+            class="form-control"
+            placeholder="https://linkedin.com/company/your-company"
+          />
+        </div>
+        <div class="form-group">
+          <label for="twitter">Twitter</label>
+          <input
+            type="text"
+            id="twitter"
+            formControlName="twitter"
+            class="form-control"
+            placeholder="https://twitter.com/your-company"
+          />
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="goToStep('profile-type')"
+        >
+          Back
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="clientProfileForm.invalid || loading"
+        >
+          <span *ngIf="loading" class="loading-spinner mr-2"></span>
+          <span *ngIf="!loading">Complete Profile</span>
         </button>
       </div>
     </form>

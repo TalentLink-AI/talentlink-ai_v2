@@ -1,0 +1,90 @@
+<!-- src/app/features/profile/profile-edit.component.html -->
+<div class="profile-edit-container">
+  <div class="profile-edit-header">
+    <h1>Edit Your Profile</h1>
+    <p>Update your information to keep your profile current</p>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="!loading && profileForm" class="profile-edit-form">
+    <!-- Talent Profile Form -->
+    <form
+      *ngIf="userSvc.getUserRole() === 'talent'"
+      [formGroup]="profileForm"
+      (ngSubmit)="onSubmit()"
+    >
+      <div class="form-group">
+        <label for="title">Professional Title *</label>
+        <input
+          type="text"
+          id="title"
+          formControlName="title"
+          class="form-control"
+          placeholder="e.g. Full Stack Developer"
+        />
+        <div
+          *ngIf="
+            profileForm.get('title')?.invalid &&
+            profileForm.get('title')?.touched
+          "
+          class="error-text"
+        >
+          Professional title is required
+        </div>
+      </div>
+
+      <!-- Include all the other talent profile form fields similar to the onboarding component -->
+
+      <div formGroupName="location" class="form-row">
+        <!-- Location fields here -->
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="profileForm.invalid || loading"
+        >
+          Save Changes
+        </button>
+      </div>
+    </form>
+
+    <!-- Client Profile Form -->
+    <form
+      *ngIf="userSvc.getUserRole() === 'client'"
+      [formGroup]="profileForm"
+      (ngSubmit)="onSubmit()"
+    >
+      <!-- Include all the client profile form fields similar to the onboarding component -->
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelEdit()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="profileForm.invalid || loading"
+        >
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

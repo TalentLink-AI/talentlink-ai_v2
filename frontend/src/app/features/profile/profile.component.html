@@ -1,43 +1,348 @@
-<!-- profile.component.html -->
-<div *ngIf="loading">Loading profile...</div>
-
-<div *ngIf="error" class="error-message">
-  {{ error }}
-</div>
+<!-- frontend/src/app/features/profile/profile.component.html -->
 <div class="profile-container">
-  <h2 id="profile-name">Name Placeholder</h2>
-  <p>Email: <span id="profile-email">Email Placeholder</span></p>
-  <p>Last Login: <span id="profile-last-login">Last Login Placeholder</span></p>
-  <ul id="profile-roles">
-    <!-- Roles will populate here -->
-  </ul>
-</div>
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading profile...</p>
+  </div>
 
-<div *ngIf="userProfile && !loading">
-  <h2>Your Profile</h2>
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
 
-  <div class="profile-info">
-    <img
-      *ngIf="userProfile.profile.picture"
-      [src]="userProfile.profile.picture"
-      alt="Profile picture"
-      class="profile-picture"
-    />
+  <!-- No user data available -->
+  <div *ngIf="!loading && !userData" class="auth-message">
+    <h2>Please log in to view your profile</h2>
+    <button class="btn btn-primary" (click)="auth.loginWithRedirect()">
+      Log in
+    </button>
+  </div>
 
-    <div class="profile-details">
-      <h3>{{ userProfile.profile.name || "No name provided" }}</h3>
-      <p>{{ this.auth.user$ }}</p>
-      <p *ngIf="userProfile.metadata?.lastLogin">
-        Last login: {{ userProfile.metadata.lastLogin | date : "medium" }}
-      </p>
-      <p><strong>Roles:</strong> {{ userProfile.roles.join(", ") }}</p>
+  <!-- Talent Profile Display -->
+  <div
+    *ngIf="
+      !loading && userData && isTalentProfile() && !userData.needsOnboarding
+    "
+    class="profile-content"
+  >
+    <div class="profile-header">
+      <div class="profile-picture">
+        <img
+          [src]="
+            userData.user.profilePicture || 'assets/images/default-avatar.png'
+          "
+          alt="Profile"
+        />
+      </div>
+      <div class="profile-header-content">
+        <h1>{{ userData.user.firstName }} {{ userData.user.lastName }}</h1>
+        <h2 *ngIf="getTalentProfile()?.title">
+          {{ getTalentProfile()?.title }}
+        </h2>
+        <div class="profile-meta">
+          <span
+            *ngIf="
+              getTalentProfile()?.location?.country ||
+              getTalentProfile()?.location?.city
+            "
+          >
+            <i class="icon-location"></i>
+            {{ getTalentProfile()?.location?.city }},
+            {{ getTalentProfile()?.location?.country }}
+            <span
+              *ngIf="getTalentProfile()?.location?.remote"
+              class="badge badge-primary ml-2"
+              >Remote Available</span
+            >
+          </span>
+          <span *ngIf="getTalentProfile()?.hourlyRate">
+            <i class="icon-dollar"></i> ${{ getTalentProfile()?.hourlyRate }}/hr
+          </span>
+          <span *ngIf="getTalentProfile()?.availability">
+            <i class="icon-clock"></i>
+            {{ getTalentProfile()?.availability | titlecase }}
+          </span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-primary" (click)="editProfile()">
+          Edit Profile
+        </button>
+      </div>
+    </div>
+
+    <div class="profile-body">
+      <div class="profile-section">
+        <h3>About Me</h3>
+        <p>{{ getTalentProfile()?.bio }}</p>
+      </div>
+
+      <div class="profile-section">
+        <h3>Skills</h3>
+        <div class="skill-tags">
+          <span
+            *ngFor="let skill of getTalentProfile()?.skills"
+            class="skill-tag"
+          >
+            {{ skill }}
+          </span>
+        </div>
+      </div>
+
+      <div
+        *ngIf="getTalentProfile()?.experience?.length"
+        class="profile-section"
+      >
+        <h3>Work Experience</h3>
+        <div
+          *ngFor="let exp of getTalentProfile()?.experience"
+          class="experience-item"
+        >
+          <h4>{{ exp.title }} at {{ exp.company }}</h4>
+          <p class="experience-duration">
+            {{ exp.startDate | date : "MMM yyyy" }} -
+            {{ exp.current ? "Present" : (exp.endDate | date : "MMM yyyy") }}
+          </p>
+          <p class="experience-location">{{ exp.location }}</p>
+          <p class="experience-description">{{ exp.description }}</p>
+        </div>
+      </div>
+
+      <div
+        *ngIf="getTalentProfile()?.education?.length"
+        class="profile-section"
+      >
+        <h3>Education</h3>
+        <div
+          *ngFor="let edu of getTalentProfile()?.education"
+          class="education-item"
+        >
+          <h4>{{ edu.degree }} in {{ edu.fieldOfStudy }}</h4>
+          <p class="education-institution">{{ edu.institution }}</p>
+          <p class="education-duration">
+            {{ edu.startDate | date : "MMM yyyy" }} -
+            {{ edu.current ? "Present" : (edu.endDate | date : "MMM yyyy") }}
+          </p>
+        </div>
+      </div>
+
+      <div
+        *ngIf="getTalentProfile()?.portfolio?.length"
+        class="profile-section"
+      >
+        <h3>Portfolio</h3>
+        <div class="portfolio-grid">
+          <div
+            *ngFor="let project of getTalentProfile()?.portfolio"
+            class="portfolio-item"
+          >
+            <div *ngIf="project.imageUrl" class="portfolio-image">
+              <img [src]="project.imageUrl" alt="{{ project.title }}" />
+            </div>
+            <div class="portfolio-details">
+              <h4>{{ project.title }}</h4>
+              <p>{{ project.description }}</p>
+              <div
+                *ngIf="project.technologies?.length"
+                class="portfolio-technologies"
+              >
+                <span
+                  *ngFor="let tech of project.technologies"
+                  class="tech-tag"
+                  >{{ tech }}</span
+                >
+              </div>
+              <a
+                *ngIf="project.url"
+                [href]="project.url"
+                target="_blank"
+                class="btn btn-sm btn-secondary"
+              >
+                View Project
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-section profile-contact">
+        <h3>Contact & Links</h3>
+        <ul class="contact-links">
+          <li *ngIf="userData.user.email">
+            <i class="icon-email"></i>
+            <a href="mailto:{{ userData.user.email }}">{{
+              userData.user.email
+            }}</a>
+          </li>
+          <li *ngIf="getTalentProfile()?.website">
+            <i class="icon-globe"></i>
+            <a [href]="getTalentProfile()?.website" target="_blank"
+              >Personal Website</a
+            >
+          </li>
+          <li *ngIf="getTalentProfile()?.linkedin">
+            <i class="icon-linkedin"></i>
+            <a [href]="getTalentProfile()?.linkedin" target="_blank"
+              >LinkedIn Profile</a
+            >
+          </li>
+          <li *ngIf="getTalentProfile()?.github">
+            <i class="icon-github"></i>
+            <a [href]="getTalentProfile()?.github" target="_blank"
+              >GitHub Profile</a
+            >
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 
-  <button (click)="updateProfile({ name: 'New Name' })">Update Name</button>
-</div>
+  <!-- Client Profile Display -->
+  <div
+    *ngIf="
+      !loading && userData && isClientProfile() && !userData.needsOnboarding
+    "
+    class="profile-content"
+  >
+    <div class="profile-header company-header">
+      <div class="company-logo">
+        <img
+          [src]="
+            getClientProfile()?.logo || 'assets/images/default-company.png'
+          "
+          alt="Company Logo"
+        />
+      </div>
+      <div class="profile-header-content">
+        <h1>{{ getClientProfile()?.companyName }}</h1>
+        <h2 *ngIf="getClientProfile()?.industry">
+          {{ getClientProfile()?.industry }}
+        </h2>
+        <div class="profile-meta">
+          <span
+            *ngIf="
+              getClientProfile()?.location?.country ||
+              getClientProfile()?.location?.city
+            "
+          >
+            <i class="icon-location"></i>
+            {{ getClientProfile()?.location?.city }},
+            {{ getClientProfile()?.location?.country }}
+          </span>
+          <span *ngIf="getClientProfile()?.companySize">
+            <i class="icon-people"></i>
+            {{ getClientProfile()?.companySize }} employees
+          </span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-primary" (click)="editProfile()">
+          Edit Profile
+        </button>
+      </div>
+    </div>
 
-<div *ngIf="!userProfile && !loading">
-  <p>Please log in to view your profile.</p>
-  <button (click)="auth.loginWithRedirect()">Log in</button>
+    <div class="profile-body">
+      <div class="profile-section">
+        <h3>About the Company</h3>
+        <p>{{ getClientProfile()?.description }}</p>
+      </div>
+
+      <div
+        *ngIf="getClientProfile()?.preferredSkills?.length"
+        class="profile-section"
+      >
+        <h3>Looking For</h3>
+        <div class="skill-tags">
+          <span
+            *ngFor="let skill of getClientProfile()?.preferredSkills"
+            class="skill-tag"
+          >
+            {{ skill }}
+          </span>
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <h3>Company Stats</h3>
+        <div class="stats-container">
+          <div class="stat-item">
+            <div class="stat-value">
+              {{ getClientProfile()?.jobsPosted || 0 }}
+            </div>
+            <div class="stat-label">Jobs Posted</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">
+              {{ getClientProfile()?.talentsHired || 0 }}
+            </div>
+            <div class="stat-label">Talents Hired</div>
+          </div>
+          <div *ngIf="getClientProfile()?.avgRating" class="stat-item">
+            <div class="stat-value">
+              {{ (getClientProfile()?.avgRating || 0).toFixed(1) }}
+            </div>
+            <div class="stat-label">Average Rating</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-section profile-contact">
+        <h3>Contact Information</h3>
+        <ul class="contact-links">
+          <li *ngIf="getClientProfile()?.contactEmail">
+            <i class="icon-email"></i>
+            <a href="mailto:{{ getClientProfile()?.contactEmail }}">{{
+              getClientProfile()?.contactEmail
+            }}</a>
+          </li>
+          <li *ngIf="getClientProfile()?.contactPhone">
+            <i class="icon-phone"></i>
+            <a href="tel:{{ getClientProfile()?.contactPhone }}">{{
+              getClientProfile()?.contactPhone
+            }}</a>
+          </li>
+          <li *ngIf="getClientProfile()?.website">
+            <i class="icon-globe"></i>
+            <a [href]="getClientProfile()?.website" target="_blank">Website</a>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="getClientProfile()?.socialMedia" class="profile-section">
+        <h3>Social Media</h3>
+        <ul class="social-links">
+          <li *ngIf="getClientProfile()?.socialMedia?.linkedin">
+            <i class="icon-linkedin"></i>
+            <a
+              [href]="getClientProfile()?.socialMedia?.linkedin"
+              target="_blank"
+              >LinkedIn</a
+            >
+          </li>
+          <li *ngIf="getClientProfile()?.socialMedia?.twitter">
+            <i class="icon-twitter"></i>
+            <a [href]="getClientProfile()?.socialMedia?.twitter" target="_blank"
+              >Twitter</a
+            >
+          </li>
+          <li *ngIf="getClientProfile()?.socialMedia?.facebook">
+            <i class="icon-facebook"></i>
+            <a
+              [href]="getClientProfile()?.socialMedia?.facebook"
+              target="_blank"
+              >Facebook</a
+            >
+          </li>
+          <li *ngIf="getClientProfile()?.socialMedia?.instagram">
+            <i class="icon-instagram"></i>
+            <a
+              [href]="getClientProfile()?.socialMedia?.instagram"
+              target="_blank"
+              >Instagram</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>

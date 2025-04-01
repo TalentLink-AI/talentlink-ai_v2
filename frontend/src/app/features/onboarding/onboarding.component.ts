@@ -5,10 +5,11 @@ import {
   FormGroup,
   Validators,
   ReactiveFormsModule,
+  FormArray,
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { UserService, UserProfile } from '../../services/user.service';
+import { UserService } from '../../services/user.service';
 import { AuthService } from '@auth0/auth0-angular';
 
 @Component({
@@ -20,18 +21,21 @@ import { AuthService } from '@auth0/auth0-angular';
 })
 export class OnboardingComponent implements OnInit {
   currentStep = 'initial';
+
+  // Forms for different steps
   basicInfoForm!: FormGroup;
-  skillsForm!: FormGroup;
-  preferencesForm!: FormGroup;
+  profileTypeForm!: FormGroup;
+  talentProfileForm!: FormGroup;
+  clientProfileForm!: FormGroup;
+
   loading = false;
   error: string | null = null;
-  userProfile: UserProfile | null = null;
 
   // Track steps completion
   stepsCompleted = {
     'basic-info': false,
-    skills: false,
-    preferences: false,
+    'profile-type': false,
+    'profile-details': false,
   };
 
   constructor(
@@ -44,22 +48,22 @@ export class OnboardingComponent implements OnInit {
   ngOnInit(): void {
     this.initForms();
 
-    // Get current user profile and determine starting step
+    // Get current user data and determine starting step
     this.userService.getCurrentUser().subscribe({
-      next: (profile) => {
-        this.userProfile = profile;
-        this.currentStep = profile.currentOnboardingStep || 'initial';
+      next: (userData) => {
+        this.currentStep = userData.currentOnboardingStep || 'initial';
 
         // If onboarding is already completed, redirect to profile
-        if (profile.metadata.onboardingCompleted) {
+        if (userData.user.metadata.onboardingCompleted) {
           this.router.navigate(['/profile']);
+          return;
         }
 
         // Pre-fill forms with existing data if available
-        this.populateFormsWithUserData(profile);
+        this.populateFormsWithUserData(userData);
       },
       error: (err) => {
-        console.error('Error fetching user profile:', err);
+        console.error('Error fetching user data:', err);
         this.error = 'Failed to load profile data. Please try again.';
       },
     });
@@ -68,64 +72,142 @@ export class OnboardingComponent implements OnInit {
   initForms() {
     // Basic info form
     this.basicInfoForm = this.fb.group({
-      name: ['', [Validators.required]],
-      title: ['', [Validators.required]],
-      location: ['', [Validators.required]],
-      bio: [''],
+      firstName: ['', [Validators.required]],
+      lastName: ['', [Validators.required]],
     });
 
-    // Skills form
-    this.skillsForm = this.fb.group({
-      skills: ['', [Validators.required]], // Will be split into array
+    // Profile type selection form
+    this.profileTypeForm = this.fb.group({
+      role: ['talent', [Validators.required]],
+    });
+
+    // Talent profile form
+    this.talentProfileForm = this.fb.group({
+      title: ['', [Validators.required]],
+      bio: ['', [Validators.required, Validators.minLength(100)]],
+      skills: ['', [Validators.required]],
+      hourlyRate: [null, [Validators.required, Validators.min(1)]],
+      availability: ['freelance'],
+      location: this.fb.group({
+        country: ['', [Validators.required]],
+        city: ['', [Validators.required]],
+        remote: [true],
+      }),
+      website: [''],
       linkedin: [''],
       github: [''],
+      // Advanced sections - could be expanded later
+      education: this.fb.array([]),
+      experience: this.fb.array([]),
+      languages: this.fb.array([]),
+      portfolio: this.fb.array([]),
     });
 
-    // Preferences form
-    this.preferencesForm = this.fb.group({
-      phoneNumber: [''],
+    // Client profile form
+    this.clientProfileForm = this.fb.group({
+      companyName: ['', [Validators.required]],
+      industry: ['', [Validators.required]],
+      companySize: ['1-10'],
+      description: ['', [Validators.required, Validators.minLength(100)]],
       website: [''],
+      location: this.fb.group({
+        country: ['', [Validators.required]],
+        city: ['', [Validators.required]],
+        address: [''],
+      }),
+      contactEmail: ['', [Validators.required, Validators.email]],
+      contactPhone: [''],
+      socialMedia: this.fb.group({
+        linkedin: [''],
+        twitter: [''],
+        facebook: [''],
+        instagram: [''],
+      }),
+      preferredSkills: [''],
     });
   }
 
-  populateFormsWithUserData(profile: UserProfile) {
+  populateFormsWithUserData(userData: any) {
+    const { user, profile } = userData;
+
     // Fill basic info form
-    if (profile.profile) {
+    if (user) {
       this.basicInfoForm.patchValue({
-        name: profile.profile.name || '',
-        title: profile.profile.title || '',
-        location: profile.profile.location || '',
-        bio: profile.profile.bio || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
       });
+    }
 
-      // Fill skills form
-      this.skillsForm.patchValue({
-        skills: profile.profile.skills ? profile.profile.skills.join(', ') : '',
-        linkedin: profile.profile.linkedin || '',
-        github: profile.profile.github || '',
+    // Set role if defined
+    if (user && user.role) {
+      this.profileTypeForm.patchValue({
+        role: user.role,
       });
+    }
 
-      // Fill preferences form
-      this.preferencesForm.patchValue({
-        phoneNumber: profile.profile.phoneNumber || '',
-        website: profile.profile.website || '',
-      });
+    // Fill appropriate profile form based on role
+    if (profile) {
+      if (this.userService.isTalentProfile(profile)) {
+        // Fill talent profile form
+        this.talentProfileForm.patchValue({
+          title: profile.title || '',
+          bio: profile.bio || '',
+          skills: profile.skills ? profile.skills.join(', ') : '',
+          hourlyRate: profile.hourlyRate || null,
+          availability: profile.availability || 'freelance',
+          location: {
+            country: profile.location?.country || '',
+            city: profile.location?.city || '',
+            remote: profile.location?.remote ?? true,
+          },
+          website: profile.website || '',
+          linkedin: profile.linkedin || '',
+          github: profile.github || '',
+        });
+      } else if (this.userService.isClientProfile(profile)) {
+        // Fill client profile form
+        this.clientProfileForm.patchValue({
+          companyName: profile.companyName || '',
+          industry: profile.industry || '',
+          companySize: profile.companySize || '1-10',
+          description: profile.description || '',
+          website: profile.website || '',
+          location: {
+            country: profile.location?.country || '',
+            city: profile.location?.city || '',
+            address: profile.location?.address || '',
+          },
+          contactEmail: profile.contactEmail || user.email || '',
+          contactPhone: profile.contactPhone || '',
+          socialMedia: {
+            linkedin: profile.socialMedia?.linkedin || '',
+            twitter: profile.socialMedia?.twitter || '',
+            facebook: profile.socialMedia?.facebook || '',
+            instagram: profile.socialMedia?.instagram || '',
+          },
+          preferredSkills: profile.preferredSkills
+            ? profile.preferredSkills.join(', ')
+            : '',
+        });
+      }
     }
   }
 
   onBasicInfoSubmit() {
     if (this.basicInfoForm.invalid) {
+      this.markFormGroupTouched(this.basicInfoForm);
       return;
     }
 
     this.loading = true;
     const basicInfoData = this.basicInfoForm.value;
 
-    this.userService.updateOnboardingStep('skills', basicInfoData).subscribe({
-      next: (profile) => {
+    this.userService.updateUserInfo(basicInfoData).subscribe({
+      next: () => {
         this.loading = false;
-        this.currentStep = 'skills';
+        this.currentStep = 'profile-type';
         this.stepsCompleted['basic-info'] = true;
+        this.userService.updateOnboardingStep('profile-type').subscribe();
       },
       error: (err) => {
         console.error('Error updating basic info:', err);
@@ -135,56 +217,106 @@ export class OnboardingComponent implements OnInit {
     });
   }
 
-  onSkillsSubmit() {
-    if (this.skillsForm.invalid) {
+  onProfileTypeSubmit() {
+    if (this.profileTypeForm.invalid) {
       return;
     }
 
     this.loading = true;
-    const skillsData = {
-      ...this.skillsForm.value,
-      skills: this.skillsForm.value.skills
-        .split(',')
-        .map((skill: string) => skill.trim()),
-    };
+    const { role } = this.profileTypeForm.value;
 
-    this.userService.updateOnboardingStep('preferences', skillsData).subscribe({
-      next: (profile) => {
+    this.userService.setUserRole(role).subscribe({
+      next: () => {
         this.loading = false;
-        this.currentStep = 'preferences';
-        this.stepsCompleted['skills'] = true;
+        this.currentStep = 'profile-details';
+        this.stepsCompleted['profile-type'] = true;
       },
       error: (err) => {
-        console.error('Error updating skills:', err);
+        console.error('Error setting user role:', err);
         this.loading = false;
-        this.error = 'Failed to save skills. Please try again.';
+        this.error = 'Failed to set user role. Please try again.';
       },
     });
   }
 
-  onPreferencesSubmit() {
+  onTalentProfileSubmit() {
+    if (this.talentProfileForm.invalid) {
+      this.markFormGroupTouched(this.talentProfileForm);
+      return;
+    }
+
     this.loading = true;
-    const preferencesData = this.preferencesForm.value;
 
-    this.userService
-      .updateOnboardingStep('completed', preferencesData)
-      .subscribe({
-        next: (profile) => {
-          this.loading = false;
-          this.stepsCompleted['preferences'] = true;
+    // Process the form values
+    const formValues = { ...this.talentProfileForm.value };
 
-          // Redirect to profile page after completion
-          this.router.navigate(['/profile']);
-        },
-        error: (err) => {
-          console.error('Error updating preferences:', err);
-          this.loading = false;
-          this.error = 'Failed to save preferences. Please try again.';
-        },
-      });
+    // Convert skills from comma-separated string to array
+    if (typeof formValues.skills === 'string') {
+      formValues.skills = formValues.skills
+        .split(',')
+        .map((skill: string) => skill.trim())
+        .filter((skill: string) => skill.length > 0);
+    }
+
+    this.userService.updateTalentProfile(formValues).subscribe({
+      next: () => {
+        this.loading = false;
+        this.stepsCompleted['profile-details'] = true;
+        this.router.navigate(['/profile']);
+      },
+      error: (err) => {
+        console.error('Error updating talent profile:', err);
+        this.loading = false;
+        this.error = 'Failed to save talent profile. Please try again.';
+      },
+    });
   }
 
-  // Helper methods to navigate between steps manually
+  onClientProfileSubmit() {
+    if (this.clientProfileForm.invalid) {
+      this.markFormGroupTouched(this.clientProfileForm);
+      return;
+    }
+
+    this.loading = true;
+
+    // Process the form values
+    const formValues = { ...this.clientProfileForm.value };
+
+    // Convert preferredSkills from comma-separated string to array
+    if (typeof formValues.preferredSkills === 'string') {
+      formValues.preferredSkills = formValues.preferredSkills
+        .split(',')
+        .map((skill: string) => skill.trim())
+        .filter((skill: string) => skill.length > 0);
+    }
+
+    this.userService.updateClientProfile(formValues).subscribe({
+      next: () => {
+        this.loading = false;
+        this.stepsCompleted['profile-details'] = true;
+        this.router.navigate(['/profile']);
+      },
+      error: (err) => {
+        console.error('Error updating client profile:', err);
+        this.loading = false;
+        this.error = 'Failed to save client profile. Please try again.';
+      },
+    });
+  }
+
+  // Helper method to mark all controls as touched to trigger validation
+  markFormGroupTouched(formGroup: FormGroup) {
+    Object.values(formGroup.controls).forEach((control) => {
+      control.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+
+  // Helper methods to navigate between steps
   goToStep(step: string) {
     this.currentStep = step;
   }
@@ -192,20 +324,23 @@ export class OnboardingComponent implements OnInit {
   skipStep() {
     switch (this.currentStep) {
       case 'basic-info':
-        this.userService.updateOnboardingStep('skills').subscribe(() => {
-          this.currentStep = 'skills';
+        this.userService.updateOnboardingStep('profile-type').subscribe(() => {
+          this.currentStep = 'profile-type';
         });
         break;
-      case 'skills':
-        this.userService.updateOnboardingStep('preferences').subscribe(() => {
-          this.currentStep = 'preferences';
-        });
+      case 'profile-type':
+        // Cannot skip role selection
         break;
-      case 'preferences':
+      case 'profile-details':
         this.userService.completeOnboarding().subscribe(() => {
           this.router.navigate(['/profile']);
         });
         break;
     }
+  }
+
+  // Get current role
+  getCurrentRole(): string {
+    return this.profileTypeForm.get('role')?.value || 'talent';
   }
 }

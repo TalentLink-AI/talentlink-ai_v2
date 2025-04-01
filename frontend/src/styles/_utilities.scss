@@ -1,5 +1,6 @@
 // frontend/src/styles/utilities.scss
 @use 'sass:math';
+@use 'sass:meta';
 @use 'variables' as *;
 @use 'mixins' as *;
 
@@ -124,7 +125,7 @@ $spacing-amounts: (
   @each $dir-abbr, $dir in $spacing-directions {
     @each $size-abbr, $size in $spacing-amounts {
       .#{$prop-abbr}#{$dir-abbr}-#{$size-abbr} {
-        @if type-of($dir) == 'list' {
+        @if meta.type-of($dir) == 'list' {
           @each $d in $dir {
             #{$prop}-#{$d}: $size !important;
           }

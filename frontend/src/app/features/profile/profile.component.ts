@@ -2,9 +2,14 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
-import { UserService, UserProfile } from '../../services/user.service';
 import { CommonModule } from '@angular/common';
 import { switchMap, filter } from 'rxjs/operators';
+import {
+  UserService,
+  UserData,
+  TalentProfile,
+  ClientProfile,
+} from '../../services/user.service';
 
 @Component({
   selector: 'app-profile',
@@ -14,7 +19,7 @@ import { switchMap, filter } from 'rxjs/operators';
   standalone: true,
 })
 export class ProfileComponent implements OnInit {
-  userProfile: UserProfile | null = null;
+  userData: UserData | null = null;
   loading = false;
   error: string | null = null;
 
@@ -28,21 +33,21 @@ export class ProfileComponent implements OnInit {
     this.auth.isAuthenticated$
       .pipe(
         filter((isAuthenticated) => isAuthenticated),
-        switchMap(() => this.loadUserProfile())
+        switchMap(() => this.loadUserData())
       )
       .subscribe();
   }
 
-  loadUserProfile() {
+  loadUserData() {
     this.loading = true;
     this.error = null;
     return this.userService.getCurrentUser().pipe(
-      switchMap((profile) => {
-        this.userProfile = profile;
+      switchMap((userData) => {
+        this.userData = userData;
         this.loading = false;
 
         // Check if the user needs to complete onboarding
-        if (profile.needsOnboarding) {
+        if (userData.needsOnboarding) {
           this.router.navigate(['/onboarding']);
         }
 
@@ -51,18 +56,36 @@ export class ProfileComponent implements OnInit {
     );
   }
 
-  updateProfile(profileData: Partial<UserProfile['profile']>): void {
-    this.loading = true;
-    this.userService.updateProfile(profileData).subscribe({
-      next: (updatedProfile) => {
-        this.userProfile = updatedProfile;
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error updating profile:', err);
-        this.error = 'Failed to update profile. Please try again.';
-        this.loading = false;
-      },
-    });
+  // Helper method to check if profile is talent type
+  isTalentProfile(): boolean {
+    if (!this.userData) return false;
+    return this.userData.user.role === 'talent';
+  }
+
+  // Helper method to check if profile is client type
+  isClientProfile(): boolean {
+    if (!this.userData) return false;
+    return this.userData.user.role === 'client';
+  }
+
+  // Helper to safely access the talent profile
+  getTalentProfile(): TalentProfile | null {
+    if (!this.userData || !this.userData.profile || !this.isTalentProfile()) {
+      return null;
+    }
+    return this.userData.profile as TalentProfile;
+  }
+
+  // Helper to safely access the client profile
+  getClientProfile(): ClientProfile | null {
+    if (!this.userData || !this.userData.profile || !this.isClientProfile()) {
+      return null;
+    }
+    return this.userData.profile as ClientProfile;
+  }
+
+  // Method to edit profile (redirects to an edit form)
+  editProfile(): void {
+    this.router.navigate(['/profile/edit']);
   }
 }
