@@ -1,0 +1,63 @@
+<!-- frontend/src/app/shared/components/header/header.component.html -->
+<header class="site-header">
+  <div class="container">
+    <div class="header-content">
+      <div class="logo">
+        <a routerLink="/">
+          <span class="brand">TalentLink</span>
+        </a>
+      </div>
+
+      <nav class="main-nav" [class.active]="isMenuOpen">
+        <ul class="nav-links">
+          <li><a routerLink="/home" routerLinkActive="active">Home</a></li>
+
+          <!-- Authenticated user links -->
+          <ng-container *ngIf="auth.isAuthenticated$ | async">
+            <li>
+              <a routerLink="/profile" routerLinkActive="active">Profile</a>
+            </li>
+            <li><a routerLink="/jobs" routerLinkActive="active">Jobs</a></li>
+            <li>
+              <a routerLink="/messages" routerLinkActive="active">Messages</a>
+            </li>
+          </ng-container>
+
+          <!-- Non-authenticated links -->
+          <ng-container *ngIf="!(auth.isAuthenticated$ | async)">
+            <li><a routerLink="/about" routerLinkActive="active">About</a></li>
+            <li>
+              <a routerLink="/how-it-works" routerLinkActive="active"
+                >How It Works</a
+              >
+            </li>
+          </ng-container>
+        </ul>
+      </nav>
+
+      <div class="auth-buttons">
+        <ng-container
+          *ngIf="auth.isAuthenticated$ | async; else notAuthenticated"
+        >
+          <button class="btn btn-secondary" (click)="logout()">Log Out</button>
+        </ng-container>
+
+        <ng-template #notAuthenticated>
+          <button class="btn btn-primary" (click)="auth.loginWithRedirect()">
+            Log In
+          </button>
+        </ng-template>
+      </div>
+
+      <button
+        class="mobile-toggle"
+        (click)="toggleMenu()"
+        aria-label="Toggle menu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>

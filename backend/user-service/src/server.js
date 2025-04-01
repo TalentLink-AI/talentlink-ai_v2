@@ -65,7 +65,7 @@ app.use("/api/", limiter);
 // Authentication rate limiter
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per window
+  max: 50, // 10 attempts per window
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many authentication attempts, please try again later.",
@@ -75,7 +75,7 @@ app.use("/login", authLimiter);
 // Profile update rate limiter
 const profileLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // 20 updates per hour
+  max: 40, // 20 updates per hour
   standardHeaders: true,
   legacyHeaders: false,
 });

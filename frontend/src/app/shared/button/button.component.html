@@ -1,0 +1,10 @@
+<!-- frontend/src/app/shared/components/button/button.component.html -->
+<button
+  [ngClass]="classes"
+  [type]="buttonType"
+  [disabled]="disabled || loading"
+  (click)="onClick($event)"
+>
+  <span *ngIf="loading" class="loading-spinner"></span>
+  <ng-content></ng-content>
+</button>

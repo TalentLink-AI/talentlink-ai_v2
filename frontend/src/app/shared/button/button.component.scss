@@ -1,0 +1,58 @@
+/* frontend/src/app/shared/components/button/button.component.scss */
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+.btn {
+  @include mixins.button-base;
+  
+  &-primary {
+    @include mixins.button-primary;
+  }
+  
+  &-secondary {
+    @include mixins.button-secondary;
+  }
+  
+  &-success {
+    @include mixins.button-success;
+  }
+  
+  &-danger {
+    @include mixins.button-danger;
+  }
+  
+  &-sm {
+    padding: $spacing-2 $spacing-4;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+  }
+  
+  &-lg {
+    padding: $spacing-4 $spacing-8;
+    font-size: $font-size-lg;
+    border-radius: $border-radius-lg;
+  }
+  
+  &-block {
+    display: block;
+    width: 100%;
+  }
+  
+  .loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 0.2rem solid rgba(255, 255, 255, 0.25);
+    border-right-color: $color-white;
+    border-radius: 50%;
+    animation: spinner 1s linear infinite;
+    margin-right: $spacing-2;
+    vertical-align: text-bottom;
+  }
+  
+  @keyframes spinner {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}

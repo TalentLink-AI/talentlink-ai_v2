@@ -1,0 +1,13 @@
+/* frontend/src/app/shared/components/layout/layout.component.scss */
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page-content {
+  flex: 1 0 auto;
+}

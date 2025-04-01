@@ -1,0 +1,188 @@
+/* frontend/src/app/shared/components/header/header.component.scss */
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+.site-header {
+  background-color: $color-white;
+  box-shadow: $shadow-sm;
+  position: sticky;
+  top: 0;
+  z-index: $z-index-fixed;
+  padding: $spacing-4 0;
+  
+  .container {
+    @include mixins.container;
+  }
+  
+  .header-content {
+    @include mixins.flex-between;
+    
+    .logo {
+      font-size: $font-size-xl;
+      font-weight: $font-weight-bold;
+      
+      a {
+        text-decoration: none;
+        color: $color-text;
+        
+        .brand {
+          color: $color-primary;
+        }
+      }
+    }
+    
+    .main-nav {
+      @include mixins.respond-to(lg) {
+        display: block;
+      }
+      
+      display: none;
+      
+      &.active {
+        display: block;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: $color-white;
+        box-shadow: $shadow-md;
+        padding: $spacing-4;
+        
+        .nav-links {
+          flex-direction: column;
+          
+          li {
+            margin: $spacing-2 0;
+          }
+        }
+        
+        @include mixins.respond-to(lg) {
+          position: static;
+          display: block;
+          box-shadow: none;
+          padding: 0;
+          
+          .nav-links {
+            flex-direction: row;
+            
+            li {
+              margin: 0 $spacing-4;
+              
+              &:last-child {
+                margin-right: 0;
+              }
+            }
+          }
+        }
+      }
+      
+      .nav-links {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        
+        li {
+          a {
+            color: $color-text;
+            text-decoration: none;
+            font-weight: $font-weight-medium;
+            padding: $spacing-2;
+            transition: color $transition-fast;
+            
+            &:hover, &.active {
+              color: $color-primary;
+            }
+            
+            &.active {
+              font-weight: $font-weight-bold;
+              position: relative;
+              
+              &::after {
+                content: '';
+                position: absolute;
+                bottom: -$spacing-1;
+                left: $spacing-2;
+                right: $spacing-2;
+                height: 2px;
+                background-color: $color-primary;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    .auth-buttons {
+      @include mixins.respond-to(sm) {
+        display: block;
+      }
+      
+      display: none;
+      
+      .btn {
+        @include mixins.button-base;
+        
+        &-primary {
+          @include mixins.button-primary;
+        }
+        
+        &-secondary {
+          @include mixins.button-secondary;
+        }
+      }
+    }
+    
+    .mobile-toggle {
+      @include mixins.respond-to(lg) {
+        display: none;
+      }
+      
+      display: block;
+      background: transparent;
+      border: none;
+      padding: $spacing-2;
+      cursor: pointer;
+      
+      span {
+        display: block;
+        width: 25px;
+        height: 2px;
+        background-color: $color-text;
+        margin: 5px 0;
+        transition: transform 0.3s, opacity 0.3s;
+      }
+      
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+}
+
+// Media queries for responsive design
+@include mixins.respond-to(lg) {
+  .site-header {
+    .header-content {
+      .main-nav {
+        display: block;
+        
+        .nav-links {
+          flex-direction: row;
+          
+          li {
+            margin: 0 $spacing-4;
+            
+            &:last-child {
+              margin-right: 0;
+            }
+          }
+        }
+      }
+      
+      .auth-buttons {
+        display: block;
+      }
+    }
+  }
+}

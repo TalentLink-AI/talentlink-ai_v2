@@ -1,0 +1,122 @@
+/* frontend/src/app/shared/components/footer/footer.component.scss */
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+.site-footer {
+  background-color: $color-gray-100;
+  border-top: $border-width-default solid $color-gray-200;
+  padding: $spacing-12 0 $spacing-6;
+  margin-top: $spacing-12;
+  
+  .container {
+    @include mixins.container;
+  }
+  
+  .footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-8;
+    margin-bottom: $spacing-8;
+    
+    @include mixins.respond-to(md) {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+    
+    .footer-brand {
+      max-width: 320px;
+      
+      .logo {
+        font-size: $font-size-2xl;
+        font-weight: $font-weight-bold;
+        margin-bottom: $spacing-4;
+        
+        .brand {
+          color: $color-primary;
+        }
+      }
+      
+      .tagline {
+        color: $color-text-muted;
+      }
+    }
+    
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: $spacing-6;
+      
+      @include mixins.respond-to(sm) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      @include mixins.respond-to(md) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: $spacing-12;
+      }
+      
+      .links-group {
+        h3 {
+          font-size: $font-size-lg;
+          font-weight: $font-weight-bold;
+          margin-bottom: $spacing-4;
+        }
+        
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          
+          li {
+            margin-bottom: $spacing-2;
+            
+            a {
+              color: $color-text-muted;
+              text-decoration: none;
+              transition: color $transition-fast;
+              
+              &:hover {
+                color: $color-primary;
+                text-decoration: underline;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .footer-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-4;
+    padding-top: $spacing-6;
+    border-top: $border-width-default solid $color-gray-200;
+    
+    @include mixins.respond-to(md) {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+    
+    .copyright {
+      color: $color-text-muted;
+      font-size: $font-size-sm;
+    }
+    
+    .social-links {
+      display: flex;
+      gap: $spacing-4;
+      
+      a {
+        color: $color-text-muted;
+        font-size: $font-size-lg;
+        transition: color $transition-fast;
+        
+        &:hover {
+          color: $color-primary;
+        }
+      }
+    }
+  }
+}
