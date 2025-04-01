@@ -5,6 +5,18 @@ const TalentProfile = require("../models/talent-profile.model");
 const ClientProfile = require("../models/client-profile.model");
 const router = express.Router();
 const axios = require("axios");
+const Joi = require("joi");
+
+// Validation middleware
+const validateRequest = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    next();
+  };
+};
 
 // Get the current user profile
 router.get("/me", async (req, res) => {
@@ -76,95 +88,117 @@ router.get("/me", async (req, res) => {
   }
 });
 
-// Update user profile
-router.put("/me", async (req, res) => {
-  try {
-    const auth0Id = req.auth.payload.sub;
-
-    if (!auth0Id) {
-      return res
-        .status(400)
-        .json({ message: "auth0Id missing from authentication payload." });
-    }
-
-    const { firstName, lastName, role, onboardingStep } = req.body;
-    const updateData = {};
-
-    // Update basic info if provided
-    if (firstName !== undefined) {
-      updateData["firstName"] = firstName;
-    }
-
-    if (lastName !== undefined) {
-      updateData["lastName"] = lastName;
-    }
-
-    // Update role if provided
-    if (role !== undefined) {
-      updateData["role"] = role;
-    }
-
-    // Update onboarding step if provided
-    if (onboardingStep) {
-      updateData["metadata.onboardingStep"] = onboardingStep;
-
-      // If onboarding is completed, set the flag
-      if (onboardingStep === "completed") {
-        updateData["metadata.onboardingCompleted"] = true;
-      }
-    }
-
-    // Add timestamp for the update
-    updateData["metadata.lastUpdated"] = new Date();
-
-    const user = await User.findOneAndUpdate(
-      { auth0Id },
-      { $set: updateData },
-      { new: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Get the appropriate profile based on role
-    let profile = null;
-    if (user.role === "talent") {
-      profile = await TalentProfile.findOne({ userId: user._id });
-    } else if (user.role === "client") {
-      profile = await ClientProfile.findOne({ userId: user._id });
-    }
-
-    // Check if profile is complete based on required fields
-    const isProfileComplete = profile
-      ? checkProfileCompleteness(profile, user.role)
-      : false;
-
-    // If profile is complete but onboarding not marked as completed,
-    // update the onboarding status
-    if (isProfileComplete && !user.metadata.onboardingCompleted) {
-      user.metadata.onboardingCompleted = true;
-      user.metadata.onboardingStep = "completed";
-      await user.save();
-    }
-
-    // Determine if onboarding is needed
-    const needsOnboarding = !user.metadata.onboardingCompleted || !profile;
-
-    res.json({
-      user,
-      profile,
-      needsOnboarding,
-      currentOnboardingStep: user.metadata.onboardingStep,
-    });
-  } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).json({ message: "Error updating user profile" });
-  }
+// validate - Get the current user profile
+const userProfileUpdateSchema = Joi.object({
+  firstName: Joi.string().trim().max(100),
+  lastName: Joi.string().trim().max(100),
+  role: Joi.string().valid("talent", "client"),
+  onboardingStep: Joi.string().valid(
+    "initial",
+    "basic-info",
+    "profile-type",
+    "profile-details",
+    "completed"
+  ),
 });
 
+// Update user profile
+router.put(
+  "/me",
+  validateRequest(userProfileUpdateSchema),
+  async (req, res) => {
+    try {
+      const auth0Id = req.auth.payload.sub;
+
+      if (!auth0Id) {
+        return res
+          .status(400)
+          .json({ message: "auth0Id missing from authentication payload." });
+      }
+
+      const { firstName, lastName, role, onboardingStep } = req.body;
+      const updateData = {};
+
+      // Update basic info if provided
+      if (firstName !== undefined) {
+        updateData["firstName"] = firstName;
+      }
+
+      if (lastName !== undefined) {
+        updateData["lastName"] = lastName;
+      }
+
+      // Update role if provided
+      if (role !== undefined) {
+        updateData["role"] = role;
+      }
+
+      // Update onboarding step if provided
+      if (onboardingStep) {
+        updateData["metadata.onboardingStep"] = onboardingStep;
+
+        // If onboarding is completed, set the flag
+        if (onboardingStep === "completed") {
+          updateData["metadata.onboardingCompleted"] = true;
+        }
+      }
+
+      // Add timestamp for the update
+      updateData["metadata.lastUpdated"] = new Date();
+
+      const user = await User.findOneAndUpdate(
+        { auth0Id },
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get the appropriate profile based on role
+      let profile = null;
+      if (user.role === "talent") {
+        profile = await TalentProfile.findOne({ userId: user._id });
+      } else if (user.role === "client") {
+        profile = await ClientProfile.findOne({ userId: user._id });
+      }
+
+      // Check if profile is complete based on required fields
+      const isProfileComplete = profile
+        ? checkProfileCompleteness(profile, user.role)
+        : false;
+
+      // If profile is complete but onboarding not marked as completed,
+      // update the onboarding status
+      if (isProfileComplete && !user.metadata.onboardingCompleted) {
+        user.metadata.onboardingCompleted = true;
+        user.metadata.onboardingStep = "completed";
+        await user.save();
+      }
+
+      // Determine if onboarding is needed
+      const needsOnboarding = !user.metadata.onboardingCompleted || !profile;
+
+      res.json({
+        user,
+        profile,
+        needsOnboarding,
+        currentOnboardingStep: user.metadata.onboardingStep,
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Error updating user profile" });
+    }
+  }
+);
+
+// Update user role
+const roleUpdateSchema = Joi.object({
+  role: Joi.string().valid("talent", "client").required(),
+});
 // Set user role (talent or client)
-router.post("/role", async (req, res) => {
+router.post("/role", validateRequest(roleUpdateSchema), async (req, res) => {
   try {
     const auth0Id = req.auth.payload.sub;
     const { role } = req.body;

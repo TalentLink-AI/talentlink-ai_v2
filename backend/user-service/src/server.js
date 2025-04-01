@@ -62,6 +62,25 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
+// Authentication rate limiter
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many authentication attempts, please try again later.",
+});
+app.use("/login", authLimiter);
+
+// Profile update rate limiter
+const profileLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // 20 updates per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/users/profile", profileLimiter);
+
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGODB_URI || "mongodb://mongodb:27017/talentlink", {
@@ -82,40 +101,14 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "OK", timestamp: new Date() });
 });
 
-// Development mode auth middleware for local testing
-const developmentAuth = (req, res, next) => {
-  if (process.env.NODE_ENV === "development") {
-    // Add a mock auth object for development
-    req.auth = {
-      sub: "mock-auth0-id",
-      email: "dev@example.com",
-    };
-    return next();
-  }
-  // In production, this would use the real auth middleware
-  return res.status(401).json({ message: "Authentication not configured" });
-};
+const { auth } = require("express-oauth2-jwt-bearer");
 
-// Configure Auth0 JWT middleware conditionally
-let checkJwt = developmentAuth;
-
-// Only set up real Auth0 validation if the environment variables are present
-if (process.env.AUTH0_AUDIENCE && process.env.AUTH0_ISSUER_BASE_URL) {
-  try {
-    const { auth } = require("express-oauth2-jwt-bearer");
-    checkJwt = auth({
-      audience: process.env.AUTH0_AUDIENCE,
-      issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-      tokenSigningAlg: "RS256",
-    });
-    logger.info("Auth0 authentication configured successfully");
-  } catch (error) {
-    logger.warn(
-      "Auth0 configuration error, using development auth mode:",
-      error.message
-    );
-  }
-}
+// Always use the real Auth0 middleware
+const authMiddleware = auth({
+  audience: process.env.AUTH0_AUDIENCE,
+  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+  tokenSigningAlg: "RS256",
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -134,7 +127,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.use("/api/users", checkJwt, userRoutes);
+app.use("/api/users", authMiddleware, userRoutes);
 
 // Start the server
 app.listen(PORT, () => {

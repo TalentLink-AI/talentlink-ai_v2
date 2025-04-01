@@ -6,6 +6,8 @@ const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
 const winston = require("winston");
 const { createProxyMiddleware } = require("http-proxy-middleware");
+const csrf = require("csurf");
+const cookieParser = require("cookie-parser");
 
 // Initialize Express app
 const app = express();
@@ -44,6 +46,10 @@ if (process.env.NODE_ENV === "production") {
   );
 }
 
+// Set up CSRF protection
+app.use(cookieParser());
+const csrfProtection = csrf({ cookie: true });
+
 // Middleware
 app.use(cors());
 app.use(helmet());
@@ -71,6 +77,25 @@ const serviceRoutes = [
     target: process.env.USER_SERVICE_URL || "http://user-service:3001",
   },
 ];
+
+const { auth } = require("express-oauth2-jwt-bearer");
+
+//Auth0 middleware
+const authMiddleware = auth({
+  audience: process.env.AUTH0_AUDIENCE,
+  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+  tokenSigningAlg: "RS256",
+});
+
+app.use("/api/users", authMiddleware);
+
+// Apply to routes that handle state-changing operations
+app.use("/api/users/profile", csrfProtection);
+
+// Generate CSRF token endpoint
+app.get("/api/csrf-token", csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 
 // Configure proxy middleware
 serviceRoutes.forEach(({ path, target }) => {
