@@ -1,0 +1,129 @@
+/* frontend/src/app/features/admin/components/admin-header/admin-header.component.scss */
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as mixins;
+
+.admin-header {
+  background-color: $color-white;
+  box-shadow: $shadow-sm;
+  padding: $spacing-3 $spacing-6;
+  z-index: $z-index-fixed;
+  
+  .header-content {
+    @include mixins.flex-between;
+  }
+  
+  .logo-container {
+    display: flex;
+    align-items: center;
+    
+    .mobile-menu-toggle {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 24px;
+      height: 18px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      margin-right: $spacing-4;
+      
+      @include mixins.respond-to(lg) {
+        display: none;
+      }
+      
+      span {
+        display: block;
+        width: 100%;
+        height: 2px;
+        background-color: $color-text;
+        transition: all $transition-base;
+      }
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      
+      .brand {
+        font-size: $font-size-xl;
+        font-weight: $font-weight-bold;
+        color: $color-primary;
+      }
+      
+      .admin-badge {
+        background-color: $color-gray-200;
+        color: $color-text;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        padding: $spacing-1 $spacing-2;
+        border-radius: $border-radius-sm;
+        margin-left: $spacing-2;
+      }
+    }
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    
+    .user-dropdown {
+      position: relative;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      
+      &:hover .dropdown-menu {
+        display: block;
+      }
+      
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: $spacing-2;
+      }
+      
+      .user-name {
+        font-weight: $font-weight-medium;
+        margin-right: $spacing-2;
+        
+        @include mixins.respond-to(xs) {
+          display: none;
+        }
+      }
+      
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background-color: $color-white;
+        border-radius: $border-radius-md;
+        box-shadow: $shadow-md;
+        min-width: 180px;
+        padding: $spacing-2 0;
+        margin-top: $spacing-2;
+        z-index: $z-index-dropdown;
+        
+        a, button {
+          display: block;
+          width: 100%;
+          text-align: left;
+          padding: $spacing-2 $spacing-4;
+          color: $color-text;
+          font-size: $font-size-base;
+          background: none;
+          border: none;
+          text-decoration: none;
+          cursor: pointer;
+          
+          &:hover {
+            background-color: $color-gray-100;
+          }
+        }
+      }
+    }
+  }
+}

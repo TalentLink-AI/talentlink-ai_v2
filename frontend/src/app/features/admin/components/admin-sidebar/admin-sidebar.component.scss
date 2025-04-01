@@ -1,0 +1,106 @@
+/* frontend/src/app/features/admin/components/admin-sidebar/admin-sidebar.component.scss */
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as mixins;
+
+.admin-sidebar {
+  width: 250px;
+  background-color: $color-white;
+  border-right: $border-width-default solid $color-gray-200;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  
+  // Mobile styling - hide by default
+  display: none;
+  position: fixed;
+  top: 60px; // Height of admin header
+  left: 0;
+  bottom: 0;
+  z-index: $z-index-fixed - 1;
+  box-shadow: $shadow-lg;
+  transition: transform $transition-base ease;
+  
+  &.active {
+    display: flex;
+    transform: translateX(0);
+  }
+  
+  // Desktop styling
+  @include mixins.respond-to(lg) {
+    display: flex;
+    position: static;
+    box-shadow: none;
+    transition: none;
+  }
+  
+  .sidebar-nav {
+    flex: 1;
+    padding: $spacing-4 0;
+    overflow-y: auto;
+    
+    .nav-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      
+      .nav-item {
+        margin-bottom: $spacing-1;
+        
+        .nav-link {
+          display: flex;
+          align-items: center;
+          padding: $spacing-3 $spacing-6;
+          color: $color-text;
+          text-decoration: none;
+          transition: all $transition-fast;
+          border-left: 3px solid transparent;
+          
+          &:hover {
+            background-color: $color-gray-100;
+          }
+          
+          &.active {
+            border-left-color: $color-primary;
+            background-color: rgba($color-primary, 0.05);
+            color: $color-primary;
+            font-weight: $font-weight-medium;
+            
+            .icon {
+              color: $color-primary;
+            }
+          }
+          
+          .icon {
+            margin-right: $spacing-3;
+            font-size: $font-size-lg;
+            color: $color-text-muted;
+            // Replace with your icon system styles
+          }
+        }
+      }
+    }
+  }
+  
+  .sidebar-footer {
+    padding: $spacing-4 $spacing-6;
+    border-top: $border-width-default solid $color-gray-200;
+    
+    .back-to-site {
+      display: flex;
+      align-items: center;
+      color: $color-text-muted;
+      text-decoration: none;
+      font-size: $font-size-sm;
+      transition: color $transition-fast;
+      
+      &:hover {
+        color: $color-primary;
+      }
+      
+      .icon {
+        margin-right: $spacing-2;
+        // Replace with your icon system styles
+      }
+    }
+  }
+}

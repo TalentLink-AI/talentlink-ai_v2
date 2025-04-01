@@ -1,0 +1,25 @@
+/* frontend/src/app/features/admin/layout/admin-layout.component.scss */
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as mixins;
+
+.admin-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $color-gray-100;
+}
+
+.admin-content {
+  display: flex;
+  flex: 1;
+}
+
+.admin-main {
+  flex: 1;
+  padding: $spacing-6;
+  overflow-y: auto;
+  
+  @include mixins.respond-to(md) {
+    padding: $spacing-8;
+  }
+}

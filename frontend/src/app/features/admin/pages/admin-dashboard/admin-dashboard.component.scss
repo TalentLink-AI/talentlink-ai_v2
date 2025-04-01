@@ -1,0 +1,157 @@
+/* frontend/src/app/features/admin/pages/dashboard/dashboard.component.scss */
+@use '../../../../../styles/variables' as *;
+@use '../../../../../styles/mixins' as mixins;
+
+.admin-dashboard {
+  .dashboard-header {
+    margin-bottom: $spacing-6;
+    
+    h1 {
+      @include mixins.heading-2;
+      margin-bottom: $spacing-1;
+    }
+    
+    .date {
+      color: $color-text-muted;
+      font-size: $font-size-sm;
+    }
+  }
+  
+  .stat-cards {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: $spacing-4;
+    margin-bottom: $spacing-8;
+    
+    @include mixins.respond-to(sm) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include mixins.respond-to(lg) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .stat-card {
+      background-color: $color-white;
+      border-radius: $border-radius-lg;
+      padding: $spacing-6;
+      box-shadow: $shadow-sm;
+      display: flex;
+      align-items: flex-start;
+      
+      .card-icon {
+        background-color: rgba($color-primary, 0.1);
+        border-radius: $border-radius-md;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: $spacing-4;
+        
+        .icon {
+          color: $color-primary;
+          font-size: $font-size-xl;
+          // Replace with your icon system styles
+        }
+      }
+      
+      .card-content {
+        flex: 1;
+        
+        .card-title {
+          font-size: $font-size-sm;
+          font-weight: $font-weight-medium;
+          color: $color-text-muted;
+          margin-bottom: $spacing-1;
+        }
+        
+        .card-value {
+          font-size: $font-size-2xl;
+          font-weight: $font-weight-bold;
+          margin-bottom: $spacing-2;
+        }
+        
+        .card-trend {
+          display: flex;
+          align-items: center;
+          font-size: $font-size-sm;
+          
+          &.trend-up {
+            color: $color-success;
+          }
+          
+          &.trend-down {
+            color: $color-danger;
+          }
+          
+          &.trend-neutral {
+            color: $color-text-muted;
+          }
+          
+          .icon {
+            margin-right: $spacing-1;
+          }
+          
+          .trend-period {
+            color: $color-text-muted;
+            margin-left: $spacing-1;
+          }
+        }
+      }
+    }
+  }
+  
+  .dashboard-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-8;
+    
+    @include mixins.respond-to(lg) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  .dashboard-section {
+    background-color: $color-white;
+    border-radius: $border-radius-lg;
+    padding: $spacing-6;
+    box-shadow: $shadow-sm;
+    
+    .section-header {
+      @include mixins.flex-between;
+      margin-bottom: $spacing-6;
+      
+      h2 {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-bold;
+        margin: 0;
+      }
+      
+      .btn-link {
+        color: $color-primary;
+        text-decoration: none;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      
+      th, td {
+        padding: $spacing-3 $spacing-4;
+        text-align: left;
+      }
+    }
+}
+}

@@ -9,6 +9,7 @@ const rateLimit = require("express-rate-limit");
 
 // Import routes
 const userRoutes = require("./routes/user.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 // Initialize Express app
 const app = express();
@@ -128,6 +129,7 @@ app.use((err, req, res, next) => {
 });
 
 app.use("/api/users", authMiddleware, userRoutes);
+app.use("/api/admin", authMiddleware, adminRoutes);
 
 // Start the server
 app.listen(PORT, () => {

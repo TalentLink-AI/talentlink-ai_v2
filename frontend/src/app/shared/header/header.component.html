@@ -21,6 +21,15 @@
             <li>
               <a routerLink="/messages" routerLinkActive="active">Messages</a>
             </li>
+            <!-- Admin link - only shown to admin users -->
+            <li *ngIf="isAdmin()">
+              <a
+                routerLink="/admin"
+                routerLinkActive="active"
+                class="admin-link"
+                >Admin</a
+              >
+            </li>
           </ng-container>
 
           <!-- Non-authenticated links -->

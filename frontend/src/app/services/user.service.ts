@@ -1,9 +1,10 @@
 // frontend/src/app/services/user.service.ts
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { tap, map, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from '@auth0/auth0-angular';
 
 // Base user interface
 export interface UserData {
@@ -131,6 +132,7 @@ export interface UserData {
 export class UserService {
   private apiUrl = `${environment.apiUrl}/api/users`;
   private userDataSubject = new BehaviorSubject<UserData | null>(null);
+  private auth = inject(AuthService);
 
   // Observable that components can subscribe to
   public userData$ = this.userDataSubject.asObservable();
@@ -208,10 +210,23 @@ export class UserService {
     return this.updateOnboardingStep('completed');
   }
 
-  // Helper methods
   getUserRole(): string | null {
     const userData = this.userDataSubject.getValue();
     return userData ? userData.user.role : null;
+  }
+
+  // Helper methods
+  getUserRoles(): Observable<string[]> {
+    return this.auth.user$.pipe(
+      map((user) => {
+        // Access the custom claim with roles
+        return (user && user['https://talentlink.com/roles']) || [];
+      })
+    );
+  }
+
+  isAdmin(): Observable<boolean> {
+    return this.getUserRoles().pipe(map((roles) => roles.includes('admin')));
   }
 
   getNeedsOnboarding(): boolean {
@@ -239,6 +254,42 @@ export class UserService {
   isClientProfile(profile: any): profile is ClientProfile {
     return profile && 'companyName' in profile;
   }
+
+  // Admin-specific methods
+  getAllUsers(page = 1, limit = 20): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/admin/users?page=${page}&limit=${limit}`
+    );
+  }
+
+  getUserById(userId: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/admin/users/${userId}`);
+  }
+
+  updateUserRole(userId: string, role: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/admin/users/${userId}/role`, {
+      role,
+    });
+  }
+
+  deactivateUser(userId: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/admin/users/${userId}/deactivate`,
+      {}
+    );
+  }
+
+  activateUser(userId: string): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/admin/users/${userId}/activate`,
+      {}
+    );
+  }
+
+  getDashboardStats(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/admin/dashboard/stats`);
+  }
+
   getTalentProfileForEdit(): Observable<TalentProfile> {
     const userData = this.userDataSubject.getValue();
     if (!userData || !userData.profile || userData.user.role !== 'talent') {

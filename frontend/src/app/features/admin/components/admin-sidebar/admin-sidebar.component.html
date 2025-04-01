@@ -1,0 +1,20 @@
+<!-- frontend/src/app/features/admin/components/admin-sidebar/admin-sidebar.component.html -->
+<aside class="admin-sidebar">
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      <li *ngFor="let item of navItems" class="nav-item">
+        <a [routerLink]="item.route" routerLinkActive="active" class="nav-link">
+          <span class="icon icon-{{ item.icon }}"></span>
+          <span class="label">{{ item.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a routerLink="/" class="back-to-site">
+      <span class="icon icon-back"></span>
+      Back to Website
+    </a>
+  </div>
+</aside>

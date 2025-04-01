@@ -1,0 +1,131 @@
+<!-- frontend/src/app/features/admin/pages/dashboard/dashboard.component.html -->
+<div class="admin-dashboard">
+  <div class="dashboard-header">
+    <h1>Admin Dashboard</h1>
+    <p class="date">{{ today | date : "fullDate" }}</p>
+  </div>
+
+  <div class="stat-cards">
+    <div *ngFor="let stat of stats" class="stat-card">
+      <div class="card-icon">
+        <span class="icon icon-{{ stat.icon }}"></span>
+      </div>
+      <div class="card-content">
+        <h3 class="card-title">{{ stat.title }}</h3>
+        <p class="card-value">
+          {{
+            stat.title === "Revenue"
+              ? "$" + stat.value.toLocaleString()
+              : stat.value.toLocaleString()
+          }}
+        </p>
+        <div class="card-trend" [class]="'trend-' + stat.trend">
+          <span
+            class="icon icon-{{
+              stat.trend === 'up' ? 'arrow-up' : 'arrow-down'
+            }}"
+          ></span>
+          <span>{{ stat.change }}%</span>
+          <span class="trend-period">vs last month</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h2>Recent Users</h2>
+        <a routerLink="/admin/users" class="btn-link">View All</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Joined Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of recentUsers">
+              <td>{{ user.name }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-primary]="user.role === 'Talent'"
+                  [class.badge-secondary]="user.role === 'Client'"
+                >
+                  {{ user.role }}
+                </span>
+              </td>
+              <td>{{ user.joined | date }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-icon" title="View User">
+                    <span class="icon icon-eye"></span>
+                  </button>
+                  <button class="btn-icon" title="Edit User">
+                    <span class="icon icon-edit"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h2>Recent Jobs</h2>
+        <a routerLink="/admin/jobs" class="btn-link">View All</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Job Title</th>
+              <th>Company</th>
+              <th>Status</th>
+              <th>Posted Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let job of recentJobs">
+              <td>{{ job.title }}</td>
+              <td>{{ job.company }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-success]="job.status === 'Active'"
+                  [class.badge-info]="job.status === 'Filled'"
+                  [class.badge-warning]="job.status === 'Paused'"
+                >
+                  {{ job.status }}
+                </span>
+              </td>
+              <td>{{ job.posted | date }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-icon" title="View Job">
+                    <span class="icon icon-eye"></span>
+                  </button>
+                  <button class="btn-icon" title="Edit Job">
+                    <span class="icon icon-edit"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

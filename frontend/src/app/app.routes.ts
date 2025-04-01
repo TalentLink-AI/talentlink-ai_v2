@@ -6,10 +6,12 @@ import { ProfileEditComponent } from './features/profile/edit-profile/edit-profi
 import { OnboardingComponent } from './features/onboarding/onboarding.component';
 import { LayoutComponent } from './shared/layout/layout.component';
 import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import {
   onboardingGuard,
   onboardingCompletedGuard,
 } from './core/guards/onboarding.guard';
+import { ADMIN_ROUTES } from './features/admin/admin.routes';
 
 export const routes: Routes = [
   {
@@ -42,6 +44,11 @@ export const routes: Routes = [
       },
       // Add other routes here
     ],
+  },
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    children: ADMIN_ROUTES,
   },
   {
     path: '**',

@@ -81,6 +81,7 @@ router.get("/me", async (req, res) => {
       profile,
       needsOnboarding,
       currentOnboardingStep: user.metadata.onboardingStep,
+      isAdmin: user.role === "admin",
     });
   } catch (error) {
     console.error("Error fetching user profile:", error);

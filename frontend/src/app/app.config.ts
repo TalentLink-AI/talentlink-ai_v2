@@ -24,6 +24,7 @@ export const appConfig: ApplicationConfig = {
       authorizationParams: {
         redirect_uri: window.location.origin,
         audience: 'https://api.talentlink.com',
+        scope: 'openid profile email read:roles',
       },
     }),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
