@@ -4,14 +4,17 @@
     <div class="header-content">
       <div class="logo">
         <a routerLink="/">
-          <span class="brand">TalentLink</span>
+          <img
+            width="190"
+            height="35"
+            src="assets/images/logo.svg"
+            alt="Talentlink-AI"
+          />
         </a>
       </div>
 
       <nav class="main-nav" [class.active]="isMenuOpen">
         <ul class="nav-links">
-          <li><a routerLink="/home" routerLinkActive="active">Home</a></li>
-
           <!-- Authenticated user links -->
           <ng-container *ngIf="auth.isAuthenticated$ | async">
             <li>
@@ -34,16 +37,25 @@
 
           <!-- Non-authenticated links -->
           <ng-container *ngIf="!(auth.isAuthenticated$ | async)">
-            <li><a routerLink="/about" routerLinkActive="active">About</a></li>
             <li>
               <a routerLink="/how-it-works" routerLinkActive="active"
-                >How It Works</a
+                >Getting Started</a
               >
+            </li>
+            <li>
+              <a routerLink="/talent" routerLinkActive="active">Our Talent</a>
+            </li>
+            <li>
+              <a routerLink="/blogs" routerLinkActive="active">Blogs</a>
+            </li>
+            <li>
+              <a routerLink="/job-listing" routerLinkActive="active">Jobs</a>
             </li>
           </ng-container>
         </ul>
       </nav>
 
+      <!-- Login / Logout -->
       <div class="auth-buttons">
         <ng-container
           *ngIf="auth.isAuthenticated$ | async; else notAuthenticated"

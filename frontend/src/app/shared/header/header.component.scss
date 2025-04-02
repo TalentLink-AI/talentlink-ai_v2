@@ -32,11 +32,12 @@
     }
     
     .main-nav {
+      display: none;
+
       @include mixins.respond-to(lg) {
         display: block;
       }
       
-      display: none;
       
       &.active {
         display: block;
@@ -125,11 +126,13 @@
     }
     
     .auth-buttons {
+      display: none;
+
       @include mixins.respond-to(sm) {
         display: block;
       }
       
-      display: none;
+
       
       .btn {
         @include mixins.button-base;

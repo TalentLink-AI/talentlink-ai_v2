@@ -25,7 +25,8 @@
       "@services/*": ["src/app/services/*"],
       "@environments/*": ["src/environments/*"],
       "@features/*": ["src/app/features/*"],
-      "@core/*": ["src/app/core/*"]
+      "@core/*": ["src/app/core/*"],
+      "@logger/*": ["src/app/core/services/logger.service.ts"]
     }
   },
   "angularCompilerOptions": {
