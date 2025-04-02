@@ -1,201 +1,763 @@
-/* frontend/src/app/shared/components/header/header.component.scss */
+/* frontend/src/app/shared/header/header.component.scss - Updated for Material Icons */
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as mixins;
 
 .site-header {
   background-color: $color-white;
-  box-shadow: $shadow-sm;
-  position: sticky;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: $z-index-fixed;
-  padding: $spacing-4 0;
   
   .container {
-    @include mixins.container;
+    max-width: 1400px;
+    padding: 0 $spacing-4;
+    margin: 0 auto;
   }
   
   .header-content {
-    @include mixins.flex-between;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
     
-    .logo {
-      font-size: $font-size-xl;
-      font-weight: $font-weight-bold;
+    @include mixins.respond-to(md) {
+      height: 70px;
+    }
+  }
+  
+  // Logo styling
+  .logo {
+    flex-shrink: 0;
+    
+    a {
+      display: block;
+    }
+    
+    .logo-image {
+      height: 28px;
       
-      a {
-        text-decoration: none;
-        color: $color-text;
-        
-        .brand {
-          color: $color-primary;
+      @include mixins.respond-to(md) {
+        height: 32px;
+      }
+    }
+  }
+  
+  // Desktop navigation
+  .desktop-nav {
+    display: none;
+    
+    @include mixins.respond-to(lg) {
+      display: block;
+    }
+    
+    .nav-links {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .nav-item {
+      position: relative;
+      margin: 0 $spacing-2;
+      
+      &.dropdown {
+        .nav-icon {
+          font-size: 16px;
+          vertical-align: middle;
+          margin-bottom: 2px;
+          color: $color-gray-600;
         }
       }
     }
     
-    .main-nav {
+    .nav-link {
+      display: block;
+      padding: $spacing-3 $spacing-2;
+      color: $color-gray-900;
+      text-decoration: none;
+      font-weight: $font-weight-medium;
+      font-size: $font-size-base;
+      cursor: pointer;
+      
+      &:hover {
+        color: $color-primary;
+      }
+    }
+  }
+  
+  // Header actions
+  .header-actions {
+    display: flex;
+    align-items: center;
+    
+    // Search box
+    .search-box {
+      position: relative;
+      margin-right: $spacing-4;
       display: none;
-
-      @include mixins.respond-to(lg) {
-        display: block;
+      
+      @include mixins.respond-to(md) {
+        display: flex;
       }
       
+      .search-input {
+        width: 200px;
+        height: 36px;
+        padding: $spacing-2 $spacing-3;
+        padding-right: 40px;
+        border: 1px solid $color-gray-300;
+        border-radius: $border-radius-full;
+        font-size: $font-size-sm;
+        
+        &:focus {
+          outline: none;
+          border-color: $color-primary;
+        }
+      }
       
-      &.active {
-        display: block;
+      .search-button {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 36px;
+        width: 36px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        .material-icons {
+          font-size: 20px;
+          color: $color-gray-600;
+        }
+      }
+    }
+    
+    // Theme toggle
+    .theme-toggle {
+      margin-right: $spacing-4;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: $border-radius-full;
+      
+      &:hover {
+        background-color: $color-gray-100;
+      }
+      
+      .material-icons {
+        font-size: 20px;
+        color: $color-gray-800;
+      }
+      @media (max-width: #{($breakpoint-lg - 1)}) {
+        display: none;
+      }
+    }
+    
+    // Notification icon
+    .notification-icon {
+      position: relative;
+      margin-right: $spacing-4;
+      
+      a {
+        display: flex;
+        width: 32px;
+        height: 32px;
+        align-items: center;
+        justify-content: center;
+        border-radius: $border-radius-full;
+        
+        &:hover {
+          background-color: $color-gray-100;
+        }
+        
+        .material-icons {
+          font-size: 20px;
+          color: $color-gray-800;
+        }
+      }
+      
+      .notification-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 18px;
+        height: 18px;
+        background-color: $color-danger;
+        border-radius: $border-radius-full;
+        color: $color-white;
+        font-size: 11px;
+        font-weight: $font-weight-bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        padding: 0 4px;
+      }
+      @media (max-width: #{($breakpoint-lg - 1)}) {
+        display: none;
+      }
+    }
+    
+    // User menu
+    .user-menu {
+      position: relative;
+      cursor: pointer;
+      
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: $border-radius-full;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: $color-primary;
+        color: $color-white;
+        font-weight: $font-weight-bold;
+        font-size: $font-size-sm;
+        
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+      
+      .login-button {
+        color: $color-primary;
+        font-weight: $font-weight-medium;
+        text-decoration: none;
+        cursor: pointer;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+      
+      .user-dropdown {
         position: absolute;
         top: 100%;
-        left: 0;
         right: 0;
-        background: $color-white;
-        box-shadow: $shadow-md;
-        padding: $spacing-4;
+        width: 240px;
+        margin-top: $spacing-2;
+        background-color: $color-white;
+        border-radius: $border-radius-md;
+        box-shadow: $shadow-lg;
+        z-index: $z-index-dropdown;
+        overflow: hidden;
         
-        .nav-links {
-          flex-direction: column;
+        .user-info {
+          padding: $spacing-4;
+          border-bottom: 1px solid $color-gray-200;
           
-          li {
-            margin: $spacing-2 0;
+          .user-name {
+            font-weight: $font-weight-medium;
+            margin: 0 0 $spacing-1;
+          }
+          
+          .user-role {
+            font-size: $font-size-sm;
+            color: $color-gray-600;
+            margin: 0;
           }
         }
         
-        @include mixins.respond-to(lg) {
-          position: static;
-          display: block;
-          box-shadow: none;
-          padding: 0;
+        .dropdown-menu {
+          list-style: none;
+          margin: 0;
+          padding: $spacing-2 0;
           
-          .nav-links {
-            flex-direction: row;
-            
-            li {
-              margin: 0 $spacing-4;
+          li {
+            a, button {
+              display: flex;
+              align-items: center;
+              width: 100%;
+              padding: $spacing-2 $spacing-4;
+              color: $color-gray-900;
+              text-decoration: none;
+              text-align: left;
+              font-size: $font-size-base;
+              background: transparent;
+              border: none;
+              cursor: pointer;
               
-              &:last-child {
-                margin-right: 0;
+              .menu-icon {
+                font-size: 18px;
+                margin-right: $spacing-3;
+                color: $color-gray-600;
+              }
+              
+              &:hover {
+                background-color: $color-gray-100;
+              }
+            }
+            
+            .logout-button {
+              color: $color-danger;
+              
+              .menu-icon {
+                color: $color-danger;
               }
             }
           }
         }
       }
+      @media (max-width: #{($breakpoint-md - 1)}) {
+        display: none;
+      }
+    }
+  }
+  
+  // Mobile menu toggle
+  .mobile-menu-toggle {
+    display: block;
+    width: 24px;
+    height: 24px;
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    
+    @include mixins.respond-to(lg) {
+      display: none;
+    }
+    
+    span {
+      display: block;
+      position: absolute;
+      height: 2px;
+      width: 100%;
+      background: $color-gray-900;
+      opacity: 1;
+      left: 0;
+      transform: rotate(0deg);
+      transition: transform 0.25s ease-in-out;
       
-      .nav-links {
+      &:nth-child(1) {
+        top: 0;
+      }
+      
+      &:nth-child(2) {
+        top: 8px;
+      }
+      
+      &:nth-child(3) {
+        top: 16px;
+      }
+    }
+    
+    &.active {
+      span {
+        &:nth-child(1) {
+          top: 8px;
+          transform: rotate(135deg);
+        }
+        
+        &:nth-child(2) {
+          opacity: 0;
+        }
+        
+        &:nth-child(3) {
+          top: 8px;
+          transform: rotate(-135deg);
+        }
+      }
+    }
+  }
+  
+  // Mobile menu
+  .mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: $color-white;
+    z-index: $z-index-modal;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    
+    &.active {
+      transform: translateX(0);
+    }
+    
+    .mobile-menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: $spacing-4;
+      border-bottom: 1px solid $color-gray-200;
+      
+      .mobile-logo {
+        img {
+          height: 24px;
+        }
+      }
+      
+      .close-menu {
+        width: 32px;
+        height: 32px;
         display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        
+        .material-icons {
+          font-size: 24px;
+        }
+      }
+    }
+    
+    .mobile-user-info {
+      display: flex;
+      align-items: center;
+      padding: $spacing-4;
+      border-bottom: 1px solid $color-gray-200;
+      
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: $border-radius-full;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: $color-primary;
+        color: $color-white;
+        font-weight: $font-weight-bold;
+        margin-right: $spacing-3;
+        
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+      
+      .user-details {
+        .user-name {
+          font-weight: $font-weight-medium;
+          margin: 0 0 $spacing-1;
+        }
+        
+        .user-role {
+          font-size: $font-size-sm;
+          color: $color-gray-600;
+          margin: 0;
+        }
+      }
+    }
+    
+    .mobile-nav {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: $spacing-4 0;
+      
+      .mobile-nav-links {
         list-style: none;
         margin: 0;
         padding: 0;
-        
-        li {
-          a {
-            color: $color-text;
-            text-decoration: none;
-            font-weight: $font-weight-medium;
-            padding: $spacing-2;
-            transition: color $transition-fast;
-            
-            &:hover, &.active {
-              color: $color-primary;
+      }
+      
+      .mobile-nav-item {
+        .mobile-nav-link {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: $spacing-3 $spacing-4;
+          color: $color-gray-900;
+          text-decoration: none;
+          font-weight: $font-weight-medium;
+          
+          &:hover {
+            background-color: $color-gray-100;
+          }
+          
+          &.dropdown-toggle {
+            .dropdown-icon {
+              font-size: 20px;
+              color: $color-gray-600;
             }
-            
-            &.active {
-              font-weight: $font-weight-bold;
-              position: relative;
-              
-              &::after {
-                content: '';
-                position: absolute;
-                bottom: -$spacing-1;
-                left: $spacing-2;
-                right: $spacing-2;
-                height: 2px;
-                background-color: $color-primary;
-              }
-            }
-            
-            &.admin-link {
-                background-color: rgba($color-primary, 0.1);
-                color: $color-primary;
-                border-radius: $border-radius-sm;
-                padding: $spacing-1 $spacing-3;
-                
-                &:hover {
-                  background-color: rgba($color-primary, 0.2);
-                }
-              }
           }
         }
       }
     }
     
-    .auth-buttons {
-      display: none;
-
-      @include mixins.respond-to(sm) {
-        display: block;
-      }
+    .mobile-actions {
+      padding: $spacing-4;
+      border-top: 1px solid $color-gray-200;
       
-
-      
-      .btn {
-        @include mixins.button-base;
+      .mobile-action-item {
+        display: flex;
+        align-items: center;
+        padding: $spacing-3 0;
+        color: $color-gray-900;
+        text-decoration: none;
         
-        &-primary {
-          @include mixins.button-primary;
+        .material-icons {
+          margin-right: $spacing-2;
+          font-size: 20px;
+          color: $color-gray-700;
         }
         
-        &-secondary {
-          @include mixins.button-secondary;
+        .notification-badge {
+          margin-left: $spacing-2;
+          min-width: 18px;
+          height: 18px;
+          background-color: $color-danger;
+          border-radius: $border-radius-full;
+          color: $color-white;
+          font-size: 11px;
+          font-weight: $font-weight-bold;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+          padding: 0 4px;
         }
       }
-    }
-    
-    .mobile-toggle {
-      @include mixins.respond-to(lg) {
-        display: none;
+      
+      .theme-selector {
+        display: flex;
+        align-items: center;
+        margin: $spacing-3 0;
+        
+        span {
+          margin-right: $spacing-2;
+        }
+        
+        .theme-button {
+          margin-right: $spacing-2;
+          background-color: $color-gray-100;
+          border: 1px solid $color-gray-300;
+          border-radius: $border-radius-sm;
+          padding: $spacing-1 $spacing-2;
+          font-size: $font-size-sm;
+          cursor: pointer;
+          
+          &:hover {
+            background-color: $color-gray-200;
+          }
+        }
       }
       
-      display: block;
-      background: transparent;
-      border: none;
-      padding: $spacing-2;
-      cursor: pointer;
-      
-      span {
+      .mobile-logout {
         display: block;
-        width: 25px;
-        height: 2px;
-        background-color: $color-text;
-        margin: 5px 0;
-        transition: transform 0.3s, opacity 0.3s;
-      }
-      
-      &:focus {
-        outline: none;
+        width: 100%;
+        padding: $spacing-3;
+        margin-top: $spacing-4;
+        background-color: transparent;
+        border: 1px solid $color-danger;
+        border-radius: $border-radius-md;
+        color: $color-danger;
+        font-weight: $font-weight-medium;
+        text-align: center;
+        cursor: pointer;
+        
+        &:hover {
+          background-color: rgba($color-danger, 0.05);
+        }
       }
     }
   }
 }
 
-// Media queries for responsive design
-@include mixins.respond-to(lg) {
+// Dark mode styling
+:host-context(.dark-mode) {
   .site-header {
-    .header-content {
-      .main-nav {
-        display: block;
+    background-color: $color-secondary;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    
+    .desktop-nav {
+      .nav-link {
+        color: $color-white;
         
-        .nav-links {
-          flex-direction: row;
+        &:hover {
+          color: $color-primary-light;
+        }
+        
+        .nav-icon {
+          color: $color-gray-400;
+        }
+      }
+    }
+    
+    .header-actions {
+      .search-box {
+        .search-input {
+          background-color: lighten($color-secondary, 5%);
+          border-color: lighten($color-secondary, 10%);
+          color: $color-white;
           
-          li {
-            margin: 0 $spacing-4;
+          &::placeholder {
+            color: $color-gray-400;
+          }
+          
+          &:focus {
+            border-color: $color-primary;
+          }
+        }
+        
+        .search-button {
+          .material-icons {
+            color: $color-gray-400;
+          }
+        }
+      }
+      
+      .theme-toggle {
+        .material-icons {
+          color: $color-white;
+        }
+        
+        &:hover {
+          background-color: lighten($color-secondary, 10%);
+        }
+      }
+      
+      .notification-icon {
+        a {
+          &:hover {
+            background-color: lighten($color-secondary, 10%);
+          }
+          
+          .material-icons {
+            color: $color-white;
+          }
+        }
+      }
+      
+      .user-menu {
+        .login-button {
+          color: $color-primary-light;
+        }
+        
+        .user-dropdown {
+          background-color: $color-secondary;
+          border: 1px solid lighten($color-secondary, 10%);
+          
+          .user-info {
+            border-color: lighten($color-secondary, 10%);
             
-            &:last-child {
-              margin-right: 0;
+            .user-role {
+              color: $color-gray-400;
+            }
+          }
+          
+          .dropdown-menu {
+            li {
+              a, button {
+                color: $color-white;
+                
+                .menu-icon {
+                  color: $color-gray-400;
+                }
+                
+                &:hover {
+                  background-color: lighten($color-secondary, 10%);
+                }
+              }
+              
+              .logout-button {
+                .menu-icon {
+                  color: $color-danger;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    .mobile-menu-toggle {
+      span {
+        background: $color-white;
+      }
+    }
+    
+    .mobile-menu {
+      background-color: $color-secondary;
+      
+      .mobile-menu-header {
+        border-color: lighten($color-secondary, 10%);
+        
+        .close-menu {
+          color: $color-white;
+          
+          .material-icons {
+            color: $color-white;
+          }
+        }
+      }
+      
+      .mobile-user-info {
+        border-color: lighten($color-secondary, 10%);
+        
+        .user-details {
+          .user-role {
+            color: $color-gray-400;
+          }
+        }
+      }
+      
+      .mobile-nav {
+        .mobile-nav-item {
+          .mobile-nav-link {
+            color: $color-white;
+            
+            &:hover {
+              background-color: lighten($color-secondary, 10%);
+            }
+            
+            .dropdown-icon {
+              color: $color-gray-400;
             }
           }
         }
       }
       
-      .auth-buttons {
-        display: block;
+      .mobile-actions {
+        border-color: lighten($color-secondary, 10%);
+        
+        .mobile-action-item {
+          color: $color-white;
+          
+          .material-icons {
+            color: $color-gray-300;
+          }
+        }
+        
+        .theme-selector {
+          color: $color-white;
+          
+          .theme-button {
+            background-color: lighten($color-secondary, 10%);
+            border-color: lighten($color-secondary, 15%);
+            color: $color-white;
+            
+            &:hover {
+              background-color: lighten($color-secondary, 15%);
+            }
+          }
+        }
       }
     }
   }

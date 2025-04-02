@@ -1,23 +1,22 @@
-// frontend/src/styles/variables.scss
+// frontend/src/styles/_variables.scss
 
-// Color System
-// Primary palette
-$color-primary: #007bff;
-$color-primary-light: #8bb9ef;
-$color-primary-dark: #0069d9;
+// Primary Color Palette
+$color-primary: #4f83f1;         // Light blue accent color used in headlines and CTAs
+$color-primary-light: #7ba6ff;    // Lighter version for hover states
+$color-primary-dark: #2a51af;     // Darker version for active states
 
-// Secondary palette
-$color-secondary: #6c757d;
-$color-secondary-light: #a1a8ae;
-$color-secondary-dark: #494f54;
+// Secondary Color
+$color-secondary: #101d3d;        // Deep navy background color
+$color-secondary-light: #1e2b52;  // Slightly lighter navy for card backgrounds
+$color-secondary-dark: #0a152d;   // Darker navy for footer/header
 
-// Accent colors
-$color-success: #28a745;
-$color-info: #17a2b8;
-$color-warning: #ffc107;
-$color-danger: #dc3545;
+// Accent Colors
+$color-success: #34c759;         // Green for success messages
+$color-info: #17a2b8;            // Cyan blue for information
+$color-warning: #ffc107;         // Amber for warnings
+$color-danger: #dc3545;          // Red for errors/danger
 
-// Neutral colors
+// Neutral Colors
 $color-white: #ffffff;
 $color-gray-100: #f8f9fa;
 $color-gray-200: #e9ecef;
@@ -30,18 +29,29 @@ $color-gray-800: #343a40;
 $color-gray-900: #212529;
 $color-black: #000000;
 
-// Semantic colors
+// Semantic Colors
 $color-background: $color-white;
 $color-background-alt: $color-gray-100;
+$color-background-dark: $color-secondary;     // Deep navy for dark sections
 $color-text: $color-gray-900;
 $color-text-muted: $color-gray-600;
+$color-text-light: $color-white;              // For text on dark backgrounds
+$color-text-accent: $color-primary;           // For emphasized text
 $color-border: $color-gray-300;
 
+// Button Colors
+$btn-primary-bg: $color-primary;
+$btn-primary-text: $color-white;
+$btn-secondary-bg: transparent;
+$btn-secondary-text: $color-primary;
+$btn-secondary-border: $color-primary;
+
 // Typography
-$font-family-base: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 $font-family-headings: $font-family-base;
 $font-family-monospace: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
+// Font Sizes - kept the same
 $font-size-base: 1rem; // 16px
 $font-size-sm: 0.875rem; // 14px
 $font-size-lg: 1.25rem; // 20px
@@ -49,6 +59,7 @@ $font-size-xl: 1.5rem; // 24px
 $font-size-2xl: 2rem; // 32px
 $font-size-3xl: 2.5rem; // 40px
 
+// Rest of variables remain unchanged
 $font-weight-light: 300;
 $font-weight-normal: 400;
 $font-weight-medium: 500;

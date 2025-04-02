@@ -1,0 +1,77 @@
+// frontend/src/styles/_dark-mode.scss
+@use 'variables' as *;
+
+// Dark Mode Base Styles
+body.dark-mode {
+  // Update background and text colors
+  background-color: $color-secondary-dark;
+  color: $color-text-light;
+  
+  // Common elements
+  a {
+    color: $color-primary-light;
+    
+    &:hover {
+      color: lighten($color-primary-light, 10%);
+    }
+  }
+  
+  // Form elements
+  input, select, textarea {
+    background-color: lighten($color-secondary, 5%);
+    border-color: lighten($color-secondary, 10%);
+    color: $color-text-light;
+    
+    &::placeholder {
+      color: $color-gray-500;
+    }
+    
+    &:focus {
+      border-color: $color-primary;
+    }
+  }
+  
+  // Buttons
+  .btn {
+    &-primary {
+      background-color: $color-primary;
+      
+      &:hover {
+        background-color: darken($color-primary, 5%);
+      }
+    }
+    
+    &-secondary {
+      background-color: transparent;
+      border-color: $color-primary-light;
+      color: $color-primary-light;
+      
+      &:hover {
+        background-color: rgba($color-primary-light, 0.1);
+      }
+    }
+  }
+  
+  // Cards and containers
+  .card {
+    background-color: $color-secondary;
+    border-color: lighten($color-secondary, 10%);
+  }
+  
+  // Tables
+  table {
+    th {
+      border-color: lighten($color-secondary, 15%);
+    }
+    
+    td {
+      border-color: lighten($color-secondary, 8%);
+    }
+  }
+  
+  // Modal/Dialog
+  .modal-content {
+    background-color: $color-secondary;
+    border-color: lighten($color-secondary, 10%);
+  }
+}

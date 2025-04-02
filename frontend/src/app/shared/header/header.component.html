@@ -1,83 +1,234 @@
-<!-- frontend/src/app/shared/components/header/header.component.html -->
+<!-- frontend/src/app/shared/header/header.component.html with Material Icons -->
 <header class="site-header">
   <div class="container">
     <div class="header-content">
+      <!-- Logo -->
       <div class="logo">
         <a routerLink="/">
           <img
-            width="190"
-            height="35"
             src="assets/images/logo.svg"
-            alt="Talentlink-AI"
+            alt="TalentLink-AI"
+            class="logo-image"
           />
         </a>
       </div>
 
-      <nav class="main-nav" [class.active]="isMenuOpen">
+      <!-- Primary Navigation - Desktop -->
+      <nav class="main-nav desktop-nav">
         <ul class="nav-links">
-          <!-- Authenticated user links -->
-          <ng-container *ngIf="auth.isAuthenticated$ | async">
-            <li>
-              <a routerLink="/profile" routerLinkActive="active">Profile</a>
-            </li>
-            <li><a routerLink="/jobs" routerLinkActive="active">Jobs</a></li>
-            <li>
-              <a routerLink="/messages" routerLinkActive="active">Messages</a>
-            </li>
-            <!-- Admin link - only shown to admin users -->
-            <li *ngIf="isAdmin()">
-              <a
-                routerLink="/admin"
-                routerLinkActive="active"
-                class="admin-link"
-                >Admin</a
-              >
-            </li>
-          </ng-container>
-
-          <!-- Non-authenticated links -->
-          <ng-container *ngIf="!(auth.isAuthenticated$ | async)">
-            <li>
-              <a routerLink="/how-it-works" routerLinkActive="active"
-                >Getting Started</a
-              >
-            </li>
-            <li>
-              <a routerLink="/talent" routerLinkActive="active">Our Talent</a>
-            </li>
-            <li>
-              <a routerLink="/blogs" routerLinkActive="active">Blogs</a>
-            </li>
-            <li>
-              <a routerLink="/job-listing" routerLinkActive="active">Jobs</a>
-            </li>
-          </ng-container>
+          <li class="nav-item dropdown">
+            <a class="nav-link"
+              >Find Talent <i class="material-icons nav-icon">expand_more</i></a
+            >
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link"
+              >Post Job <i class="material-icons nav-icon">expand_more</i></a
+            >
+          </li>
+          <li class="nav-item">
+            <a routerLink="/how-it-works" class="nav-link">How it Works</a>
+          </li>
+          <li class="nav-item">
+            <a routerLink="/our-talent" class="nav-link">Our Talent</a>
+          </li>
+          <li class="nav-item">
+            <a routerLink="/blogs" class="nav-link">Blog</a>
+          </li>
         </ul>
       </nav>
 
-      <!-- Login / Logout -->
-      <div class="auth-buttons">
-        <ng-container
-          *ngIf="auth.isAuthenticated$ | async; else notAuthenticated"
-        >
-          <button class="btn btn-secondary" (click)="logout()">Log Out</button>
-        </ng-container>
-
-        <ng-template #notAuthenticated>
-          <button class="btn btn-primary" (click)="auth.loginWithRedirect()">
-            Log In
+      <!-- Right Side Actions -->
+      <div class="header-actions">
+        <!-- Search Box -->
+        <div class="search-box">
+          <input type="text" placeholder="Search" class="search-input" />
+          <button class="search-button">
+            <i class="material-icons">search</i>
           </button>
-        </ng-template>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" (click)="toggleTheme()">
+          <i class="material-icons">{{
+            isDarkMode ? "light_mode" : "dark_mode"
+          }}</i>
+        </button>
+
+        <!-- Notification -->
+        <div *ngIf="auth.isAuthenticated$ | async" class="notification-icon">
+          <a routerLink="/notifications">
+            <i class="material-icons">notifications</i>
+            <span *ngIf="notificationCount > 0" class="notification-badge">
+              {{ notificationCount }}
+            </span>
+          </a>
+        </div>
+
+        <!-- User Menu -->
+        <div
+          class="user-menu"
+          (click)="toggleUserMenu()"
+          [class.active]="isUserMenuOpen"
+        >
+          <ng-container *ngIf="auth.isAuthenticated$ | async; else loginButton">
+            <div class="user-avatar">
+              <img
+                *ngIf="(auth.user$ | async)?.picture"
+                [src]="(auth.user$ | async)?.picture"
+                alt="User avatar"
+              />
+              <div
+                *ngIf="!(auth.user$ | async)?.picture"
+                class="avatar-placeholder"
+              >
+                {{ getInitials((auth.user$ | async)?.name) }}
+              </div>
+            </div>
+            <div class="user-dropdown" *ngIf="isUserMenuOpen">
+              <div class="user-info">
+                <p class="user-name">{{ (auth.user$ | async)?.name }}</p>
+                <p class="user-role">{{ getUserRole() }}</p>
+              </div>
+              <ul class="dropdown-menu">
+                <li *ngIf="isAdmin()">
+                  <a routerLink="/admin" routerLinkActive="active">
+                    <i class="material-icons menu-icon">verified_user</i
+                    >Admin</a
+                  >
+                </li>
+                <li>
+                  <a routerLink="/profile"
+                    ><i class="material-icons menu-icon">person</i> My
+                    Profile</a
+                  >
+                </li>
+                <li>
+                  <a routerLink="/dashboard"
+                    ><i class="material-icons menu-icon">dashboard</i>
+                    Dashboard</a
+                  >
+                </li>
+                <li>
+                  <a routerLink="/settings"
+                    ><i class="material-icons menu-icon">settings</i>
+                    Settings</a
+                  >
+                </li>
+                <li>
+                  <button class="logout-button" (click)="logout()">
+                    <i class="material-icons menu-icon">logout</i> Log Out
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </ng-container>
+          <ng-template #loginButton>
+            <a class="login-button" (click)="auth.loginWithRedirect()"
+              >Log in / Sign Up</a
+            >
+          </ng-template>
+        </div>
       </div>
 
+      <!-- Mobile Menu Toggle -->
       <button
-        class="mobile-toggle"
-        (click)="toggleMenu()"
-        aria-label="Toggle menu"
+        class="mobile-menu-toggle"
+        (click)="toggleMobileMenu()"
+        [class.active]="isMobileMenuOpen"
       >
         <span></span>
         <span></span>
         <span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Navigation Menu -->
+  <div class="mobile-menu" [class.active]="isMobileMenuOpen">
+    <div class="mobile-menu-header">
+      <div class="mobile-logo">
+        <img src="assets/images/logo.svg" alt="TalentLink-AI" />
+      </div>
+      <button class="close-menu" (click)="toggleMobileMenu()">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <div *ngIf="auth.isAuthenticated$ | async" class="mobile-user-info">
+      <div class="user-avatar">
+        <img
+          *ngIf="(auth.user$ | async)?.picture"
+          [src]="(auth.user$ | async)?.picture"
+          alt="User avatar"
+        />
+        <div *ngIf="!(auth.user$ | async)?.picture" class="avatar-placeholder">
+          {{ getInitials((auth.user$ | async)?.name) }}
+        </div>
+      </div>
+      <div class="user-details">
+        <p class="user-name">{{ (auth.user$ | async)?.name }}</p>
+        <p class="user-role">{{ getUserRole() }}</p>
+      </div>
+    </div>
+
+    <nav class="mobile-nav">
+      <ul class="mobile-nav-links">
+        <li class="mobile-nav-item">
+          <a
+            class="mobile-nav-link dropdown-toggle"
+            (click)="toggleMobileSubmenu('findTalent')"
+          >
+            Find Talent
+            <i class="material-icons dropdown-icon">{{
+              mobileSubmenus.findTalent ? "expand_less" : "expand_more"
+            }}</i>
+          </a>
+        </li>
+        <li class="mobile-nav-item">
+          <a
+            class="mobile-nav-link dropdown-toggle"
+            (click)="toggleMobileSubmenu('postJob')"
+          >
+            Post Job
+            <i class="material-icons dropdown-icon">{{
+              mobileSubmenus.postJob ? "expand_less" : "expand_more"
+            }}</i>
+          </a>
+        </li>
+        <li class="mobile-nav-item">
+          <a routerLink="/how-it-works" class="mobile-nav-link">How it Works</a>
+        </li>
+        <li class="mobile-nav-item">
+          <a routerLink="/our-talent" class="mobile-nav-link">Our Talent</a>
+        </li>
+        <li class="mobile-nav-item">
+          <a routerLink="/blogs" class="mobile-nav-link">Blog</a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="mobile-actions">
+      <a routerLink="/messages" class="mobile-action-item">
+        <i class="material-icons">message</i> Messages
+      </a>
+      <a routerLink="/notifications" class="mobile-action-item">
+        <i class="material-icons">notifications</i> Notifications
+        <span *ngIf="notificationCount > 0" class="notification-badge">{{
+          notificationCount
+        }}</span>
+      </a>
+      <div class="theme-selector">
+        <span>Theme: </span>
+        <button class="theme-button" (click)="setTheme('light')">Light</button>
+        <button class="theme-button" (click)="setTheme('dark')">Dark</button>
+      </div>
+      <button
+        *ngIf="auth.isAuthenticated$ | async"
+        class="logout-button mobile-logout"
+        (click)="logout()"
+      >
+        Log Out
       </button>
     </div>
   </div>
