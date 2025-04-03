@@ -1,0 +1,197 @@
+/* frontend/src/app/features/payments/payment-methods/payment-methods.component.scss */
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as mixins;
+
+.payment-methods-container {
+  max-width: $container-md;
+  margin: 0 auto;
+  padding: $spacing-8 $spacing-4;
+  
+  @include mixins.respond-to(md) {
+    padding: $spacing-12 $spacing-6;
+  }
+}
+
+.payment-methods-header {
+  margin-bottom: $spacing-8;
+  
+  h1 {
+    @include mixins.heading-1;
+    margin-bottom: $spacing-2;
+  }
+  
+  .subtitle {
+    color: $color-text-muted;
+  }
+}
+
+.card {
+  @include mixins.card;
+  margin-bottom: $spacing-8;
+  
+  .card-header {
+    @include mixins.flex-between;
+    padding-bottom: $spacing-4;
+    margin-bottom: $spacing-6;
+    border-bottom: $border-width-default solid $color-gray-200;
+    
+    h2 {
+      @include mixins.heading-3;
+      margin: 0;
+    }
+  }
+}
+
+.add-card-form {
+  h3 {
+    margin-bottom: $spacing-4;
+  }
+  
+  .form-group {
+    margin-bottom: $spacing-6;
+  }
+  
+  .card-element {
+    padding: $spacing-4;
+    border: $border-width-default solid $color-gray-300;
+    border-radius: $border-radius-md;
+    background-color: $color-white;
+    
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 0.25rem rgba($color-primary, 0.25);
+    }
+  }
+}
+
+.payment-methods-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  
+  .payment-method-item {
+    @include mixins.flex-between;
+    padding: $spacing-4;
+    border: $border-width-default solid $color-gray-200;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-3;
+    transition: all $transition-fast;
+    
+    &:hover {
+      border-color: $color-gray-300;
+      background-color: $color-gray-100;
+    }
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  .payment-method-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .card-icon {
+    width: 40px;
+    height: 32px;
+    margin-right: $spacing-4;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    
+    &.visa-icon {
+      background-image: url('/assets/images/card-visa.svg');
+    }
+    
+    &.mastercard-icon {
+      background-image: url('/assets/images/card-mastercard.svg');
+    }
+    
+    &.amex-icon {
+      background-image: url('/assets/images/card-amex.svg');
+    }
+    
+    &.discover-icon {
+      background-image: url('/assets/images/card-discover.svg');
+    }
+    
+    &.card-icon {
+      background-image: url('/assets/images/card-generic.svg');
+    }
+  }
+  
+  .card-details {
+    .card-name {
+      font-weight: $font-weight-medium;
+    }
+    
+    .card-expiry {
+      font-size: $font-size-sm;
+      color: $color-text-muted;
+    }
+  }
+}
+
+.no-methods {
+  color: $color-text-muted;
+  text-align: center;
+  padding: $spacing-8 0;
+}
+
+.security-info {
+  display: flex;
+  align-items: center;
+  padding: $spacing-4;
+  background-color: rgba($color-primary, 0.05);
+  border-radius: $border-radius-md;
+  
+  .security-icon {
+    font-size: $font-size-2xl;
+    color: $color-success;
+    margin-right: $spacing-4;
+  }
+  
+  .security-text {
+    h3 {
+      font-size: $font-size-lg;
+      margin-bottom: $spacing-1;
+    }
+    
+    p {
+      color: $color-text-muted;
+      font-size: $font-size-sm;
+      margin: 0;
+    }
+  }
+}
+
+// Dark mode styles
+:host-context(.dark-mode) {
+  .card {
+    background-color: $color-secondary;
+    border-color: lighten($color-secondary, 10%);
+    
+    .card-header {
+      border-color: lighten($color-secondary, 10%);
+    }
+  }
+  
+  .payment-method-item {
+    border-color: lighten($color-secondary, 10%);
+    
+    &:hover {
+      border-color: lighten($color-secondary, 15%);
+      background-color: lighten($color-secondary, 5%);
+    }
+  }
+  
+  .card-element {
+    background-color: lighten($color-secondary, 5%);
+    border-color: lighten($color-secondary, 10%);
+  }
+  
+  .security-info {
+    background-color: rgba($color-primary, 0.1);
+  }
+}

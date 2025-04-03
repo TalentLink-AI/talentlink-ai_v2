@@ -78,6 +78,13 @@ const serviceRoutes = [
   },
 ];
 
+const paymentRoutes = [
+  {
+    path: "/api/payments",
+    target: process.env.PAYMENT_SERVICE_URL || "http://payment-service:3003",
+  },
+];
+
 const { auth } = require("express-oauth2-jwt-bearer");
 
 //Auth0 middleware
@@ -88,7 +95,7 @@ const authMiddleware = auth({
 });
 
 app.use("/api/users", authMiddleware);
-
+app.use("/api/payments", authMiddleware);
 // Apply to routes that handle state-changing operations
 app.use("/api/users/profile", csrfProtection);
 
@@ -99,6 +106,29 @@ app.get("/api/csrf-token", csrfProtection, (req, res) => {
 
 // Configure proxy middleware
 serviceRoutes.forEach(({ path, target }) => {
+  logger.info(`Setting up proxy for ${path} -> ${target}`);
+
+  app.use(
+    path,
+    createProxyMiddleware({
+      target,
+      changeOrigin: true,
+      pathRewrite: {
+        [`^${path}`]: "", // Remove the path prefix
+      },
+      logLevel: "warn",
+      onError: (err, req, res) => {
+        logger.error(`Proxy error: ${err.message}`);
+        res.status(500).json({
+          error: "Service Unavailable",
+          message: "The requested service is currently unavailable",
+        });
+      },
+    })
+  );
+});
+
+paymentRoutes.forEach(({ path, target }) => {
   logger.info(`Setting up proxy for ${path} -> ${target}`);
 
   app.use(

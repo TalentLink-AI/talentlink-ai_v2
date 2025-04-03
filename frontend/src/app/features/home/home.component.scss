@@ -1,0 +1,29 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+.home-container {
+  max-width: $container-lg;
+  margin: 0 auto;
+  padding: $spacing-8 $spacing-4;
+  
+  @include mixins.respond-to(md) {
+    padding: $spacing-12 $spacing-6;
+  }
+}
+
+.loading-container {
+  @include mixins.flex-center;
+  flex-direction: column;
+  min-height: 300px;
+  
+  .loading-spinner {
+    margin-bottom: $spacing-4;
+  }
+}
+
+.home-content {
+    background-color: $color-white;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-md;
+    overflow: hidden;
+  }

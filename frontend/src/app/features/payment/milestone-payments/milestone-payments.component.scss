@@ -1,0 +1,299 @@
+/* frontend/src/app/features/payments/milestone-payments/milestone-payments.component.scss */
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as mixins;
+
+.milestone-payments-container {
+  max-width: $container-lg;
+  margin: 0 auto;
+  padding: $spacing-6 $spacing-4;
+  
+  @include mixins.respond-to(md) {
+    padding: $spacing-8 $spacing-6;
+  }
+}
+
+.milestone-payments-header {
+  @include mixins.flex-between;
+  margin-bottom: $spacing-6;
+  
+  h2 {
+    @include mixins.heading-2;
+    margin: 0;
+  }
+  
+  .escrow-info {
+    background-color: rgba($color-primary, 0.1);
+    padding: $spacing-2 $spacing-4;
+    border-radius: $border-radius-md;
+    
+    .label {
+      font-weight: $font-weight-medium;
+      margin-right: $spacing-2;
+    }
+    
+    .value {
+      font-weight: $font-weight-bold;
+      color: $color-primary;
+    }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: $spacing-12 $spacing-6;
+  background-color: $color-white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-sm;
+  
+  .empty-icon {
+    font-size: 48px;
+    color: $color-gray-400;
+    margin-bottom: $spacing-4;
+  }
+  
+  h3 {
+    font-size: $font-size-xl;
+    margin-bottom: $spacing-2;
+  }
+  
+  p {
+    color: $color-text-muted;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+}
+
+.milestones-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-6;
+}
+
+.milestone-card {
+  background-color: $color-white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+  transition: transform $transition-fast, box-shadow $transition-fast;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+}
+
+.milestone-header {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  background-color: $color-gray-100;
+  padding: $spacing-3 $spacing-4;
+  border-bottom: $border-width-default solid $color-gray-200;
+  
+  .milestone-number {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: $color-primary;
+    color: $color-white;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+  }
+  
+  .milestone-title {
+    font-weight: $font-weight-bold;
+    font-size: $font-size-lg;
+    padding: 0 $spacing-4;
+  }
+  
+  .milestone-amount {
+    font-weight: $font-weight-bold;
+    font-size: $font-size-lg;
+    color: $color-primary;
+  }
+}
+
+.milestone-details {
+  padding: $spacing-4 $spacing-6;
+  
+  .milestone-description {
+    margin-bottom: $spacing-4;
+    line-height: $line-height-base;
+  }
+  
+  .milestone-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: $spacing-4;
+    gap: $spacing-4;
+    
+    .milestone-status {
+      display: flex;
+      align-items: center;
+      
+      .status-label {
+        margin-right: $spacing-2;
+        color: $color-text-muted;
+      }
+      
+      .status-badge {
+        padding: $spacing-1 $spacing-3;
+        border-radius: $border-radius-full;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        
+        &.status-pending {
+          background-color: $color-gray-200;
+          color: $color-gray-700;
+        }
+        
+        &.status-in-progress {
+          background-color: rgba($color-primary, 0.1);
+          color: $color-primary;
+        }
+        
+        &.status-completed {
+          background-color: rgba($color-warning, 0.1);
+          color: darken($color-warning, 20%);
+        }
+        
+        &.status-paid {
+          background-color: rgba($color-success, 0.1);
+          color: $color-success;
+        }
+      }
+    }
+    
+    .milestone-dates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-4;
+      
+      .date-item {
+        .date-label {
+          color: $color-text-muted;
+          margin-right: $spacing-1;
+        }
+        
+        .date-value {
+          font-weight: $font-weight-medium;
+        }
+      }
+    }
+  }
+  
+  .milestone-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: $spacing-4;
+    
+    .status-message {
+      color: $color-text-muted;
+      font-style: italic;
+      
+      &.success {
+        color: $color-success;
+        font-weight: $font-weight-medium;
+        font-style: normal;
+      }
+    }
+  }
+}
+
+.payment-info {
+  margin-top: $spacing-10;
+  background-color: $color-gray-100;
+  border-radius: $border-radius-lg;
+  padding: $spacing-6;
+  
+  h3 {
+    @include mixins.heading-3;
+    margin-bottom: $spacing-4;
+    text-align: center;
+  }
+  
+  .payment-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: $spacing-6;
+    
+    @include mixins.respond-to(sm) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include mixins.respond-to(lg) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    
+    li {
+      display: flex;
+      align-items: flex-start;
+      
+      .step-number {
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: $color-primary;
+        color: $color-white;
+        font-weight: $font-weight-bold;
+        border-radius: $border-radius-full;
+        margin-right: $spacing-3;
+      }
+      
+      .step-content {
+        .step-title {
+          font-weight: $font-weight-bold;
+          margin-bottom: $spacing-1;
+        }
+        
+        .step-description {
+          font-size: $font-size-sm;
+          color: $color-text-muted;
+          line-height: $line-height-base;
+        }
+      }
+    }
+  }
+}
+
+// Dark mode styling
+:host-context(.dark-mode) {
+  .milestone-card {
+    background-color: $color-secondary;
+  }
+  
+  .milestone-header {
+    background-color: lighten($color-secondary, 5%);
+    border-color: lighten($color-secondary, 10%);
+  }
+  
+  .empty-state {
+    background-color: $color-secondary;
+  }
+  
+  .payment-info {
+    background-color: lighten($color-secondary, 5%);
+  }
+  
+  .escrow-info {
+    background-color: rgba($color-primary, 0.2);
+  }
+  
+  .milestone-status-row {
+    .status-badge {
+      &.status-pending {
+        background-color: lighten($color-secondary, 15%);
+      }
+    }
+  }
+}

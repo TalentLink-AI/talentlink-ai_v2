@@ -1,0 +1,125 @@
+<!-- frontend/src/app/features/payments/payment-methods/payment-methods.component.html -->
+<div class="payment-methods-container">
+  <div class="payment-methods-header">
+    <h1>Payment Methods</h1>
+    <p class="subtitle">
+      Manage your payment methods for contracts and escrow funding
+    </p>
+  </div>
+
+  <!-- Success message -->
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading && !addingCard" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading payment methods...</p>
+  </div>
+
+  <!-- Payment methods list -->
+  <div *ngIf="!loading || addingCard" class="card">
+    <div class="card-header">
+      <h2>Your Payment Methods</h2>
+      <button
+        *ngIf="!addingCard"
+        class="btn btn-primary"
+        (click)="showAddCard()"
+      >
+        Add Payment Method
+      </button>
+    </div>
+
+    <div class="card-body">
+      <!-- Add card form -->
+      <div *ngIf="addingCard" class="add-card-form">
+        <h3>Add a Credit or Debit Card</h3>
+
+        <!-- Card element placeholder -->
+        <div class="form-group">
+          <label for="card-element">Credit or Debit Card</label>
+          <div
+            id="card-element"
+            #cardElement
+            class="form-control card-element"
+          ></div>
+          <div *ngIf="cardError" class="error-text">{{ cardError }}</div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="cancelAddCard()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!cardComplete || loading"
+            (click)="submitNewCard()"
+          >
+            <span *ngIf="loading" class="loading-spinner mr-2"></span>
+            <span *ngIf="!loading">Add Card</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Existing payment methods -->
+      <div *ngIf="!addingCard">
+        <p *ngIf="paymentMethods.length === 0" class="no-methods">
+          You don't have any payment methods yet. Add a payment method to fund
+          escrow accounts or make payments for contracts.
+        </p>
+
+        <ul *ngIf="paymentMethods.length > 0" class="payment-methods-list">
+          <li *ngFor="let method of paymentMethods" class="payment-method-item">
+            <div class="payment-method-info">
+              <div
+                class="card-icon"
+                [ngClass]="getCardIcon(method.card?.brand || '')"
+              ></div>
+              <div class="card-details">
+                <div class="card-name">
+                  {{ method.card?.brand }} •••• {{ method.card?.last4 }}
+                </div>
+                <div class="card-expiry">
+                  Expires {{ method.card?.expMonth }}/{{ method.card?.expYear }}
+                </div>
+              </div>
+            </div>
+            <button
+              class="btn btn-sm btn-danger"
+              [disabled]="processingDelete"
+              (click)="deletePaymentMethod(method.id)"
+            >
+              Remove
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security information -->
+  <div class="security-info">
+    <div class="security-icon">
+      <i class="icon-lock"></i>
+    </div>
+    <div class="security-text">
+      <h3>Your payment information is secure</h3>
+      <p>
+        We use Stripe to process payments. Your payment information is encrypted
+        and securely stored by Stripe. TalentLink never stores your full card
+        details.
+      </p>
+    </div>
+  </div>
+</div>

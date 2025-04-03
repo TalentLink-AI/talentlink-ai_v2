@@ -1,0 +1,209 @@
+<!-- frontend/src/app/features/payments/milestone-payments/milestone-payments.component.html -->
+<div class="milestone-payments-container">
+  <div class="milestone-payments-header">
+    <h2>Contract Milestones</h2>
+    <div *ngIf="isClient" class="escrow-info">
+      <span class="label">Escrow Balance:</span>
+      <span class="value">{{ formatCurrency(escrowBalance) }}</span>
+    </div>
+  </div>
+
+  <!-- Success message -->
+  <div *ngIf="success" class="success-message">
+    {{ success }}
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading milestone data...</p>
+  </div>
+
+  <!-- No milestones message -->
+  <div *ngIf="!loading && milestones.length === 0" class="empty-state">
+    <div class="empty-icon">
+      <i class="icon-clipboard"></i>
+    </div>
+    <h3>No Milestones Found</h3>
+    <p>This contract doesn't have any milestones defined yet.</p>
+  </div>
+
+  <!-- Milestones list -->
+  <div *ngIf="!loading && milestones.length > 0" class="milestones-list">
+    <div
+      *ngFor="let milestone of milestones; let i = index"
+      class="milestone-card"
+    >
+      <div class="milestone-header">
+        <div class="milestone-number">{{ i + 1 }}</div>
+        <div class="milestone-title">{{ milestone.title }}</div>
+        <div class="milestone-amount">
+          {{ formatCurrency(milestone.amount) }}
+        </div>
+      </div>
+
+      <div class="milestone-details">
+        <div class="milestone-description">
+          {{ milestone.description }}
+        </div>
+
+        <div class="milestone-status-row">
+          <div class="milestone-status">
+            <span class="status-label">Status:</span>
+            <span
+              class="status-badge"
+              [ngClass]="getMilestoneStatusClass(milestone.status)"
+            >
+              {{ getMilestoneStatusText(milestone.status) }}
+            </span>
+          </div>
+
+          <div class="milestone-dates">
+            <div *ngIf="milestone.dueDate" class="date-item">
+              <span class="date-label">Due:</span>
+              <span class="date-value">{{ milestone.dueDate | date }}</span>
+            </div>
+            <div *ngIf="milestone.completedDate" class="date-item">
+              <span class="date-label">Completed:</span>
+              <span class="date-value">{{
+                milestone.completedDate | date
+              }}</span>
+            </div>
+            <div *ngIf="milestone.paidDate" class="date-item">
+              <span class="date-label">Paid:</span>
+              <span class="date-value">{{ milestone.paidDate | date }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="milestone-actions">
+          <!-- Talent actions -->
+          <ng-container *ngIf="isTalent">
+            <button
+              *ngIf="milestone.status === 'pending'"
+              class="btn btn-primary"
+              [disabled]="actionInProgress"
+              (click)="updateMilestoneStatus(milestone.id, 'inProgress')"
+            >
+              <span
+                *ngIf="actionInProgress"
+                class="loading-spinner mr-2"
+              ></span>
+              <span>Start Working</span>
+            </button>
+
+            <button
+              *ngIf="milestone.status === 'inProgress'"
+              class="btn btn-success"
+              [disabled]="actionInProgress"
+              (click)="updateMilestoneStatus(milestone.id, 'completed')"
+            >
+              <span
+                *ngIf="actionInProgress"
+                class="loading-spinner mr-2"
+              ></span>
+              <span>Mark as Completed</span>
+            </button>
+
+            <div
+              *ngIf="milestone.status === 'completed'"
+              class="status-message"
+            >
+              Waiting for client to release payment...
+            </div>
+
+            <div
+              *ngIf="milestone.status === 'paid'"
+              class="status-message success"
+            >
+              Payment received!
+            </div>
+          </ng-container>
+
+          <!-- Client actions -->
+          <ng-container *ngIf="isClient">
+            <div *ngIf="milestone.status === 'pending'" class="status-message">
+              Waiting for talent to start work...
+            </div>
+
+            <div
+              *ngIf="milestone.status === 'inProgress'"
+              class="status-message"
+            >
+              Talent is working on this milestone...
+            </div>
+
+            <button
+              *ngIf="milestone.status === 'completed'"
+              class="btn btn-primary"
+              [disabled]="actionInProgress"
+              (click)="releaseMilestonePayment(milestone.id)"
+            >
+              <span
+                *ngIf="actionInProgress"
+                class="loading-spinner mr-2"
+              ></span>
+              <span>Release Payment</span>
+            </button>
+
+            <div
+              *ngIf="milestone.status === 'paid'"
+              class="status-message success"
+            >
+              Payment sent!
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment process information -->
+  <div class="payment-info">
+    <h3>How Milestone Payments Work</h3>
+    <ol class="payment-steps">
+      <li>
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <div class="step-title">Contract Agreed</div>
+          <div class="step-description">
+            Client and talent agree on milestones and payment amounts.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <div class="step-title">Funds in Escrow</div>
+          <div class="step-description">
+            Client places funds in escrow account to ensure secure payment.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <div class="step-title">Work Completed</div>
+          <div class="step-description">
+            Talent marks milestone as complete when work is finished.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <div class="step-title">Payment Released</div>
+          <div class="step-description">
+            Client reviews work and releases payment from escrow to talent.
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+</div>

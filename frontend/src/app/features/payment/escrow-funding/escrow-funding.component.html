@@ -1,0 +1,204 @@
+<!-- frontend/src/app/features/payments/escrow-funding/escrow-funding.component.html -->
+<div class="escrow-funding-container">
+  <!-- Escrow information card -->
+  <div class="escrow-card">
+    <div class="escrow-header">
+      <h3>Escrow Account</h3>
+      <div *ngIf="isFullyFunded()" class="status-badge status-funded">
+        Fully Funded
+      </div>
+    </div>
+
+    <div class="escrow-body">
+      <!-- Loading state -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading escrow information...</p>
+      </div>
+
+      <!-- Escrow information -->
+      <div *ngIf="!loading" class="escrow-info">
+        <div class="escrow-detail">
+          <span class="label">Current Balance:</span>
+          <span class="value">{{ formatCurrency(escrowBalance) }}</span>
+        </div>
+
+        <div *ngIf="totalAmount > 0" class="escrow-detail">
+          <span class="label">Total Required:</span>
+          <span class="value">{{ formatCurrency(totalAmount) }}</span>
+        </div>
+
+        <div *ngIf="totalAmount > 0" class="escrow-detail">
+          <span class="label">Remaining:</span>
+          <span class="value">{{ formatCurrency(getRemainingAmount()) }}</span>
+        </div>
+
+        <div class="escrow-progress" *ngIf="totalAmount > 0">
+          <div class="progress-bar">
+            <div
+              class="progress-bar-fill"
+              [style.width.%]="(escrowBalance / totalAmount) * 100"
+            ></div>
+          </div>
+          <div class="progress-text">
+            {{ ((escrowBalance / totalAmount) * 100).toFixed(0) }}% funded
+          </div>
+        </div>
+      </div>
+
+      <!-- Success/Error messages -->
+      <div *ngIf="success" class="success-message">
+        {{ success }}
+      </div>
+
+      <div *ngIf="error" class="error-message">
+        {{ error }}
+      </div>
+
+      <!-- Add funds button -->
+      <div class="escrow-actions">
+        <button
+          *ngIf="!showPaymentForm && !isFullyFunded()"
+          class="btn btn-primary"
+          (click)="togglePaymentForm()"
+        >
+          Add Funds to Escrow
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment form -->
+  <div *ngIf="showPaymentForm" class="payment-form-card">
+    <div class="payment-form-header">
+      <h3>Fund Escrow Account</h3>
+    </div>
+
+    <div class="payment-form-body">
+      <!-- No payment methods message -->
+      <div *ngIf="paymentMethods.length === 0" class="no-payment-methods">
+        <p>You don't have any payment methods available.</p>
+        <button routerLink="/payments/methods" class="btn btn-primary">
+          Add Payment Method
+        </button>
+      </div>
+
+      <!-- Payment form -->
+      <form
+        *ngIf="paymentMethods.length > 0"
+        [formGroup]="escrowForm"
+        (ngSubmit)="fundEscrow()"
+      >
+        <div class="form-group">
+          <label for="amount">Amount to Fund</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              id="amount"
+              formControlName="amount"
+              class="form-control"
+              placeholder="Enter amount"
+              min="1"
+              [step]="0.01"
+            />
+          </div>
+          <div
+            *ngIf="
+              escrowForm.get('amount')?.invalid &&
+              escrowForm.get('amount')?.touched
+            "
+            class="error-text"
+          >
+            Please enter a valid amount
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="paymentMethodId">Payment Method</label>
+          <select
+            id="paymentMethodId"
+            formControlName="paymentMethodId"
+            class="form-control"
+          >
+            <option *ngFor="let method of paymentMethods" [value]="method.id">
+              {{ getPaymentMethodDisplay(method) }}
+            </option>
+          </select>
+          <div
+            *ngIf="
+              escrowForm.get('paymentMethodId')?.invalid &&
+              escrowForm.get('paymentMethodId')?.touched
+            "
+            class="error-text"
+          >
+            Please select a payment method
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="togglePaymentForm()"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="escrowForm.invalid || paymentInProgress"
+          >
+            <span *ngIf="paymentInProgress" class="loading-spinner mr-2"></span>
+            <span>Pay Now</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Escrow information -->
+  <div class="info-section">
+    <h3>About Escrow Payments</h3>
+    <p>
+      Escrow provides security for both clients and talents by holding funds in
+      a secure account until work is completed and approved.
+    </p>
+    <ul class="info-list">
+      <li>
+        <div class="icon-container">
+          <i class="icon-shield"></i>
+        </div>
+        <div class="info-content">
+          <h4>Secure Payments</h4>
+          <p>
+            Funds are held securely until milestones are completed and approved.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div class="icon-container">
+          <i class="icon-check-circle"></i>
+        </div>
+        <div class="info-content">
+          <h4>Release Control</h4>
+          <p>
+            As a client, you control when payments are released based on work
+            completion.
+          </p>
+        </div>
+      </li>
+      <li>
+        <div class="icon-container">
+          <i class="icon-credit-card"></i>
+        </div>
+        <div class="info-content">
+          <h4>Multiple Payment Methods</h4>
+          <p>
+            Fund your escrow using credit cards, debit cards, or bank transfers.
+          </p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>

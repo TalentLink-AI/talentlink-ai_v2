@@ -1,0 +1,325 @@
+<!-- frontend/src/app/features/payments/time-based-payment/time-based-payment.component.html -->
+<div class="time-payment-container">
+  <div class="time-payment-header">
+    <h2>{{ paymentModel | titlecase }} Rate Payments</h2>
+
+    <div class="rate-display">
+      <span class="rate-label">Rate:</span>
+      <span class="rate-value">
+        <ng-container *ngIf="paymentModel === 'hourly' && hourlyRate">
+          {{ formatCurrency(hourlyRate) }}/hour
+        </ng-container>
+        <ng-container *ngIf="paymentModel === 'weekly' && weeklyRate">
+          {{ formatCurrency(weeklyRate) }}/week
+        </ng-container>
+      </span>
+    </div>
+  </div>
+
+  <!-- Success/Error messages -->
+  <div *ngIf="success" class="success-message">
+    {{ success }}
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <!-- Client view - Make payment -->
+  <div *ngIf="isClient" class="client-actions">
+    <!-- Payment summary card -->
+    <div class="payment-summary-card">
+      <div class="summary-title">Payment Summary</div>
+
+      <div class="summary-content">
+        <div class="summary-row">
+          <span class="label">Pending Hours:</span>
+          <span class="value">{{ getApprovedHours() }}</span>
+        </div>
+
+        <div class="summary-row">
+          <span class="label">Amount Due:</span>
+          <span class="value highlight">
+            {{ formatCurrency(calculateAmount(getApprovedHours())) }}
+          </span>
+        </div>
+
+        <div class="summary-row">
+          <span class="label">Total Paid:</span>
+          <span class="value">
+            {{ formatCurrency(calculateAmount(getTotalPaidHours())) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="summary-actions">
+        <button
+          *ngIf="!showPaymentForm && getApprovedHours() > 0"
+          class="btn btn-primary"
+          (click)="togglePaymentForm()"
+        >
+          Make Payment
+        </button>
+      </div>
+    </div>
+
+    <!-- Payment form -->
+    <div *ngIf="showPaymentForm" class="payment-form-card">
+      <div class="form-title">Process Payment</div>
+
+      <!-- No payment methods message -->
+      <div *ngIf="paymentMethods.length === 0" class="no-payment-methods">
+        <p>You don't have any payment methods available.</p>
+        <button routerLink="/payments/methods" class="btn btn-primary">
+          Add Payment Method
+        </button>
+      </div>
+
+      <!-- Payment form -->
+      <form
+        *ngIf="paymentMethods.length > 0"
+        [formGroup]="paymentForm"
+        (ngSubmit)="makePayment()"
+      >
+        <div class="form-group">
+          <label for="hours">Hours to Pay</label>
+          <input
+            type="number"
+            id="hours"
+            formControlName="hours"
+            class="form-control"
+            placeholder="Enter hours"
+            min="0.5"
+            [step]="0.5"
+            [value]="getApprovedHours()"
+          />
+          <div
+            *ngIf="
+              paymentForm.get('hours')?.invalid &&
+              paymentForm.get('hours')?.touched
+            "
+            class="error-text"
+          >
+            Please enter valid hours (minimum 0.5)
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="paymentMethodId">Payment Method</label>
+          <select
+            id="paymentMethodId"
+            formControlName="paymentMethodId"
+            class="form-control"
+          >
+            <option *ngFor="let method of paymentMethods" [value]="method.id">
+              {{ getPaymentMethodDisplay(method) }}
+            </option>
+          </select>
+          <div
+            *ngIf="
+              paymentForm.get('paymentMethodId')?.invalid &&
+              paymentForm.get('paymentMethodId')?.touched
+            "
+            class="error-text"
+          >
+            Please select a payment method
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="note">Payment Note (Optional)</label>
+          <textarea
+            id="note"
+            formControlName="note"
+            class="form-control"
+            rows="3"
+            placeholder="Enter a note about this payment (e.g., 'Payment for week of April 1-7')"
+          ></textarea>
+        </div>
+
+        <div class="payment-amount">
+          <span class="label">Payment Amount:</span>
+          <span class="amount">
+            {{
+              formatCurrency(
+                calculateAmount(paymentForm.get("hours")?.value || 0)
+              )
+            }}
+          </span>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="togglePaymentForm()"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="paymentForm.invalid || paymentInProgress"
+          >
+            <span *ngIf="paymentInProgress" class="loading-spinner mr-2"></span>
+            <span>Process Payment</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Time logs table -->
+  <div class="time-logs-card">
+    <div class="card-title">Time & Payment History</div>
+
+    <div class="time-logs-content">
+      <!-- Loading state -->
+      <div *ngIf="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading time records...</p>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="!loading && timeLogs.length === 0" class="empty-state">
+        <p>No time records found for this contract.</p>
+      </div>
+
+      <!-- Time logs table -->
+      <div
+        *ngIf="!loading && timeLogs.length > 0"
+        class="time-logs-table-wrapper"
+      >
+        <table class="time-logs-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Hours</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of timeLogs">
+              <td>{{ log.date | date }}</td>
+              <td>{{ log.hours }}</td>
+              <td>{{ log.description }}</td>
+              <td>{{ formatCurrency(calculateAmount(log.hours)) }}</td>
+              <td>
+                <span
+                  class="status-badge"
+                  [ngClass]="getStatusBadgeClass(log.status)"
+                >
+                  {{ log.status | titlecase }}
+                </span>
+                <span *ngIf="log.paidDate" class="paid-date">
+                  Paid on {{ log.paidDate | date }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Information about time-based payments -->
+  <div class="info-section">
+    <h3>About {{ paymentModel | titlecase }} Rate Payments</h3>
+
+    <div class="info-content">
+      <ng-container *ngIf="paymentModel === 'hourly'">
+        <p>
+          Hourly rate payments allow flexible work arrangements where the talent
+          is paid based on the actual hours worked.
+        </p>
+
+        <div class="info-steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Log Hours</h4>
+              <p>
+                Talent logs hours worked with descriptions of tasks completed.
+              </p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Review & Approve</h4>
+              <p>Client reviews and approves the logged hours.</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Process Payment</h4>
+              <p>
+                Client processes payment for approved hours at the agreed hourly
+                rate.
+              </p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Receive Payment</h4>
+              <p>Talent receives payment for work completed.</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="paymentModel === 'weekly'">
+        <p>
+          Weekly rate payments provide a consistent payment schedule for ongoing
+          projects, based on a fixed weekly rate.
+        </p>
+
+        <div class="info-steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Weekly Work</h4>
+              <p>
+                Talent works on the project according to the agreed schedule.
+              </p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Progress Report</h4>
+              <p>
+                Talent submits a weekly progress report summarizing work
+                completed.
+              </p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Weekly Payment</h4>
+              <p>Client processes payment based on the agreed weekly rate.</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Continuous Work</h4>
+              <p>The cycle repeats for the duration of the contract.</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

@@ -13,6 +13,12 @@ import {
 } from './core/guards/onboarding.guard';
 import { ADMIN_ROUTES } from './features/admin/admin.routes';
 
+// Import payment-related components
+import { PaymentMethodsComponent } from './features/payment/payment-methods/payment-methods.component';
+import { MilestonePaymentsComponent } from './features/payment/milestone-payments/milestone-payments.component';
+import { EscrowFundingComponent } from './features/payment/escrow-funding/escrow-funding.component';
+import { TimeBasedPaymentComponent } from './features/payment/time-based-payment/time-based-payment.component';
+
 export const routes: Routes = [
   {
     path: '',
@@ -41,6 +47,33 @@ export const routes: Routes = [
         path: 'onboarding',
         component: OnboardingComponent,
         canActivate: [authGuard, onboardingCompletedGuard],
+      },
+      {
+        path: 'payments',
+        canActivate: [authGuard, onboardingGuard],
+        children: [
+          {
+            path: '',
+            redirectTo: 'methods',
+            pathMatch: 'full',
+          },
+          {
+            path: 'methods',
+            component: PaymentMethodsComponent,
+          },
+          {
+            path: 'contracts/:contractId/milestones',
+            component: MilestonePaymentsComponent,
+          },
+          {
+            path: 'contracts/:contractId/escrow',
+            component: EscrowFundingComponent,
+          },
+          {
+            path: 'contracts/:contractId/time-based',
+            component: TimeBasedPaymentComponent,
+          },
+        ],
       },
       // Add other routes here
     ],

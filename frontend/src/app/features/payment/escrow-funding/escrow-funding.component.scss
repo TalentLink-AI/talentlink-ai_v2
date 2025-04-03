@@ -1,0 +1,264 @@
+/* frontend/src/app/features/payments/escrow-funding/escrow-funding.component.scss */
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as mixins;
+
+.escrow-funding-container {
+  max-width: $container-md;
+  margin: 0 auto;
+  padding: $spacing-6 $spacing-4;
+  
+  @include mixins.respond-to(md) {
+    padding: $spacing-8 $spacing-6;
+  }
+}
+
+.escrow-card,
+.payment-form-card {
+  @include mixins.card;
+  margin-bottom: $spacing-6;
+}
+
+.escrow-header,
+.payment-form-header {
+  @include mixins.flex-between;
+  padding-bottom: $spacing-4;
+  margin-bottom: $spacing-6;
+  border-bottom: $border-width-default solid $color-gray-200;
+  
+  h3 {
+    @include mixins.heading-3;
+    margin: 0;
+  }
+  
+  .status-badge {
+    padding: $spacing-1 $spacing-3;
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    
+    &.status-funded {
+      background-color: rgba($color-success, 0.1);
+      color: $color-success;
+    }
+  }
+}
+
+.escrow-body,
+.payment-form-body {
+  padding: $spacing-4 0;
+}
+
+.escrow-info {
+  .escrow-detail {
+    @include mixins.flex-between;
+    margin-bottom: $spacing-3;
+    
+    .label {
+      color: $color-text-muted;
+    }
+    
+    .value {
+      font-weight: $font-weight-bold;
+    }
+  }
+  
+  .escrow-progress {
+    margin: $spacing-6 0;
+    
+    .progress-bar {
+      height: 8px;
+      background-color: $color-gray-200;
+      border-radius: $border-radius-full;
+      overflow: hidden;
+      margin-bottom: $spacing-2;
+      
+      .progress-bar-fill {
+        height: 100%;
+        background-color: $color-primary;
+        border-radius: $border-radius-full;
+      }
+    }
+    
+    .progress-text {
+      text-align: right;
+      color: $color-text-muted;
+      font-size: $font-size-sm;
+    }
+  }
+}
+
+.escrow-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: $spacing-6;
+}
+
+.form-group {
+  margin-bottom: $spacing-4;
+  
+  label {
+    display: block;
+    margin-bottom: $spacing-2;
+    font-weight: $font-weight-medium;
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: $spacing-3;
+    border: $border-width-default solid $color-gray-300;
+    border-radius: $border-radius-md;
+    font-size: $font-size-base;
+    
+    &:focus {
+      border-color: $color-primary;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba($color-primary, 0.25);
+    }
+  }
+  
+  .input-group {
+    display: flex;
+    
+    .input-group-text {
+      display: flex;
+      align-items: center;
+      padding: $spacing-2 $spacing-3;
+      background-color: $color-gray-100;
+      border: $border-width-default solid $color-gray-300;
+      border-right: none;
+      border-radius: $border-radius-md 0 0 $border-radius-md;
+    }
+    
+    .form-control {
+      border-radius: 0 $border-radius-md $border-radius-md 0;
+    }
+  }
+  
+  .error-text {
+    margin-top: $spacing-1;
+    color: $color-danger;
+    font-size: $font-size-sm;
+  }
+}
+
+.form-actions {
+  @include mixins.flex-between;
+  margin-top: $spacing-6;
+}
+
+.no-payment-methods {
+  text-align: center;
+  padding: $spacing-6;
+  
+  p {
+    margin-bottom: $spacing-4;
+    color: $color-text-muted;
+  }
+}
+
+.info-section {
+  margin-top: $spacing-8;
+  padding: $spacing-6;
+  background-color: $color-gray-100;
+  border-radius: $border-radius-lg;
+  
+  h3 {
+    text-align: center;
+    margin-bottom: $spacing-4;
+  }
+  
+  > p {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto $spacing-6;
+    color: $color-text-muted;
+  }
+  
+  .info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-6;
+    
+    @include mixins.respond-to(md) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    li {
+      display: flex;
+      align-items: flex-start;
+      
+      .icon-container {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: $border-radius-full;
+        background-color: rgba($color-primary, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: $spacing-3;
+        
+        i {
+          color: $color-primary;
+          font-size: $font-size-lg;
+        }
+      }
+      
+      .info-content {
+        h4 {
+          font-size: $font-size-base;
+          margin-bottom: $spacing-1;
+        }
+        
+        p {
+          color: $color-text-muted;
+          font-size: $font-size-sm;
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+// Dark mode styling
+:host-context(.dark-mode) {
+  .escrow-card,
+  .payment-form-card {
+    background-color: $color-secondary;
+  }
+  
+  .escrow-header,
+  .payment-form-header {
+    border-color: lighten($color-secondary, 10%);
+  }
+  
+  .escrow-progress {
+    .progress-bar {
+      background-color: lighten($color-secondary, 10%);
+    }
+  }
+  
+  .info-section {
+    background-color: lighten($color-secondary, 5%);
+  }
+  
+  .form-group {
+    .input-group-text {
+      background-color: lighten($color-secondary, 5%);
+      border-color: lighten($color-secondary, 10%);
+    }
+    
+    .form-control {
+      background-color: lighten($color-secondary, 5%);
+      border-color: lighten($color-secondary, 10%);
+      color: $color-white;
+      
+      &:focus {
+        border-color: $color-primary;
+      }
+    }
+  }
+}
