@@ -36,6 +36,7 @@ services:
       - PORT=3000
       - MONGODB_URI=${MONGODB_URI}
       - USER_SERVICE_URL=${USER_SERVICE_URL}
+      - PAYMENT_SERVICE_URL=${PAYMENT_SERVICE_URL}
       - AUTH0_DOMAIN=${AUTH0_DOMAIN}
       - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
       - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
@@ -44,6 +45,7 @@ services:
     depends_on:
       - mongodb
       - user-service
+      - payment-service
 
   # User Service - Initial service to handle authentication
   user-service:
@@ -64,6 +66,29 @@ services:
     - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
     - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
     - AUTH0_ISSUER_BASE_URL=${AUTH0_ISSUER_BASE_URL}
+    depends_on:
+      - mongodb
+  
+# Payment Service
+  payment-service:
+    build:
+      context: ./backend/payment-service
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./backend/payment-service:/app:cached
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - MONGODB_URI=${MONGODB_URI}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_CURRENCY=USD
+      - STRIPE_SUCCESS_URL=${FRONTEND_URL}/payment/success
+      - STRIPE_CANCEL_URL=${FRONTEND_URL}/payment/cancel
+      - PLATFORM_FEE_PERCENT=15
     depends_on:
       - mongodb
 

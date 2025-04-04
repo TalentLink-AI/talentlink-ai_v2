@@ -76,6 +76,15 @@ const serviceRoutes = [
     path: "/api/users",
     target: process.env.USER_SERVICE_URL || "http://user-service:3001",
   },
+  {
+    path: "/api/payment",
+    target: process.env.PAYMENT_SERVICE_URL || "http://payment-service:3002",
+  },
+  {
+    path: "/api/webhooks",
+    target: process.env.PAYMENT_SERVICE_URL || "http://payment-service:3002",
+    noAuth: true, // Skip authentication for webhooks
+  },
 ];
 
 const { auth } = require("express-oauth2-jwt-bearer");
@@ -87,7 +96,20 @@ const authMiddleware = auth({
   tokenSigningAlg: "RS256",
 });
 
-app.use("/api/users", authMiddleware);
+// Apply authentication to routes that require it
+app.use((req, res, next) => {
+  // Skip auth for health check and webhooks
+  if (req.path === "/health" || req.path.startsWith("/api/webhooks")) {
+    return next();
+  }
+
+  // Apply auth to all other API routes
+  if (req.path.startsWith("/api/")) {
+    return authMiddleware(req, res, next);
+  }
+
+  next();
+});
 
 // Apply to routes that handle state-changing operations
 app.use("/api/users/profile", csrfProtection);
@@ -98,27 +120,38 @@ app.get("/api/csrf-token", csrfProtection, (req, res) => {
 });
 
 // Configure proxy middleware
-serviceRoutes.forEach(({ path, target }) => {
+serviceRoutes.forEach(({ path, target, noAuth }) => {
   logger.info(`Setting up proxy for ${path} -> ${target}`);
 
-  app.use(
-    path,
-    createProxyMiddleware({
-      target,
-      changeOrigin: true,
-      pathRewrite: {
-        [`^${path}`]: "", // Remove the path prefix
-      },
-      logLevel: "warn",
-      onError: (err, req, res) => {
-        logger.error(`Proxy error: ${err.message}`);
-        res.status(500).json({
-          error: "Service Unavailable",
-          message: "The requested service is currently unavailable",
-        });
-      },
-    })
-  );
+  const proxyOptions = {
+    target,
+    changeOrigin: true,
+    pathRewrite: {
+      [`^${path}`]: "", // Remove the path prefix
+    },
+    logLevel: "warn",
+    onError: (err, req, res) => {
+      logger.error(`Proxy error: ${err.message}`);
+      res.status(500).json({
+        error: "Service Unavailable",
+        message: "The requested service is currently unavailable",
+      });
+    },
+  };
+
+  // Special handling for webhook endpoints that need raw body
+  if (path === "/api/webhooks") {
+    proxyOptions.onProxyReq = (proxyReq, req, res) => {
+      if (req.body && Object.keys(req.body).length > 0) {
+        const bodyData = JSON.stringify(req.body);
+        proxyReq.setHeader("Content-Type", "application/json");
+        proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+        proxyReq.write(bodyData);
+      }
+    };
+  }
+
+  app.use(path, createProxyMiddleware(proxyOptions));
 });
 
 // Error handling middleware
