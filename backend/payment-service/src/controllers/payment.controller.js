@@ -10,11 +10,30 @@ exports.createCustomer = async (req, res, next) => {
   }
 };
 
-// Process card payment
-exports.processCardPayment = async (req, res, next) => {
+/**
+ * Create a milestone PaymentIntent (escrow-style)
+ */
+exports.createMilestonePaymentIntent = async (req, res, next) => {
   try {
-    const payment = await stripeService.processCardPayment(req.body);
-    res.status(200).json({ success: true, data: payment });
+    const paymentIntent = await stripeService.createMilestonePaymentIntent(
+      req.body
+    );
+    res.status(201).json({ success: true, data: paymentIntent });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Capture a milestone PaymentIntent once the milestone is done
+ */
+exports.captureMilestonePaymentIntent = async (req, res, next) => {
+  try {
+    const { paymentIntentId } = req.body;
+    const paymentIntent = await stripeService.captureMilestonePaymentIntent(
+      paymentIntentId
+    );
+    res.status(200).json({ success: true, data: paymentIntent });
   } catch (error) {
     next(error);
   }

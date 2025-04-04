@@ -19,11 +19,13 @@ router.post(
   paymentController.createCustomer
 );
 
-// Card payment endpoints
 router.post(
-  "/process/card",
-  validateRequest(cardPaymentSchema),
-  paymentController.processCardPayment
+  "/milestone/intent",
+  paymentController.createMilestonePaymentIntent
+);
+router.post(
+  "/milestone/capture",
+  paymentController.captureMilestonePaymentIntent
 );
 
 // Payment intent endpoints

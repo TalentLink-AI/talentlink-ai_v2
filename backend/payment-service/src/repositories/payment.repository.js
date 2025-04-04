@@ -257,3 +257,5 @@ class PaymentRepository {
     }
   }
 }
+
+module.exports = new PaymentRepository();

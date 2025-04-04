@@ -77,126 +77,30 @@ exports.createCustomer = async (params) => {
 };
 
 /**
- * Process a payment using a card
- * @param {Object} params - Payment parameters
- * @param {string} params.card_number - Card number
- * @param {string} params.exp_month - Expiration month
- * @param {string} params.exp_year - Expiration year
- * @param {string} params.cvv - CVV code
- * @param {string} params.email - Customer email
- * @param {string} params.name - Customer name
- * @param {string} params.address - Customer address
- * @param {number} params.payment_amount - Amount to charge
- * @param {string} params.userId - User ID in our system
- * @param {string} params.description - Payment description
- * @param {string} params.orderId - Associated order ID (optional)
- * @returns {Promise<Object>} Payment response
+ * Create a PaymentIntent for a milestone/escrow flow (manual capture)
+ * @param {Object} params
+ * @param {string} params.customerId - Stripe Customer ID
+ * @param {number} params.amount - Amount to charge
+ * @param {string} params.currency - Currency (default: 'usd')
+ * @param {string} [params.connectedAccountId] - (Optional) The freelancer’s Stripe Account ID
+ * @param {string} [params.description] - Description for metadata
+ * @returns {Promise<Object>} PaymentIntent object
  */
-exports.processCardPayment = async (params) => {
+exports.createMilestonePaymentIntent = async (params) => {
   try {
-    // Create card token
-    const cardDetails = {
-      number: params.card_number,
-      exp_month: params.exp_month,
-      exp_year: params.exp_year,
-      cvc: params.cvv,
-    };
-
-    const stripeCardResponse = await stripe.tokens.create({
-      card: cardDetails,
+    const paymentIntent = await stripe.paymentIntents.create({
+      capture_method: "manual", // <-- Key difference for escrow
     });
-
-    // Create or retrieve customer
-    const { stripeCustomer } = await this.createCustomer({
-      email: params.email,
-      name: params.name,
-      address: params.address,
+    await paymentRepository.create({
       userId: params.userId,
+      stripePaymentIntentId: paymentIntent.id,
+      amount: params.amount,
+      status: paymentIntent.status, // "requires_payment_method"
     });
 
-    // Attach card to customer
-    const source = await stripe.customers.createSource(stripeCustomer.id, {
-      source: stripeCardResponse.id,
-    });
-
-    // Save payment method to our database if userId is provided
-    if (params.userId) {
-      await customerRepository.addPaymentMethod(
-        params.userId,
-        {
-          stripePaymentMethodId: source.id,
-          type: "card",
-          isDefault: true,
-          card: {
-            brand: stripeCardResponse.card.brand,
-            last4: stripeCardResponse.card.last4,
-            expMonth: stripeCardResponse.card.exp_month,
-            expYear: stripeCardResponse.card.exp_year,
-            fingerprint: stripeCardResponse.card.fingerprint,
-            country: stripeCardResponse.card.country,
-          },
-          billingDetails: {
-            name: params.name,
-            email: params.email,
-            address: params.address,
-          },
-        },
-        true
-      );
-    }
-
-    // Process payment
-    const amount = Math.round(params.payment_amount * 100);
-
-    const charge = await stripe.charges.create({
-      amount: amount,
-      currency: config.STRIPE_CONFIG.CURRENCY || "usd",
-      description: params.description || "Payment charge",
-      customer: stripeCustomer.id,
-      metadata: {
-        userId: params.userId,
-        orderId: params.orderId,
-      },
-    });
-
-    // Save payment to our database if userId is provided
-    let dbPayment = null;
-    if (params.userId) {
-      dbPayment = await paymentRepository.create({
-        userId: params.userId,
-        stripeCustomerId: stripeCustomer.id,
-        amount: params.payment_amount,
-        currency: config.STRIPE_CONFIG.CURRENCY || "usd",
-        status: charge.status,
-        paymentMethod: source.id,
-        chargeId: charge.id,
-        description: params.description || "Payment charge",
-        receiptUrl: charge.receipt_url,
-        orderId: params.orderId,
-        billingDetails: {
-          name: params.name,
-          email: params.email,
-          address: params.address,
-        },
-      });
-    }
-
-    // Format response
-    return {
-      transactionId: charge.balance_transaction,
-      chargeId: charge.id,
-      cardId: source.id,
-      cardToken: stripeCardResponse.id,
-      customerId: stripeCustomer.id,
-      cardLast4: stripeCardResponse.card.last4,
-      cardExpiryMonth: stripeCardResponse.card.exp_month,
-      cardExpiryYear: stripeCardResponse.card.exp_year,
-      status: charge.status,
-      receiptUrl: charge.receipt_url,
-      dbPayment: dbPayment,
-    };
+    return paymentIntent;
   } catch (error) {
-    logger.error(`Error processing card payment: ${error.message}`, {
+    logger.error(`Error creating milestone PaymentIntent: ${error.message}`, {
       stack: error.stack,
     });
     throw error;
@@ -204,27 +108,25 @@ exports.processCardPayment = async (params) => {
 };
 
 /**
- * Process a payment using payment intent
- * @param {Object} params - Payment parameters
- * @param {string} params.customerId - Stripe customer ID
- * @param {number} params.amount - Amount to charge in dollars
- * @returns {Promise<Object>} Payment intent object
+ * Capture a PaymentIntent once the milestone is complete
+ * @param {string} paymentIntentId - The ID of the PaymentIntent to capture
+ * @returns {Promise<Object>} Captured PaymentIntent
  */
-exports.createPaymentIntent = async (params) => {
+exports.captureMilestonePaymentIntent = async (paymentIntentId) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      customer: params.customerId,
-      setup_future_usage: params.setup_future_usage || "off_session",
-      amount: Math.round(params.amount * 100),
-      currency: config.STRIPE_CONFIG.CURRENCY || "usd",
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+    const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+
+    // Update DB status to "succeeded" (since capturing finalizes the charge)
+    await paymentRepository.updateStatusByIntentId(
+      paymentIntentId,
+      paymentIntent.status
+    );
 
     return paymentIntent;
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    logger.error(`Error capturing milestone PaymentIntent: ${error.message}`, {
+      stack: error.stack,
+    });
     throw error;
   }
 };

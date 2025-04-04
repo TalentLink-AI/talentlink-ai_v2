@@ -1,3 +1,4 @@
+// src/controllers/webhook.controller.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { STRIPE_CONFIG } = require("../config/app.config");
 const logger = require("../utils/logger");
@@ -20,11 +21,15 @@ exports.handleWebhook = async (req, res, next) => {
     }
 
     // Verify the webhook signature
+    // req.body is now a Buffer (raw body) due to express.raw middleware
     const event = stripe.webhooks.constructEvent(
-      req.rawBody, // raw request body (buffer)
+      req.body, // This is raw body from express.raw middleware
       signature,
       STRIPE_CONFIG.WEBHOOK_SECRET
     );
+
+    // Log the event type
+    logger.info(`Received webhook event: ${event.type}`);
 
     // Handle different event types
     switch (event.type) {

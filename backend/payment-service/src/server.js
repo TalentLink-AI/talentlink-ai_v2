@@ -1,3 +1,4 @@
+// src/server.js
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -26,36 +27,31 @@ connectDB()
     logger.error(`Error connecting to MongoDB: ${err.message}`, {
       stack: err.stack,
     });
-    process.exit(1);
+    // Don't exit the process, allow it to continue even if DB connection fails initially
+    // process.exit(1);
   });
 
-// Middleware for normal routes
-const standardMiddleware = [
-  cors(),
-  helmet(),
-  express.json(),
+// FIXED MIDDLEWARE CONFIGURATION
+// Setup a special route handler for webhooks first
+app.post(
+  "/api/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+  (req, res, next) => {
+    // Store raw body for webhook verification
+    req.rawBody = req.body;
+    next();
+  }
+);
+
+// Standard middleware for all other routes
+app.use(cors());
+app.use(helmet());
+app.use(express.json()); // Parse JSON bodies
+app.use(
   morgan("combined", {
     stream: { write: (message) => logger.info(message.trim()) },
-  }),
-];
-
-// Apply standard middleware to all routes except webhook
-app.use((req, res, next) => {
-  if (req.path === "/api/webhooks/stripe") {
-    // For webhooks, we need raw body for signature verification
-    express.raw({ type: "application/json" })(req, res, next);
-  } else {
-    // Apply all standard middleware for non-webhook routes
-    const applyMiddleware = (i) => {
-      if (i < standardMiddleware.length) {
-        standardMiddleware[i](req, res, () => applyMiddleware(i + 1));
-      } else {
-        next();
-      }
-    };
-    applyMiddleware(0);
-  }
-});
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({

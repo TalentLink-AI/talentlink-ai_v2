@@ -3,7 +3,7 @@
  */
 const STRIPE_CONFIG = {
   SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
-  CURRENCY: process.env.STRIPE_CURRENCY || "USD",
+  CURRENCY: process.env.STRIPE_CURRENCY || "usd",
   SUCCESS_URL:
     process.env.STRIPE_SUCCESS_URL || "http://localhost:3000/payment/success",
   CANCEL_URL:
