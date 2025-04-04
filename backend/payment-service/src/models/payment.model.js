@@ -7,9 +7,30 @@ const paymentSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    stripeCustomerId: {
+    payerId: {
       type: String,
       required: true,
+      index: true,
+      description: "ID of the client who is paying",
+    },
+    payeeId: {
+      type: String,
+      required: true,
+      index: true,
+      description: "ID of the freelancer who will receive payment",
+    },
+    projectId: {
+      type: String,
+      index: true,
+      description: "Related project ID",
+    },
+    milestoneId: {
+      type: String,
+      description: "Specific milestone this payment is for",
+    },
+    stripeCustomerId: {
+      type: String,
+      required: false,
     },
     amount: {
       type: Number,
@@ -29,6 +50,8 @@ const paymentSchema = new mongoose.Schema(
         "failed",
         "refunded",
         "partially_refunded",
+        "requires_capture",
+        "canceled",
       ],
       default: "pending",
     },

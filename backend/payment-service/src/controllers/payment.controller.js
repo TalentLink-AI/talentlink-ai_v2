@@ -15,9 +15,36 @@ exports.createCustomer = async (req, res, next) => {
  */
 exports.createMilestonePaymentIntent = async (req, res, next) => {
   try {
-    const paymentIntent = await stripeService.createMilestonePaymentIntent(
-      req.body
-    );
+    const {
+      amount,
+      currency,
+      payerId, // Client who pays
+      payeeId, // Freelancer who receives
+      projectId,
+      milestoneId,
+      description,
+    } = req.body;
+
+    // Validate required fields
+    if (!amount || !payerId || !payeeId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields",
+        message: "Amount, payer ID and payee ID are required",
+      });
+    }
+
+    const paymentIntent = await stripeService.createMilestonePaymentIntent({
+      amount,
+      currency,
+      payerId,
+      payeeId,
+      projectId,
+      milestoneId,
+      description,
+      userId: req.auth?.payload?.sub || payerId, // Current user ID from auth
+    });
+
     res.status(201).json({ success: true, data: paymentIntent });
   } catch (error) {
     next(error);

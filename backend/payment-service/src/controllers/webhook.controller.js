@@ -33,6 +33,13 @@ exports.handleWebhook = async (req, res, next) => {
 
     // Handle different event types
     switch (event.type) {
+      case "payment_intent.amount_capturable_updated":
+        await handlePaymentIntentCapturable(event.data.object);
+        break;
+
+      case "charge.captured":
+        await handleChargeCaptured(event.data.object);
+        break;
       case "payment_intent.succeeded":
         await handlePaymentIntentSucceeded(event.data.object);
         break;
@@ -138,6 +145,21 @@ async function handleSubscriptionCreated(subscription) {
   // TODO: Trigger notifications to user and/or admin
 }
 
+/**
+ * Handle payment intent ready for capture
+ * @param {Object} paymentIntent - Stripe payment intent object
+ */
+async function handlePaymentIntentCapturable(paymentIntent) {
+  logger.info(`PaymentIntent capturable: ${paymentIntent.id}`);
+}
+
+/**
+ * Handle charge captured
+ * @param {Object} charge - Stripe charge object
+ */
+async function handleChargeCaptured(charge) {
+  logger.info(`Charge captured: ${charge.id}`);
+}
 /**
  * Handle subscription updated
  * @param {Object} subscription - Stripe subscription object

@@ -256,6 +256,28 @@ class PaymentRepository {
       throw error;
     }
   }
+  // Add this to your payment.repository.js file
+  /**
+   * Update payment by payment intent ID
+   * @param {string} paymentIntentId - Stripe payment intent ID
+   * @param {Object} updateData - Data to update
+   * @returns {Promise<Object>} Updated payment record
+   */
+  async updateByPaymentIntentId(paymentIntentId, updateData) {
+    try {
+      return await Payment.findOneAndUpdate(
+        { paymentIntentId: paymentIntentId },
+        updateData,
+        { new: true }
+      );
+    } catch (error) {
+      logger.error(
+        `Error updating payment by payment intent ID: ${error.message}`,
+        { stack: error.stack }
+      );
+      throw error;
+    }
+  }
 }
 
 module.exports = new PaymentRepository();

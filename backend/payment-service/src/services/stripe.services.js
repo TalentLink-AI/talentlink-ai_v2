@@ -88,15 +88,38 @@ exports.createCustomer = async (params) => {
  */
 exports.createMilestonePaymentIntent = async (params) => {
   try {
+    // Create the payment intent in Stripe
     const paymentIntent = await stripe.paymentIntents.create({
-      capture_method: "manual", // <-- Key difference for escrow
-    });
-    await paymentRepository.create({
-      userId: params.userId,
-      stripePaymentIntentId: paymentIntent.id,
       amount: params.amount,
-      status: paymentIntent.status, // "requires_payment_method"
+      currency: params.currency || "usd",
+      customer: params.customerId,
+      capture_method: "manual", // For escrow-style functionality
+      metadata: {
+        payerId: params.payerId,
+        payeeId: params.payeeId,
+        projectId: params.projectId,
+        milestoneId: params.milestoneId,
+      },
     });
+
+    // Check if we need to save to database
+    if (params.saveToDb !== false) {
+      // Create payment record with all required fields properly set
+      await paymentRepository.create({
+        userId: params.userId,
+        payerId: params.payerId,
+        payeeId: params.payeeId,
+        stripeCustomerId: params.customerId || "no-customer",
+        projectId: params.projectId,
+        milestoneId: params.milestoneId,
+        paymentIntentId: paymentIntent.id,
+        amount: params.amount,
+        currency: params.currency || "usd",
+        paymentMethod: "card",
+        status: "pending",
+        description: params.description || "Milestone payment",
+      });
+    }
 
     return paymentIntent;
   } catch (error) {
@@ -550,6 +573,31 @@ exports.createSetupIntent = async (params) => {
     return setupIntent;
   } catch (error) {
     console.error("Error creating setup intent:", error);
+    throw error;
+  }
+};
+
+/**
+ * Capture a PaymentIntent once the milestone is complete
+ * @param {string} paymentIntentId - The ID of the PaymentIntent to capture
+ * @returns {Promise<Object>} Captured PaymentIntent
+ */
+exports.captureMilestonePaymentIntent = async (paymentIntentId) => {
+  try {
+    const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+
+    // Update DB status - use the correct repository method
+    // Looking at your error, updateStatusByIntentId doesn't exist
+    // Instead, use updateByPaymentIntentId which likely exists in your repo
+    await paymentRepository.updateByPaymentIntentId(paymentIntentId, {
+      status: paymentIntent.status,
+    });
+
+    return paymentIntent;
+  } catch (error) {
+    logger.error(`Error capturing milestone PaymentIntent: ${error.message}`, {
+      stack: error.stack,
+    });
     throw error;
   }
 };
