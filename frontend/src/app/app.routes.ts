@@ -12,6 +12,9 @@ import {
   onboardingCompletedGuard,
 } from './core/guards/onboarding.guard';
 import { ADMIN_ROUTES } from './features/admin/admin.routes';
+import { PaymentFormComponent } from './features/payment/payment-form/payment-form.component';
+import { CheckoutComponent } from './features/payment/checkout/checkout.component';
+import { MilestonePaymentComponent } from './features/payment/milestone-payment.component';
 
 export const routes: Routes = [
   {
@@ -42,7 +45,21 @@ export const routes: Routes = [
         component: OnboardingComponent,
         canActivate: [authGuard, onboardingCompletedGuard],
       },
-      // Add other routes here
+      {
+        path: 'payment-form',
+        component: PaymentFormComponent,
+        canActivate: [authGuard, onboardingGuard],
+      },
+      {
+        path: 'checkout',
+        component: CheckoutComponent,
+        canActivate: [authGuard, onboardingGuard],
+      },
+      {
+        path: 'milestone-payment',
+        component: MilestonePaymentComponent,
+        canActivate: [authGuard, onboardingGuard],
+      },
     ],
   },
   {
