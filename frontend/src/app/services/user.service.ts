@@ -214,21 +214,9 @@ export class UserService {
     return this.updateOnboardingStep('completed');
   }
 
-  // getUserRole(): string | null {
-  //   const userData = this.userDataSubject.getValue();
-  //   return userData ? userData.user.role : null;
-  // }
-  getUserRole(): string {
-    return this.userRoleSubject.value;
-  }
-  toggleUserRole() {
-    const currentRole = this.getUserRole();
-    const newRole = currentRole === 'client' ? 'talent' : 'client';
-    // Store the role in localStorage for persistence
-    localStorage.setItem('userRole', newRole);
-    // Broadcast the change
-    this.userRoleSubject.next(newRole);
-    return newRole;
+  getUserRole(): string | null {
+    const userData = this.userDataSubject.getValue();
+    return userData ? userData.user.role : null;
   }
 
   // Helper methods

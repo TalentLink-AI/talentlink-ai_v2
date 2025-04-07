@@ -48,7 +48,7 @@ export class JobDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.userRole = this.userService.getUserRole() || 'talent';
+    this.userRole = this.userService.getUserRoles() || 'talent';
     // In a real app, get userId from auth service
     this.userId = this.userRole === 'client' ? 'client-123' : 'talent-456';
 

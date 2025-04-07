@@ -2,19 +2,21 @@
 @use '../../../../styles/variables' as vars;
 @use '../../../../styles/mixins' as mixins;
 
-.container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: vars.$spacing-6;
+.page-title {
+  @include mixins.heading-1;
+  margin-bottom: vars.$spacing-8;
+  color: vars.$color-text;
 }
 
-.jobs-header {
-  @include mixins.flex-between;
-  margin-bottom: vars.$spacing-8;
+.alert {
+  padding: vars.$spacing-4;
+  border-radius: vars.$border-radius-md;
+  margin-bottom: vars.$spacing-6;
   
-  h1 {
-    margin: 0;
-    color: vars.$color-text;
+  &.alert-danger {
+    background-color: rgba(vars.$color-danger, 0.1);
+    color: vars.$color-danger;
+    border: 1px solid rgba(vars.$color-danger, 0.3);
   }
 }
 
@@ -28,9 +30,9 @@
   .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid rgba(vars.$color-primary, 0.3);
-    border-radius: 50%;
+    border: 4px solid vars.$color-gray-200;
     border-top-color: vars.$color-primary;
+    border-radius: 50%;
     animation: spinner 1s linear infinite;
     margin-bottom: vars.$spacing-4;
   }
@@ -42,17 +44,24 @@
   }
 }
 
-.no-jobs {
+.empty-state {
+  @include mixins.card;
+  padding: vars.$spacing-8;
   text-align: center;
-  padding: vars.$spacing-12;
-  background-color: vars.$color-gray-100;
-  border-radius: vars.$border-radius-lg;
   margin-bottom: vars.$spacing-8;
   
+  h3 {
+    @include mixins.heading-3;
+    margin-bottom: vars.$spacing-4;
+    color: vars.$color-text;
+  }
+  
   p {
+    color: vars.$color-text-muted;
     margin-bottom: vars.$spacing-6;
-    color: vars.$color-gray-600;
-    font-size: vars.$font-size-lg;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
@@ -60,102 +69,160 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: vars.$spacing-6;
+  margin-bottom: vars.$spacing-8;
   
   @include mixins.respond-to(md) {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include mixins.respond-to(lg) {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
 .job-card {
   @include mixins.card;
-  cursor: pointer;
-  transition: transform vars.$transition-fast, box-shadow vars.$transition-fast;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   
   &:hover {
     transform: translateY(-4px);
     box-shadow: vars.$shadow-lg;
   }
-}
-
-.job-header {
-  @include mixins.flex-between;
-  margin-bottom: vars.$spacing-4;
   
-  .job-title {
-    margin: 0;
-    color: vars.$color-primary;
-    font-size: vars.$font-size-xl;
-  }
-  
-  .job-status {
-    font-size: vars.$font-size-sm;
-    font-weight: vars.$font-weight-medium;
-    padding: vars.$spacing-1 vars.$spacing-3;
-    border-radius: vars.$border-radius-full;
-    
-    &.status-published {
-      background-color: rgba(vars.$color-info, 0.1);
-      color: vars.$color-info;
-    }
-    
-    &.status-assigned {
-      background-color: rgba(vars.$color-primary, 0.1);
-      color: vars.$color-primary;
-    }
-    
-    &.status-completed {
-      background-color: rgba(vars.$color-success, 0.1);
-      color: vars.$color-success;
-    }
-    
-    &.status-cancelled {
-      background-color: rgba(vars.$color-danger, 0.1);
-      color: vars.$color-danger;
-    }
-  }
-}
-
-.job-details {
-  margin-bottom: vars.$spacing-6;
-  
-  .job-description {
-    color: vars.$color-text;
-    margin-bottom: vars.$spacing-4;
-    line-height: vars.$line-height-base;
-  }
-  
-  .job-meta {
+  &-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: vars.$spacing-4;
-    font-size: vars.$font-size-sm;
-    color: vars.$color-text-muted;
-    
-    > div {
-      background-color: vars.$color-gray-100;
-      padding: vars.$spacing-1 vars.$spacing-3;
-      border-radius: vars.$border-radius-sm;
-      
-      strong {
-        color: vars.$color-text;
-      }
-    }
-    
-    .job-budget {
-      color: vars.$color-success;
-    }
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: vars.$spacing-4;
+    padding-bottom: vars.$spacing-4;
+    border-bottom: 1px solid vars.$color-gray-200;
+  }
+  
+  &-body {
+    flex: 1;
+    margin-bottom: vars.$spacing-4;
+  }
+  
+  &-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: vars.$spacing-4;
+    border-top: 1px solid vars.$color-gray-200;
   }
 }
 
-.job-actions {
-  display: flex;
-  justify-content: flex-end;
+.job-title {
+  @include mixins.heading-3;
+  color: vars.$color-primary;
+  margin: 0;
+  padding: 0;
+  flex: 1;
 }
 
-.alert-danger {
-  background-color: rgba(vars.$color-danger, 0.1);
-  color: vars.$color-danger;
-  padding: vars.$spacing-4;
-  border-radius: vars.$border-radius-md;
-  margin-bottom: vars.$spacing-6;
+.job-status {
+  font-size: vars.$font-size-sm;
+  padding: vars.$spacing-1 vars.$spacing-2;
+  border-radius: vars.$border-radius-sm;
+  margin-left: vars.$spacing-2;
+  font-weight: vars.$font-weight-medium;
+  
+  &.status-published {
+    background-color: rgba(vars.$color-success, 0.1);
+    color: vars.$color-success;
+  }
+  
+  &.status-draft {
+    background-color: rgba(vars.$color-gray-500, 0.1);
+    color: vars.$color-gray-500;
+  }
+  
+  &.status-assigned {
+    background-color: rgba(vars.$color-primary, 0.1);
+    color: vars.$color-primary;
+  }
+  
+  &.status-completed {
+    background-color: rgba(vars.$color-info, 0.1);
+    color: vars.$color-info;
+  }
+  
+  &.status-cancelled {
+    background-color: rgba(vars.$color-danger, 0.1);
+    color: vars.$color-danger;
+  }
+}
+
+.job-description {
+  color: vars.$color-text;
+  margin-bottom: vars.$spacing-4;
+  line-height: vars.$line-height-base;
+}
+
+.job-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: vars.$spacing-2;
+  font-size: vars.$font-size-sm;
+  color: vars.$color-text-muted;
+  
+  .job-budget {
+    font-weight: vars.$font-weight-bold;
+    color: vars.$color-text;
+  }
+}
+
+.client-actions, .talent-actions {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-2;
+}
+
+.status-badge {
+  font-size: vars.$font-size-sm;
+  padding: vars.$spacing-1 vars.$spacing-2;
+  border-radius: vars.$border-radius-full;
+  
+  &.badge-published {
+    background-color: vars.$color-success;
+    color: vars.$color-white;
+  }
+  
+  &.badge-draft {
+    background-color: vars.$color-gray-500;
+    color: vars.$color-white;
+  }
+  
+  &.badge-assigned {
+    background-color: vars.$color-primary;
+    color: vars.$color-white;
+  }
+  
+  &.badge-completed {
+    background-color: vars.$color-info;
+    color: vars.$color-white;
+  }
+  
+  &.badge-cancelled {
+    background-color: vars.$color-danger;
+    color: vars.$color-white;
+  }
+}
+
+.applications-badge {
+  font-size: vars.$font-size-sm;
+  background-color: vars.$color-gray-200;
+  color: vars.$color-text;
+  padding: vars.$spacing-1 vars.$spacing-2;
+  border-radius: vars.$border-radius-full;
+}
+
+.action-button-container {
+  display: flex;
+  justify-content: center;
+  margin: vars.$spacing-8 0;
 }

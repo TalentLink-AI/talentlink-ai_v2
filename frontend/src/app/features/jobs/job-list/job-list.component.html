@@ -1,76 +1,132 @@
 <!-- src/app/features/jobs/job-list/job-list.component.html -->
-<div class="container">
-  <div class="jobs-header">
-    <h1>{{ userRole === "client" ? "My Posted Jobs" : "Available Jobs" }}</h1>
-    <button
-      *ngIf="userRole === 'client'"
-      class="btn btn-primary"
-      (click)="createNewJob()"
-    >
-      Post New Job
-    </button>
-  </div>
+<div class="section">
+  <div class="section-container">
+    <h1 class="page-title">
+      {{ isMyJobsView ? "My Posted Jobs" : "Available Jobs" }}
+    </h1>
 
-  <div class="loading-container" *ngIf="isLoading">
-    <div class="loading-spinner"></div>
-    <p>Loading jobs...</p>
-  </div>
+    <!-- Error Message with Action Button -->
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      <p>{{ errorMessage }}</p>
+      <!-- Only show the switch button if they're in talent role but need client role -->
+      <button
+        *ngIf="userRole === 'talent' && isMyJobsView"
+        class="btn btn-primary mt-3"
+        (click)="switchToClientRole()"
+      >
+        Switch to Client Role
+      </button>
+    </div>
 
-  <div class="alert alert-danger" *ngIf="error">
-    {{ error }}
-  </div>
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading jobs...</p>
+    </div>
 
-  <div class="no-jobs" *ngIf="!isLoading && jobs.length === 0">
-    <p>No jobs found.</p>
-    <button
-      *ngIf="userRole === 'client'"
-      class="btn btn-primary"
-      (click)="createNewJob()"
-    >
-      Post Your First Job
-    </button>
-  </div>
-
-  <div class="job-list" *ngIf="!isLoading && jobs.length > 0">
+    <!-- Empty State for Client -->
     <div
-      class="job-card"
-      *ngFor="let job of jobs"
-      (click)="navigateToJobDetails(job._id)"
+      *ngIf="
+        !isLoading &&
+        jobs.length === 0 &&
+        !errorMessage &&
+        userRole === 'client' && isMyJobsView
+      "
     >
-      <div class="job-header">
-        <h3 class="job-title">{{ job.title }}</h3>
-        <span class="job-status" [ngClass]="getStatusClass(job.status)">
-          {{ job.status | titlecase }}
-        </span>
-      </div>
-
-      <div class="job-details">
-        <p class="job-description">
-          {{ job.description | slice : 0 : 150
-          }}{{ job.description.length > 150 ? "..." : "" }}
+      <div class="empty-state">
+        <h3>No jobs found</h3>
+        <p>
+          You haven't posted any jobs yet. Post your first job to find talent.
         </p>
+        <button class="btn btn-primary" (click)="postJob()">
+          Post Your First Job
+        </button>
+      </div>
+    </div>
 
-        <div class="job-meta">
-          <div class="job-budget">
-            <strong>Budget:</strong> ${{ job.budget.toFixed(2) }}
+    <!-- Empty State for Talent -->
+    <div
+      *ngIf="
+        !isLoading &&
+        jobs.length === 0 &&
+        !errorMessage &&
+        userRole === 'talent' && !isMyJobsView
+      "
+    >
+      <div class="empty-state">
+        <h3>No jobs available</h3>
+        <p>
+          There are no jobs available at the moment. Check back later or update
+          your skills to match more opportunities.
+        </p>
+      </div>
+    </div>
+
+    <!-- Job Listing -->
+    <div *ngIf="!isLoading && jobs.length > 0" class="job-list">
+      <div *ngFor="let job of jobs" class="job-card">
+        <div class="job-card-header">
+          <h3 class="job-title">{{ job.title }}</h3>
+          <span class="job-status" [ngClass]="'status-' + job.status">{{
+            job.status
+          }}</span>
+        </div>
+        <div class="job-card-body">
+          <p class="job-description">
+            {{ job.description | slice : 0 : 150
+            }}{{ job.description.length > 150 ? "..." : "" }}
+          </p>
+          <div class="job-meta">
+            <span class="job-budget">${{ job.budget }}</span>
+            <span class="job-posted">Posted: {{ job.createdAt | date }}</span>
           </div>
-
-          <div class="job-date">
-            <strong>Posted:</strong> {{ formatDate(job.createdAt) }}
-          </div>
-
-          <div
-            class="job-applicants"
-            *ngIf="userRole === 'client' && job.applications?.length"
+        </div>
+        <div class="job-card-footer">
+          <a [routerLink]="['/jobs', job._id]" class="btn btn-secondary"
+            >View Details</a
           >
-            <strong>Applicants:</strong> {{ job.applications?.length || 0 }}
+
+          <!-- Client-specific actions -->
+          <div
+            *ngIf="userRole === 'client' && isMyJobsView"
+            class="client-actions"
+          >
+            <button
+              class="btn btn-sm btn-outline"
+              [routerLink]="['/jobs', job._id, 'edit']"
+            >
+              Edit
+            </button>
+            <span class="status-badge" [ngClass]="'badge-' + job.status">{{
+              job.status
+            }}</span>
+            <span *ngIf="job.applications?.length" class="applications-badge">
+              {{ job.applications.length }} application(s)
+            </span>
+          </div>
+
+          <!-- Talent-specific actions -->
+          <div
+            *ngIf="userRole === 'talent' && !isMyJobsView"
+            class="talent-actions"
+          >
+            <button class="btn btn-primary" [routerLink]="['/jobs', job._id]">
+              Apply Now
+            </button>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="job-actions">
-        <button class="btn btn-outline-primary">View Details</button>
-      </div>
+    <!-- Post Job Button (for clients) -->
+    <div *ngIf="userRole === 'client'" class="action-button-container">
+      <button class="btn btn-primary" (click)="postJob()">
+        {{
+          isMyJobsView && jobs.length > 0
+            ? "Post New Job"
+            : "Post Your First Job"
+        }}
+      </button>
     </div>
   </div>
 </div>

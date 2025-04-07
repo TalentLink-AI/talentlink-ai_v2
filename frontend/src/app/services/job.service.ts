@@ -62,7 +62,9 @@ export class JobService {
 
   // Create a new job
   createJob(job: Partial<Job>): Observable<any> {
-    return this.http.post(`${this.apiUrl}/jobs`, job);
+    const jobData = { ...job };
+    delete jobData.clientId;
+    return this.http.post(`${this.apiUrl}/jobs`, jobData);
   }
 
   // Update a job

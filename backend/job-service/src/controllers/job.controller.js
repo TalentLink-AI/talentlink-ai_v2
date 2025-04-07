@@ -41,10 +41,27 @@ exports.getJobs = async (req, res) => {
       limit = 10,
     } = req.query;
 
+    // Get the user role from the request (set by middleware)
+    const userRole = req.userRole || "guest";
+    const userId = req.auth.payload.sub;
+
     // Build filter query
     const filter = {};
 
-    if (status) {
+    // If user is a talent, only show published jobs they can apply to
+    if (userRole === "talent") {
+      filter.status = "published";
+    }
+    // If user is a client, show their own jobs
+    else if (userRole === "client") {
+      filter.clientId = userId;
+    }
+    // If specific status requested and user is allowed to filter by it
+    else if (
+      status &&
+      (userRole === "admin" ||
+        (userRole === "client" && userId === filter.clientId))
+    ) {
       filter.status = status;
     }
 
@@ -81,6 +98,7 @@ exports.getJobs = async (req, res) => {
 
     res.json({
       success: true,
+      userRole: userRole, // Include user role in response
       data: {
         jobs,
         pagination: {
@@ -272,12 +290,10 @@ exports.updateJob = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to update it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to update it",
+      });
     }
 
     // Don't allow changing assigned jobs
@@ -327,23 +343,19 @@ exports.updateJobStatus = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to update it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to update it",
+      });
     }
 
     // Special handling for assigned status
     if (status === "assigned") {
       if (!assignedTo) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "assignedTo is required when setting status to assigned",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "assignedTo is required when setting status to assigned",
+        });
       }
 
       // Check if the talent has applied for this job
@@ -407,12 +419,10 @@ exports.deleteJob = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to delete it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to delete it",
+      });
     }
 
     // Only allow deleting draft or cancelled jobs
@@ -454,22 +464,18 @@ exports.addMilestone = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to update it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to update it",
+      });
     }
 
     // Check if job is assigned
     if (job.status !== "assigned") {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Milestones can only be added to assigned jobs",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Milestones can only be added to assigned jobs",
+      });
     }
 
     const milestone = {
@@ -509,12 +515,10 @@ exports.updateMilestone = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to update it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to update it",
+      });
     }
 
     // Find the milestone
@@ -576,12 +580,10 @@ exports.createMilestonePayment = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to update it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to update it",
+      });
     }
 
     // Find the milestone
@@ -654,12 +656,10 @@ exports.releaseMilestone = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to update it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to update it",
+      });
     }
 
     // Find the milestone
@@ -725,22 +725,18 @@ exports.completeJob = async (req, res) => {
     const job = await Job.findOne({ _id: id, clientId });
 
     if (!job) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Job not found or you do not have permission to update it",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or you do not have permission to update it",
+      });
     }
 
     // Check if job is assigned
     if (job.status !== "assigned") {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Only assigned jobs can be marked as completed",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Only assigned jobs can be marked as completed",
+      });
     }
 
     // Check if there are any pending or escrowed milestones

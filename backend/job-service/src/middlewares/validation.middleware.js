@@ -49,11 +49,9 @@ exports.isJobOwner = (jobModel) => {
         logger.warn(
           `Unauthorized job access attempt: User ${userId} tried to access job ${jobId} owned by ${job.clientId}`
         );
-        return res
-          .status(403)
-          .json({
-            message: "You don't have permission to perform this action",
-          });
+        return res.status(403).json({
+          message: "You don't have permission to perform this action",
+        });
       }
 
       // Add job to request object for use in controller
@@ -72,26 +70,56 @@ exports.isJobOwner = (jobModel) => {
  * Middleware to check if user has the client role
  * @returns {Function} Express middleware function
  */
-exports.isClient = () => {
+exports.isTalent = () => {
   return (req, res, next) => {
     try {
       // Get roles from the Auth0 token payload
       const roles = req.auth.payload["https://talentlink.com/roles"] || [];
+      const userRole = req.auth.payload["https://talentlink.com/role"] || null;
 
-      if (!roles.includes("client")) {
-        logger.warn(
-          `Non-client access attempt: User ${req.auth.payload.sub} tried to access client-only endpoint`
-        );
-        return res
-          .status(403)
-          .json({ message: "This action requires a client account" });
+      // Add user role info to request object for use in controllers
+      req.userRole =
+        userRole || (roles.includes("talent") ? "talent" : "client");
+
+      if (!roles.includes("talent")) {
+        return res.status(403).json({
+          success: false,
+          message: "This action requires a talent account",
+          userRole: req.userRole,
+        });
       }
 
       next();
     } catch (error) {
-      logger.error(`Error in isClient middleware: ${error.message}`, {
-        stack: error.stack,
-      });
+      console.error(`Error in isTalent middleware: ${error.message}`);
+      next(error);
+    }
+  };
+};
+
+exports.setUserRole = () => {
+  return (req, res, next) => {
+    try {
+      // Get roles from the Auth0 token payload
+      const roles = req.auth.payload["https://talentlink.com/roles"] || [];
+      const userRole = req.auth.payload["https://talentlink.com/role"] || null;
+
+      // Determine if user is client or talent based on roles
+      if (userRole) {
+        req.userRole = userRole;
+      } else if (roles.includes("client")) {
+        req.userRole = "client";
+      } else if (roles.includes("talent")) {
+        req.userRole = "talent";
+      } else if (roles.includes("admin")) {
+        req.userRole = "admin";
+      } else {
+        req.userRole = "guest";
+      }
+
+      next();
+    } catch (error) {
+      console.error(`Error in setUserRole middleware: ${error.message}`);
       next(error);
     }
   };
@@ -124,4 +152,21 @@ exports.isTalent = () => {
       next(error);
     }
   };
+};
+
+exports.addClientIdToBody = (req, res, next) => {
+  try {
+    // Extract the user ID from the auth token (sub claim)
+    const userId = req.auth.payload.sub;
+
+    // Add clientId to the request body if not already set
+    if (req.body && !req.body.clientId) {
+      req.body.clientId = userId;
+    }
+
+    next();
+  } catch (error) {
+    console.error("Error in addClientIdToBody middleware:", error);
+    next(error);
+  }
 };

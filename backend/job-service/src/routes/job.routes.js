@@ -6,47 +6,54 @@ const jobController = require("../controllers/job.controller");
 const {
   validateRequest,
   isJobOwner,
-  isClient,
 } = require("../middlewares/validation.middleware");
+const {
+  isClient,
+  isTalent,
+  addClientIdToBody,
+  setUserRole,
+} = require("../middlewares/role.middleware");
 const {
   jobSchema,
   jobStatusSchema,
   milestoneSchema,
 } = require("../validators/job.validator");
 
-// Get all jobs (with filtering)
-router.get("/", jobController.getJobs);
+// Get all jobs (with filtering) - allow both clients and talents
+router.get("/", setUserRole(), jobController.getJobs);
 
-// Get jobs posted by the current client
+// Get jobs posted by the current client - require client role
 router.get("/my-jobs", isClient(), jobController.getMyJobs);
 
-// Get jobs by client ID
-router.get("/client/:clientId", jobController.getJobsByClient);
+// Get jobs by client ID - allow both roles
+router.get("/client/:clientId", setUserRole(), jobController.getJobsByClient);
 
-// Get available jobs for talents
-router.get("/available", jobController.getAvailableJobs);
+// Get available jobs for talents - allow both roles
+router.get("/available", setUserRole(), jobController.getAvailableJobs);
 
-// Create a new job
+// Create a new job - require client role
 router.post(
   "/",
   isClient(),
+  addClientIdToBody,
   validateRequest(jobSchema),
   jobController.createJob
 );
 
-// Get a specific job
-router.get("/:id", jobController.getJobById);
+// Get a specific job - allow both roles
+router.get("/:id", setUserRole(), jobController.getJobById);
 
-// Update a job
+// Update a job - require client role
 router.put(
   "/:id",
   isClient(),
+  addClientIdToBody,
   isJobOwner(Job),
   validateRequest(jobSchema),
   jobController.updateJob
 );
 
-// Update job status
+// Update job status - require client role
 router.patch(
   "/:id/status",
   isClient(),
@@ -55,10 +62,10 @@ router.patch(
   jobController.updateJobStatus
 );
 
-// Delete a job
+// Delete a job - require client role
 router.delete("/:id", isClient(), isJobOwner(Job), jobController.deleteJob);
 
-// Add a milestone to a job
+// Add a milestone to a job - require client role
 router.post(
   "/:id/milestones",
   isClient(),
@@ -67,7 +74,7 @@ router.post(
   jobController.addMilestone
 );
 
-// Update a milestone
+// Update a milestone - require client role
 router.put(
   "/:id/milestones/:milestoneId",
   isClient(),
@@ -76,7 +83,7 @@ router.put(
   jobController.updateMilestone
 );
 
-// Release milestone payment
+// Release milestone payment - require client role
 router.post(
   "/:id/milestones/:milestoneId/release",
   isClient(),
@@ -84,7 +91,7 @@ router.post(
   jobController.releaseMilestone
 );
 
-// Mark job as completed
+// Mark job as completed - require client role
 router.post(
   "/:id/complete",
   isClient(),

@@ -1,9 +1,11 @@
 // src/app/features/jobs/job-list/job-list.component.ts
 import { Component, OnInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { JobService, Job } from '../../../services/job.service';
+import { JobService } from '../../../services/job.service';
 import { UserService } from '../../../services/user.service';
+import { Router, RouterLink } from '@angular/router';
+import { switchMap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-job-list',
@@ -13,89 +15,86 @@ import { UserService } from '../../../services/user.service';
   styleUrls: ['./job-list.component.scss'],
 })
 export class JobListComponent implements OnInit {
-  jobs: Job[] = [];
+  jobs: any[] = [];
   isLoading = true;
-  error = '';
+  errorMessage = '';
   userRole = '';
+  isMyJobsView = false;
 
   constructor(
-    private router: Router,
     private jobService: JobService,
-    private userService: UserService
-  ) {}
+    private userService: UserService,
+    private router: Router
+  ) {
+    // Check if this is the "my jobs" view
+    this.isMyJobsView = this.router.url.includes('/jobs/manage');
+  }
 
   ngOnInit(): void {
-    console.log('JobListComponent initialized');
-    this.userRole = this.userService.getUserRole() || 'talent';
-    console.log('User role:', this.userRole);
     this.loadJobs();
   }
 
   loadJobs(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    if (this.userRole === 'client') {
-      // If client, show jobs they've posted
-      this.jobService.getMyJobs().subscribe({
-        next: (response) => {
-          console.log('Client jobs loaded:', response);
-          this.jobs = response.data;
-          this.isLoading = false;
-        },
-        error: (err) => {
-          console.error('Failed to load client jobs:', err);
-          this.error = err.error?.message || 'Failed to load jobs';
-          this.isLoading = false;
-        },
+    // Get current user role first
+    this.userService
+      .getUserRole()
+      .pipe(
+        switchMap((role) => {
+          this.userRole = role || 'guest';
+
+          // Based on the view and role, call the appropriate endpoint
+          if (this.isMyJobsView) {
+            return this.jobService.getMyJobs().pipe(
+              catchError((error) => {
+                // Handle role errors
+                if (error.status === 403) {
+                  this.errorMessage =
+                    'You need a client account to view your posted jobs.';
+                  // Suggest switching to client role if they're in talent role
+                  if (this.userRole === 'talent') {
+                    this.errorMessage +=
+                      ' Would you like to switch to client view?';
+                  }
+                } else {
+                  this.errorMessage =
+                    'Failed to load your jobs. Please try again.';
+                }
+                return of({
+                  success: false,
+                  data: [],
+                  userRole: this.userRole,
+                });
+              })
+            );
+          } else {
+            // Regular jobs view - get available jobs for talents
+            return this.jobService.getAvailableJobs().pipe(
+              catchError((error) => {
+                this.errorMessage = 'Failed to load jobs. Please try again.';
+                return of({
+                  success: false,
+                  data: [],
+                  userRole: this.userRole,
+                });
+              })
+            );
+          }
+        })
+      )
+      .subscribe((response) => {
+        this.isLoading = false;
+        if (response && response.success) {
+          this.jobs = response.data?.jobs || response.data || [];
+        } else {
+          this.jobs = [];
+        }
       });
-    } else {
-      // If talent, show available jobs
-      this.jobService.getAvailableJobs().subscribe({
-        next: (response) => {
-          console.log('Available jobs loaded:', response);
-          // Handle potential nested structure
-          this.jobs = response.data.jobs || response.data;
-          this.isLoading = false;
-        },
-        error: (err) => {
-          console.error('Failed to load available jobs:', err);
-          this.error = err.error?.message || 'Failed to load jobs';
-          this.isLoading = false;
-        },
-      });
-    }
   }
 
-  navigateToJobDetails(jobId: string): void {
-    this.router.navigate(['/jobs', jobId]);
-  }
-
-  createNewJob(): void {
+  postJob(): void {
     this.router.navigate(['/jobs/post']);
-  }
-
-  getStatusClass(status: string): string {
-    switch (status) {
-      case 'published':
-        return 'status-published';
-      case 'assigned':
-        return 'status-assigned';
-      case 'completed':
-        return 'status-completed';
-      case 'cancelled':
-        return 'status-cancelled';
-      default:
-        return '';
-    }
-  }
-
-  // Format date with options for display
-  formatDate(date: string | Date): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
   }
 }
