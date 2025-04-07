@@ -21,7 +21,7 @@
       <div class="job-actions" *ngIf="userRole === 'client' && isOwner">
         <button
           class="btn btn-outline-primary"
-          [routerLink]="['/jobs/edit', job.id]"
+          [routerLink]="['/jobs/edit', job._id]"
         >
           Edit Job
         </button>
@@ -36,9 +36,7 @@
 
       <div class="meta-item">
         <span class="meta-label">Posted:</span>
-        <span class="meta-value">{{
-          job.createdAt | date : "mediumDate"
-        }}</span>
+        <span class="meta-value">{{ formatDate(job.createdAt) }}</span>
       </div>
 
       <div class="meta-item" *ngIf="job.assignedTo">
@@ -145,7 +143,7 @@
             <div class="application-header">
               <h4>Talent ID: {{ application.talentId }}</h4>
               <span class="application-date">{{
-                application.createdAt | date : "shortDate"
+                formatDate(application.createdAt)
               }}</span>
             </div>
 
@@ -156,7 +154,7 @@
             <div class="application-actions">
               <button
                 class="btn btn-success"
-                (click)="acceptApplication(application.talentId)"
+                (click)="acceptApplication(application._id)"
                 [disabled]="job.status !== 'published'"
               >
                 Accept Application
@@ -170,6 +168,42 @@
       <div *ngIf="job.status === 'assigned' && job.assignedTo">
         <div class="milestone-section">
           <h3>Project Milestones</h3>
+
+          <div *ngIf="job.milestones && job.milestones.length > 0">
+            <div class="milestone-list">
+              <div
+                class="milestone-card"
+                *ngFor="let milestone of job.milestones"
+              >
+                <div class="milestone-header">
+                  <h4>{{ milestone.description }}</h4>
+                  <span
+                    class="milestone-status status-{{ milestone.status }}"
+                    >{{ milestone.status }}</span
+                  >
+                </div>
+                <div class="milestone-amount">
+                  ${{ milestone.amount.toFixed(2) }}
+                </div>
+                <div class="milestone-date" *ngIf="milestone.createdAt">
+                  Created: {{ formatDate(milestone.createdAt) }}
+                </div>
+
+                <button
+                  *ngIf="milestone.status === 'escrowed'"
+                  class="btn btn-primary"
+                  [routerLink]="['/milestone-payment']"
+                  [queryParams]="{
+                    jobId: job._id,
+                    milestoneId: milestone._id,
+                    amount: milestone.amount * 100
+                  }"
+                >
+                  Release Payment
+                </button>
+              </div>
+            </div>
+          </div>
 
           <button
             class="btn btn-primary"

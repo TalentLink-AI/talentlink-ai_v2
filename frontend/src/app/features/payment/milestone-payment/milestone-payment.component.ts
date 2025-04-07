@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { environment } from '../../../../environments/environment';
 import { JobService } from '../../../services/job.service';
@@ -11,7 +11,7 @@ import { JobService } from '../../../services/job.service';
 @Component({
   selector: 'app-milestone-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './milestone-payment.component.html',
   styleUrls: ['./milestone-payment.component.scss'],
 })
@@ -29,6 +29,8 @@ export class MilestonePaymentComponent implements OnInit {
   milestoneId: string | null = null;
   jobTitle: string = '';
   paymentAmount: number = 0;
+  job: any = null;
+  milestone: any = null;
 
   constructor(
     private http: HttpClient,
@@ -72,18 +74,40 @@ export class MilestonePaymentComponent implements OnInit {
 
   loadJobDetails(jobId: string): void {
     this.jobService.getJobById(jobId).subscribe({
-      next: (job) => {
-        if (job) {
-          this.jobTitle = job.title;
+      next: (response) => {
+        console.log('Job details loaded:', response);
 
-          // If amount wasn't provided in query params, use job budget
-          if (!this.paymentAmount) {
-            this.paymentAmount = job.budget * 100; // Convert to cents for Stripe
+        if (response && response.data) {
+          this.job = response.data;
+          this.jobTitle = this.job.title;
+
+          // Find the specified milestone
+          if (this.milestoneId && this.job.milestones) {
+            this.milestone = this.job.milestones.find(
+              (m: any) => m._id === this.milestoneId
+            );
+
+            // If milestone already has payment intent, we can skip to releasing funds
+            if (this.milestone && this.milestone.paymentIntentId) {
+              this.intentIdToCapture = this.milestone.paymentIntentId;
+              this.statusMessage = 'Payment is ready to be released.';
+            }
+
+            // If the milestone specifies an amount, use it
+            if (this.milestone && this.milestone.amount) {
+              this.paymentAmount = this.milestone.amount * 100; // Convert to cents for Stripe
+            }
+          }
+
+          // If amount wasn't provided in query params or milestone, use job budget
+          if (!this.paymentAmount && this.job.budget) {
+            this.paymentAmount = this.job.budget * 100; // Convert to cents for Stripe
           }
         }
       },
       error: (err) => {
         console.error('Failed to load job details:', err);
+        this.statusMessage = 'Error: Failed to load job details.';
       },
     });
   }
@@ -94,29 +118,31 @@ export class MilestonePaymentComponent implements OnInit {
       return;
     }
 
+    if (!this.jobId || !this.milestoneId) {
+      this.statusMessage = 'Missing job or milestone information';
+      return;
+    }
+
     this.isProcessing = true;
     this.statusMessage = 'Setting up payment...';
 
     try {
-      const res: any = await this.http
-        .post(`${environment.apiUrlpayment}/api/payment/milestone/intent`, {
-          amount: this.paymentAmount,
-          currency: 'usd',
-          customerId: 'cus_123456', // This would come from your actual customer database
-          payerId: 'client-123', // Replace with actual client ID from authentication
-          payeeId: 'talent-456', // Replace with actual talent ID
-          projectId: this.jobId || 'project-unknown',
-          milestoneId: this.milestoneId || `milestone-${Date.now()}`,
-          description: `Milestone payment for job: ${
-            this.jobTitle || 'Unknown Job'
-          }`,
-        })
+      // Create milestone payment intent via job service
+      // This will call the payment service internally
+      const response: any = await this.jobService
+        .createMilestonePayment(this.jobId, this.milestoneId)
         .toPromise();
 
-      this.clientSecret = res.data.client_secret;
-      this.intentIdToCapture = res.data.id;
-      this.statusMessage =
-        'Payment ready to confirm. Click "Confirm Payment" to proceed.';
+      console.log('Payment intent created:', response);
+
+      if (response && response.data && response.data.paymentIntent) {
+        this.clientSecret = response.data.paymentIntent.client_secret;
+        this.intentIdToCapture = response.data.paymentIntent.id;
+        this.statusMessage =
+          'Payment ready to confirm. Click "Confirm Payment" to proceed.';
+      } else {
+        throw new Error('Invalid response from payment service');
+      }
     } catch (err) {
       console.error('Error creating payment intent:', err);
       this.statusMessage = 'Error: Failed to create payment intent';
@@ -146,6 +172,12 @@ export class MilestonePaymentComponent implements OnInit {
       } else {
         const paymentIntent = result.paymentIntent;
         this.statusMessage = `Payment authorized and held in escrow. Status: ${paymentIntent?.status}`;
+        this.intentIdToCapture = paymentIntent?.id || '';
+
+        // If we were successful, reload the job to get updated milestone status
+        if (this.jobId) {
+          this.loadJobDetails(this.jobId);
+        }
       }
     } catch (err: any) {
       console.error('Error confirming payment:', err);
@@ -156,8 +188,8 @@ export class MilestonePaymentComponent implements OnInit {
   }
 
   async releaseFunds() {
-    if (!this.intentIdToCapture) {
-      this.statusMessage = 'No payment to release';
+    if (!this.jobId || !this.milestoneId) {
+      this.statusMessage = 'Missing job or milestone information';
       return;
     }
 
@@ -165,24 +197,22 @@ export class MilestonePaymentComponent implements OnInit {
     this.statusMessage = 'Releasing funds...';
 
     try {
-      const res: any = await this.http
-        .post(`${environment.apiUrlpayment}/api/payment/milestone/capture`, {
-          paymentIntentId: this.intentIdToCapture,
-        })
+      // Call the job service to release the milestone
+      const response = await this.jobService
+        .releaseMilestone(this.jobId, this.milestoneId)
         .toPromise();
 
-      this.statusMessage = `Funds released successfully. Status: ${res.data.status}`;
+      console.log('Funds released:', response);
+      this.statusMessage = `Funds released successfully!`;
 
-      // Navigate back to the job detail page if jobId is available
-      if (this.jobId) {
-        setTimeout(() => {
-          this.router.navigate(['/jobs', this.jobId]);
-        }, 3000); // Redirect after 3 seconds
-      }
+      // Navigate back to the job detail page after a delay
+      setTimeout(() => {
+        this.router.navigate(['/jobs', this.jobId]);
+      }, 3000);
     } catch (err: any) {
       console.error('Error releasing funds:', err);
       this.statusMessage = `Error: ${
-        err.response?.data?.message || 'Failed to release funds'
+        err.error?.message || 'Failed to release funds'
       }`;
     } finally {
       this.isProcessing = false;

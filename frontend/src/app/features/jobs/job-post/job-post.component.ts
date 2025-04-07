@@ -47,24 +47,29 @@ export class JobPostComponent implements OnInit {
     this.isSubmitting = true;
     this.error = '';
 
-    // For this MVP, we'll use a hardcoded client ID
-    const userId = 'client-123';
+    // Make sure budget is a number
+    const budget =
+      typeof this.jobForm.value.budget === 'string'
+        ? parseFloat(this.jobForm.value.budget)
+        : this.jobForm.value.budget || 0;
 
     this.jobService
       .createJob({
-        title: this.jobForm.value.title,
-        description: this.jobForm.value.description,
-        budget: parseFloat(this.jobForm.value.budget),
-        clientId: userId,
+        title: this.jobForm.value.title || '',
+        description: this.jobForm.value.description || '',
+        budget: budget,
       })
       .subscribe({
-        next: (job) => {
+        next: (response) => {
+          console.log('Job created successfully:', response);
           this.isSubmitting = false;
-          this.router.navigate(['/jobs/manage']);
+          this.router.navigate(['/jobs']);
         },
         error: (err) => {
+          console.error('Error creating job:', err);
           this.isSubmitting = false;
-          this.error = err.message || 'Failed to create job. Please try again.';
+          this.error =
+            err.error?.message || 'Failed to create job. Please try again.';
         },
       });
   }

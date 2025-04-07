@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { JobService, Job, JobApplication } from '../../../services/job.service';
+import { JobService } from '../../../services/job.service';
 import { UserService } from '../../../services/user.service';
 import { PaymentService } from '../../../services/payment.service';
 
@@ -15,8 +15,8 @@ import { PaymentService } from '../../../services/payment.service';
   styleUrls: ['./job-detail.component.scss'],
 })
 export class JobDetailComponent implements OnInit {
-  job: Job | undefined;
-  applications: JobApplication[] = [];
+  job: any = null;
+  applications: any[] = [];
   isLoading = true;
   error = '';
   userRole = '';
@@ -48,11 +48,8 @@ export class JobDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.userService.userRole$.subscribe((role) => {
-      this.userRole = role;
-      // You might want to refresh the view when role changes
-    });
-    // For this MVP, we'll use hardcoded IDs
+    this.userRole = this.userService.getUserRole() || 'talent';
+    // In a real app, get userId from auth service
     this.userId = this.userRole === 'client' ? 'client-123' : 'talent-456';
 
     const jobId = this.route.snapshot.paramMap.get('id');
@@ -68,10 +65,11 @@ export class JobDetailComponent implements OnInit {
     this.isLoading = true;
 
     this.jobService.getJobById(jobId).subscribe({
-      next: (job) => {
-        if (job) {
-          this.job = job;
-          this.isOwner = job.clientId === this.userId;
+      next: (response) => {
+        console.log('Job details loaded:', response);
+        if (response && response.data) {
+          this.job = response.data;
+          this.isOwner = this.job.clientId === this.userId;
 
           // Load applications if client is the owner
           if (this.isOwner) {
@@ -83,12 +81,13 @@ export class JobDetailComponent implements OnInit {
             this.checkIfApplied(jobId);
           }
         } else {
-          this.error = 'Job not found';
+          this.error = 'Job details not found in response';
         }
         this.isLoading = false;
       },
       error: (err) => {
-        this.error = 'Failed to load job details';
+        console.error('Failed to load job details:', err);
+        this.error = err.error?.message || 'Failed to load job details';
         this.isLoading = false;
       },
     });
@@ -96,8 +95,9 @@ export class JobDetailComponent implements OnInit {
 
   loadApplications(jobId: string): void {
     this.jobService.getApplicationsForJob(jobId).subscribe({
-      next: (applications) => {
-        this.applications = applications;
+      next: (response) => {
+        console.log('Applications loaded:', response);
+        this.applications = response.data;
       },
       error: (err) => {
         console.error('Failed to load applications:', err);
@@ -106,9 +106,12 @@ export class JobDetailComponent implements OnInit {
   }
 
   checkIfApplied(jobId: string): void {
+    // In a real implementation, would check against current user
+    // For this example, checking if any application exists for the talent ID
     this.jobService.getApplicationsByTalent(this.userId).subscribe({
-      next: (applications) => {
-        this.hasApplied = applications.some((app) => app.jobId === jobId);
+      next: (response) => {
+        const applications = response.data;
+        this.hasApplied = applications.some((app: any) => app.jobId === jobId);
       },
       error: (err) => {
         console.error('Failed to check application status:', err);
@@ -127,33 +130,38 @@ export class JobDetailComponent implements OnInit {
     this.applicationError = '';
 
     this.jobService
-      .applyToJob(
-        this.job.id,
-        this.userId,
-        this.applicationForm.value.coverLetter
-      )
+      .applyToJob(this.job._id, this.applicationForm.value.coverLetter)
       .subscribe({
-        next: (application) => {
+        next: (response) => {
+          console.log('Application submitted:', response);
           this.isSubmittingApplication = false;
           this.hasApplied = true;
           this.showApplyForm = false;
         },
         error: (err) => {
+          console.error('Failed to submit application:', err);
           this.isSubmittingApplication = false;
-          this.applicationError = err.message || 'Failed to submit application';
+          this.applicationError =
+            err.error?.message || 'Failed to submit application';
         },
       });
   }
 
-  acceptApplication(talentId: string): void {
+  acceptApplication(applicationId: string): void {
     if (!this.job) return;
 
-    this.jobService.acceptApplication(this.job.id, talentId).subscribe({
-      next: (updatedJob) => {
-        if (updatedJob) {
-          this.job = updatedJob;
-          this.loadApplications(updatedJob.id);
+    this.jobService.acceptApplication(applicationId).subscribe({
+      next: (response) => {
+        console.log('Application accepted:', response);
+        // Refresh job data since status will change
+        if (response.data && response.data.job) {
+          this.job = response.data.job;
+        } else {
+          // Reload job details as fallback
+          this.loadJobDetails(this.job._id);
         }
+        // Refresh applications
+        this.loadApplications(this.job._id);
       },
       error: (err) => {
         console.error('Failed to accept application:', err);
@@ -166,38 +174,30 @@ export class JobDetailComponent implements OnInit {
 
     this.creatingMilestone = true;
 
-    // For simplicity, we're using the job's budget as the milestone amount
-    // In a real app, you'd probably want to break this down into multiple milestones
-    const milestoneAmount = this.job.budget * 100; // Convert to cents for Stripe
-
-    // Create a milestone payment intent
-    this.paymentService
-      .createMilestonePaymentIntent({
-        amount: milestoneAmount,
-        customerId: 'cus_123456', // This would come from your actual customer database
-        payerId: this.job.clientId,
-        payeeId: this.job.assignedTo,
-        projectId: this.job.id,
-        milestoneId: `milestone-${this.job.id}`,
-        description: `Milestone payment for job: ${this.job.title}`,
-      })
+    // First create a milestone in the job service
+    this.jobService
+      .createMilestone(
+        this.job._id,
+        'Project milestone payment',
+        this.job.budget
+      )
       .subscribe({
         next: (response) => {
-          this.creatingMilestone = false;
-          this.milestoneCreated = true;
+          console.log('Milestone created:', response);
+          const milestone = response.data.milestone;
 
-          // Redirect to the milestone payment page
+          // Navigate to the milestone payment page
           this.router.navigate(['/milestone-payment'], {
             queryParams: {
-              jobId: this.job?.id,
-              milestoneId: `milestone-${this.job?.id}`,
-              amount: milestoneAmount,
+              jobId: this.job._id,
+              milestoneId: milestone._id,
+              amount: milestone.amount * 100, // Convert to cents for Stripe
             },
           });
         },
         error: (err) => {
-          this.creatingMilestone = false;
           console.error('Failed to create milestone:', err);
+          this.creatingMilestone = false;
         },
       });
   }
@@ -205,15 +205,29 @@ export class JobDetailComponent implements OnInit {
   markJobCompleted(): void {
     if (!this.job) return;
 
-    this.jobService.completeJob(this.job.id).subscribe({
-      next: (updatedJob) => {
-        if (updatedJob) {
-          this.job = updatedJob;
+    this.jobService.completeJob(this.job._id).subscribe({
+      next: (response) => {
+        console.log('Job marked as completed:', response);
+        if (response.data) {
+          this.job = response.data;
+        } else {
+          // Reload job details as fallback
+          this.loadJobDetails(this.job._id);
         }
       },
       error: (err) => {
         console.error('Failed to mark job as completed:', err);
       },
+    });
+  }
+
+  // Format date with options for display
+  formatDate(date: string | Date): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   }
 }

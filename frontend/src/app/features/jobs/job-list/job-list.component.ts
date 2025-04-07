@@ -34,26 +34,32 @@ export class JobListComponent implements OnInit {
   loadJobs(): void {
     this.isLoading = true;
 
-    // Get current user role
-    this.userRole = this.userService.getUserRole();
-
     if (this.userRole === 'client') {
       // If client, show jobs they've posted
-      const clientId = 'client-123';
-      this.jobService.getJobsByClient(clientId).subscribe({
-        // ...existing code
+      this.jobService.getMyJobs().subscribe({
+        next: (response) => {
+          console.log('Client jobs loaded:', response);
+          this.jobs = response.data;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.error('Failed to load client jobs:', err);
+          this.error = err.error?.message || 'Failed to load jobs';
+          this.isLoading = false;
+        },
       });
     } else {
       // If talent, show available jobs
       this.jobService.getAvailableJobs().subscribe({
-        next: (jobs) => {
-          console.log('Available jobs loaded:', jobs);
-          this.jobs = jobs;
+        next: (response) => {
+          console.log('Available jobs loaded:', response);
+          // Handle potential nested structure
+          this.jobs = response.data.jobs || response.data;
           this.isLoading = false;
         },
         error: (err) => {
           console.error('Failed to load available jobs:', err);
-          this.error = 'Failed to load jobs';
+          this.error = err.error?.message || 'Failed to load jobs';
           this.isLoading = false;
         },
       });
@@ -81,5 +87,15 @@ export class JobListComponent implements OnInit {
       default:
         return '';
     }
+  }
+
+  // Format date with options for display
+  formatDate(date: string | Date): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   }
 }

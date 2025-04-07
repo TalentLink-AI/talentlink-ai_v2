@@ -35,7 +35,7 @@
     <div
       class="job-card"
       *ngFor="let job of jobs"
-      (click)="navigateToJobDetails(job.id)"
+      (click)="navigateToJobDetails(job._id)"
     >
       <div class="job-header">
         <h3 class="job-title">{{ job.title }}</h3>
@@ -56,14 +56,14 @@
           </div>
 
           <div class="job-date">
-            <strong>Posted:</strong> {{ job.createdAt | date : "mediumDate" }}
+            <strong>Posted:</strong> {{ formatDate(job.createdAt) }}
           </div>
 
           <div
             class="job-applicants"
-            *ngIf="userRole === 'client' && job.applicants?.length"
+            *ngIf="userRole === 'client' && job.applications?.length"
           >
-            <strong>Applicants:</strong> {{ job.applicants?.length || 0 }}
+            <strong>Applicants:</strong> {{ job.applications?.length || 0 }}
           </div>
         </div>
       </div>

@@ -94,6 +94,31 @@ services:
     depends_on:
       - mongodb
 
+# Job Service
+  job-service:
+    build:
+      context: ./backend/job-service
+      dockerfile: Dockerfile.dev
+    container_name: talentlink-job-service
+    volumes:
+      - ./backend/job-service:/app
+      - /app/node_modules
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - MONGODB_URI=mongodb://mongodb:27017/talentlink
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - AUTH0_ISSUER_BASE_URL=${AUTH0_ISSUER_BASE_URL}
+      - PAYMENT_SERVICE_URL=http://payment-service:3002
+      - USER_SERVICE_URL=http://user-service:3001
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:4200
+    depends_on:
+      - mongodb
+      - payment-service
+      - user-service
+
   # MongoDB - Database
   mongodb:
     image: mongo:latest
