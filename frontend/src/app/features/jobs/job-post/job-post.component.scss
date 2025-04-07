@@ -1,0 +1,72 @@
+/* src/app/features/jobs/job-post/job-post.component.scss */
+@use '../../../../styles/variables' as vars;
+@use '../../../../styles/mixins' as mixins;
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: vars.$spacing-6;
+}
+
+.card {
+  @include mixins.card;
+  margin-bottom: vars.$spacing-8;
+  
+  &-header {
+    border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+    padding-bottom: vars.$spacing-4;
+    margin-bottom: vars.$spacing-6;
+    
+    h2 {
+      margin: 0;
+      color: vars.$color-primary;
+    }
+  }
+  
+  &-body {
+    padding: vars.$spacing-4 0;
+  }
+}
+
+.form-group {
+  margin-bottom: vars.$spacing-6;
+
+  label {
+    @include mixins.form-label;
+    margin-bottom: vars.$spacing-2;
+  }
+
+  .form-control {
+    @include mixins.form-control;
+    
+    &.is-invalid {
+      border-color: vars.$color-danger;
+    }
+  }
+
+  .invalid-feedback {
+    @include mixins.form-error;
+    display: block;
+  }
+}
+
+.form-actions {
+  @include mixins.flex-between;
+  margin-top: vars.$spacing-8;
+  
+  .btn + .btn {
+    margin-left: vars.$spacing-4;
+  }
+}
+
+.alert-danger {
+  background-color: rgba(vars.$color-danger, 0.1);
+  color: vars.$color-danger;
+  padding: vars.$spacing-4;
+  border-radius: vars.$border-radius-md;
+  margin-bottom: vars.$spacing-6;
+}
+
+textarea.form-control {
+  min-height: 150px;
+}

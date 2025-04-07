@@ -1,0 +1,212 @@
+<!-- src/app/features/jobs/job-detail/job-detail.component.html -->
+<div class="container">
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading job details...</p>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="job-detail" *ngIf="!isLoading && job">
+    <div class="job-header">
+      <div class="job-title-section">
+        <h1>{{ job.title }}</h1>
+        <span class="job-status" [ngClass]="'status-' + job.status">
+          {{ job.status | titlecase }}
+        </span>
+      </div>
+
+      <div class="job-actions" *ngIf="userRole === 'client' && isOwner">
+        <button
+          class="btn btn-outline-primary"
+          [routerLink]="['/jobs/edit', job.id]"
+        >
+          Edit Job
+        </button>
+      </div>
+    </div>
+
+    <div class="job-meta">
+      <div class="meta-item">
+        <span class="meta-label">Budget:</span>
+        <span class="meta-value">${{ job.budget.toFixed(2) }}</span>
+      </div>
+
+      <div class="meta-item">
+        <span class="meta-label">Posted:</span>
+        <span class="meta-value">{{
+          job.createdAt | date : "mediumDate"
+        }}</span>
+      </div>
+
+      <div class="meta-item" *ngIf="job.assignedTo">
+        <span class="meta-label">Assigned To:</span>
+        <span class="meta-value">Talent ID: {{ job.assignedTo }}</span>
+      </div>
+    </div>
+
+    <div class="job-description">
+      <h3>Job Description</h3>
+      <p>{{ job.description }}</p>
+    </div>
+
+    <!-- For Talents - Apply to Job -->
+    <div
+      class="talent-actions"
+      *ngIf="userRole === 'talent' && job.status === 'published'"
+    >
+      <div *ngIf="!hasApplied">
+        <button class="btn btn-primary" (click)="toggleApplyForm()">
+          Apply for This Job
+        </button>
+      </div>
+
+      <div *ngIf="hasApplied" class="already-applied">
+        <div class="application-status">
+          <span class="status-icon">✓</span>
+          <span>You have applied to this job</span>
+        </div>
+      </div>
+
+      <div class="apply-form" *ngIf="showApplyForm">
+        <h3>Apply for This Job</h3>
+
+        <form [formGroup]="applicationForm" (ngSubmit)="applyToJob()">
+          <div class="form-group">
+            <label for="coverLetter">Cover Letter (Optional)</label>
+            <textarea
+              id="coverLetter"
+              formControlName="coverLetter"
+              class="form-control"
+              rows="5"
+              placeholder="Tell the client why you're the best fit for this job..."
+            ></textarea>
+          </div>
+
+          <div class="alert alert-danger" *ngIf="applicationError">
+            {{ applicationError }}
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="isSubmittingApplication"
+            >
+              <span
+                *ngIf="isSubmittingApplication"
+                class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              {{
+                isSubmittingApplication ? "Submitting..." : "Submit Application"
+              }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="toggleApplyForm()"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- For Talents - Job is assigned to this talent -->
+    <div
+      class="talent-actions"
+      *ngIf="userRole === 'talent' && job.assignedTo === userId"
+    >
+      <div class="assigned-notification">
+        <h3>You've been assigned to this job!</h3>
+        <p>Work with the client to complete this project.</p>
+      </div>
+    </div>
+
+    <!-- For Clients - View applications -->
+    <div class="client-actions" *ngIf="userRole === 'client' && isOwner">
+      <div *ngIf="job.status === 'published'">
+        <h3>Applications ({{ applications.length }})</h3>
+
+        <div class="no-applications" *ngIf="applications.length === 0">
+          <p>No applications yet.</p>
+        </div>
+
+        <div class="applications-list" *ngIf="applications.length > 0">
+          <div
+            class="application-card"
+            *ngFor="let application of applications"
+          >
+            <div class="application-header">
+              <h4>Talent ID: {{ application.talentId }}</h4>
+              <span class="application-date">{{
+                application.createdAt | date : "shortDate"
+              }}</span>
+            </div>
+
+            <div class="application-body" *ngIf="application.coverLetter">
+              <p>{{ application.coverLetter }}</p>
+            </div>
+
+            <div class="application-actions">
+              <button
+                class="btn btn-success"
+                (click)="acceptApplication(application.talentId)"
+                [disabled]="job.status !== 'published'"
+              >
+                Accept Application
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create milestone for assigned jobs -->
+      <div *ngIf="job.status === 'assigned' && job.assignedTo">
+        <div class="milestone-section">
+          <h3>Project Milestones</h3>
+
+          <button
+            class="btn btn-primary"
+            (click)="createMilestone()"
+            [disabled]="creatingMilestone"
+          >
+            <span
+              *ngIf="creatingMilestone"
+              class="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            {{ creatingMilestone ? "Creating..." : "Create Milestone Payment" }}
+          </button>
+
+          <p class="milestone-help">
+            Create a milestone payment to secure funds in escrow. Once the
+            talent completes the work, you can release the payment.
+          </p>
+        </div>
+      </div>
+
+      <!-- Mark job as completed -->
+      <div *ngIf="job.status === 'assigned' && job.assignedTo">
+        <div class="complete-job-section">
+          <h3>Complete Job</h3>
+
+          <button class="btn btn-success" (click)="markJobCompleted()">
+            Mark Job as Completed
+          </button>
+
+          <p class="complete-job-help">
+            Once all milestones have been completed and you're satisfied with
+            the work, mark the job as completed.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

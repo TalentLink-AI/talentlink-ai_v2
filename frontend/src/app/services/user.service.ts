@@ -133,6 +133,10 @@ export class UserService {
   private apiUrl = `${environment.apiUrl}/api/users`;
   private userDataSubject = new BehaviorSubject<UserData | null>(null);
   private auth = inject(AuthService);
+  private userRoleSubject = new BehaviorSubject<string>(
+    localStorage.getItem('userRole') || 'client'
+  );
+  public userRole$ = this.userRoleSubject.asObservable();
 
   // Observable that components can subscribe to
   public userData$ = this.userDataSubject.asObservable();
@@ -210,9 +214,21 @@ export class UserService {
     return this.updateOnboardingStep('completed');
   }
 
-  getUserRole(): string | null {
-    const userData = this.userDataSubject.getValue();
-    return userData ? userData.user.role : null;
+  // getUserRole(): string | null {
+  //   const userData = this.userDataSubject.getValue();
+  //   return userData ? userData.user.role : null;
+  // }
+  getUserRole(): string {
+    return this.userRoleSubject.value;
+  }
+  toggleUserRole() {
+    const currentRole = this.getUserRole();
+    const newRole = currentRole === 'client' ? 'talent' : 'client';
+    // Store the role in localStorage for persistence
+    localStorage.setItem('userRole', newRole);
+    // Broadcast the change
+    this.userRoleSubject.next(newRole);
+    return newRole;
   }
 
   // Helper methods

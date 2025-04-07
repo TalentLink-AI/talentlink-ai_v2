@@ -1,0 +1,76 @@
+<!-- src/app/features/jobs/job-list/job-list.component.html -->
+<div class="container">
+  <div class="jobs-header">
+    <h1>{{ userRole === "client" ? "My Posted Jobs" : "Available Jobs" }}</h1>
+    <button
+      *ngIf="userRole === 'client'"
+      class="btn btn-primary"
+      (click)="createNewJob()"
+    >
+      Post New Job
+    </button>
+  </div>
+
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading jobs...</p>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="no-jobs" *ngIf="!isLoading && jobs.length === 0">
+    <p>No jobs found.</p>
+    <button
+      *ngIf="userRole === 'client'"
+      class="btn btn-primary"
+      (click)="createNewJob()"
+    >
+      Post Your First Job
+    </button>
+  </div>
+
+  <div class="job-list" *ngIf="!isLoading && jobs.length > 0">
+    <div
+      class="job-card"
+      *ngFor="let job of jobs"
+      (click)="navigateToJobDetails(job.id)"
+    >
+      <div class="job-header">
+        <h3 class="job-title">{{ job.title }}</h3>
+        <span class="job-status" [ngClass]="getStatusClass(job.status)">
+          {{ job.status | titlecase }}
+        </span>
+      </div>
+
+      <div class="job-details">
+        <p class="job-description">
+          {{ job.description | slice : 0 : 150
+          }}{{ job.description.length > 150 ? "..." : "" }}
+        </p>
+
+        <div class="job-meta">
+          <div class="job-budget">
+            <strong>Budget:</strong> ${{ job.budget.toFixed(2) }}
+          </div>
+
+          <div class="job-date">
+            <strong>Posted:</strong> {{ job.createdAt | date : "mediumDate" }}
+          </div>
+
+          <div
+            class="job-applicants"
+            *ngIf="userRole === 'client' && job.applicants?.length"
+          >
+            <strong>Applicants:</strong> {{ job.applicants?.length || 0 }}
+          </div>
+        </div>
+      </div>
+
+      <div class="job-actions">
+        <button class="btn btn-outline-primary">View Details</button>
+      </div>
+    </div>
+  </div>
+</div>

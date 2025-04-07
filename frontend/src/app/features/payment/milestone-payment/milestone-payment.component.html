@@ -1,0 +1,108 @@
+<!-- src/app/features/payment/milestone-payment/milestone-payment.component.html -->
+<div class="milestone-payment-container">
+  <div class="card">
+    <div class="card-header">
+      <h2>Milestone Payment</h2>
+      <button class="btn btn-link" (click)="returnToJob()">Back to Job</button>
+    </div>
+
+    <div class="card-body">
+      <div class="payment-details">
+        <h3>Job: {{ jobTitle || "Unknown Job" }}</h3>
+
+        <div class="payment-meta">
+          <div class="meta-item">
+            <span class="meta-label">Amount:</span>
+            <span class="meta-value"
+              >${{ (paymentAmount / 100).toFixed(2) }}</span
+            >
+          </div>
+
+          <div class="meta-item" *ngIf="milestoneId">
+            <span class="meta-label">Milestone ID:</span>
+            <span class="meta-value">{{ milestoneId }}</span>
+          </div>
+        </div>
+
+        <p class="payment-instructions">
+          This payment will be held in escrow until the milestone is completed
+          and you release the funds.
+        </p>
+      </div>
+
+      <div class="payment-form" *ngIf="!clientSecret">
+        <div class="form-group">
+          <label for="card-element">Payment Information</label>
+          <div id="card-element" class="card-element-container"></div>
+          <div class="card-element-help">
+            Enter your credit card details. Your payment will only be authorized
+            and held in escrow.
+          </div>
+        </div>
+
+        <button
+          (click)="createPaymentIntent()"
+          class="btn btn-primary"
+          [disabled]="isProcessing"
+        >
+          <span
+            *ngIf="isProcessing"
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <span>{{ isProcessing ? "Processing..." : "Setup Payment" }}</span>
+        </button>
+      </div>
+
+      <div class="payment-confirm" *ngIf="clientSecret && !intentIdToCapture">
+        <button
+          (click)="confirmPayment()"
+          class="btn btn-success"
+          [disabled]="isProcessing"
+        >
+          <span
+            *ngIf="isProcessing"
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <span>{{ isProcessing ? "Processing..." : "Confirm Payment" }}</span>
+        </button>
+      </div>
+
+      <div class="release-milestone" *ngIf="intentIdToCapture">
+        <h3>Release Milestone Payment</h3>
+        <p>
+          Once the work is complete and you're satisfied with the results, you
+          can release the funds to the freelancer.
+        </p>
+        <button
+          (click)="releaseFunds()"
+          class="btn btn-primary"
+          [disabled]="isProcessing"
+        >
+          <span
+            *ngIf="isProcessing"
+            class="spinner-border spinner-border-sm"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <span>{{ isProcessing ? "Processing..." : "Release Funds" }}</span>
+        </button>
+      </div>
+
+      <div class="status-message" *ngIf="statusMessage">
+        <div
+          class="alert"
+          [ngClass]="{
+            'alert-info': !statusMessage.includes('Error'),
+            'alert-danger': statusMessage.includes('Error')
+          }"
+        >
+          {{ statusMessage }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

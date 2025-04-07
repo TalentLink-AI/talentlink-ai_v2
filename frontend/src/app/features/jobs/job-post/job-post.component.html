@@ -1,0 +1,121 @@
+<!-- src/app/features/jobs/job-post/job-post.component.html -->
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h2>Post a New Job</h2>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="jobForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="title">Job Title</label>
+          <input
+            type="text"
+            id="title"
+            formControlName="title"
+            class="form-control"
+            [ngClass]="{
+              'is-invalid':
+                jobForm.get('title')?.invalid && jobForm.get('title')?.touched
+            }"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="
+              jobForm.get('title')?.invalid && jobForm.get('title')?.touched
+            "
+          >
+            <span *ngIf="jobForm.get('title')?.errors?.['required']"
+              >Job title is required</span
+            >
+            <span *ngIf="jobForm.get('title')?.errors?.['minlength']"
+              >Job title must be at least 5 characters</span
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Job Description</label>
+          <textarea
+            id="description"
+            formControlName="description"
+            class="form-control"
+            rows="5"
+            [ngClass]="{
+              'is-invalid':
+                jobForm.get('description')?.invalid &&
+                jobForm.get('description')?.touched
+            }"
+          ></textarea>
+          <div
+            class="invalid-feedback"
+            *ngIf="
+              jobForm.get('description')?.invalid &&
+              jobForm.get('description')?.touched
+            "
+          >
+            <span *ngIf="jobForm.get('description')?.errors?.['required']"
+              >Job description is required</span
+            >
+            <span *ngIf="jobForm.get('description')?.errors?.['minlength']"
+              >Job description must be at least 20 characters</span
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="budget">Budget ($)</label>
+          <input
+            type="number"
+            id="budget"
+            formControlName="budget"
+            class="form-control"
+            [ngClass]="{
+              'is-invalid':
+                jobForm.get('budget')?.invalid && jobForm.get('budget')?.touched
+            }"
+          />
+          <div
+            class="invalid-feedback"
+            *ngIf="
+              jobForm.get('budget')?.invalid && jobForm.get('budget')?.touched
+            "
+          >
+            <span *ngIf="jobForm.get('budget')?.errors?.['required']"
+              >Budget is required</span
+            >
+            <span *ngIf="jobForm.get('budget')?.errors?.['min']"
+              >Budget must be greater than 0</span
+            >
+          </div>
+        </div>
+
+        <div class="alert alert-danger" *ngIf="error">
+          {{ error }}
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="isSubmitting"
+          >
+            <span
+              *ngIf="isSubmitting"
+              class="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            {{ isSubmitting ? "Posting..." : "Post Job" }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [routerLink]="['/jobs']"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
