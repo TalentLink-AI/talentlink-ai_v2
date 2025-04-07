@@ -6,13 +6,12 @@ const jobController = require("../controllers/job.controller");
 const {
   validateRequest,
   isJobOwner,
-} = require("../middlewares/validation.middleware");
-const {
   isClient,
   isTalent,
   addClientIdToBody,
+  addTalentIdToBody,
   setUserRole,
-} = require("../middlewares/role.middleware");
+} = require("../middlewares/validation.middleware");
 const {
   jobSchema,
   jobStatusSchema,

@@ -8,6 +8,7 @@ const {
   validateRequest,
   isJobOwner,
   isClient,
+  addTalentIdToBody,
   isTalent,
 } = require("../middlewares/validation.middleware");
 const {
@@ -38,6 +39,7 @@ router.get("/:id", applicationController.getApplicationById);
 router.post(
   "/",
   isTalent(),
+  addTalentIdToBody,
   validateRequest(applicationSchema),
   applicationController.createApplication
 );
@@ -60,6 +62,7 @@ router.post("/:id/reject", isClient(), applicationController.rejectApplication);
 router.post(
   "/:id/withdraw",
   isTalent(),
+  addTalentIdToBody,
   applicationController.withdrawApplication
 );
 

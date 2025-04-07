@@ -20,7 +20,7 @@ export class JobDetailComponent implements OnInit {
   isLoading = true;
   error = '';
   userRole = '';
-  userId = '';
+  userId: any;
   hasApplied = false;
   isOwner = false;
 
@@ -49,8 +49,16 @@ export class JobDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.userRole = this.userService.getUserRole() || 'talent';
-    // In a real app, get userId from auth service
-    this.userId = this.userRole === 'client' ? 'client-123' : 'talent-456';
+    this.userService
+      .getCurrentUser() // <-- call the function
+      .subscribe({
+        next: (response) => {
+          this.userId = response?.user?._id;
+        },
+        error: (err) => {
+          console.error('Error fetching user data:', err);
+        },
+      });
 
     const jobId = this.route.snapshot.paramMap.get('id');
     if (jobId) {
@@ -70,7 +78,8 @@ export class JobDetailComponent implements OnInit {
         if (response && response.data) {
           this.job = response.data;
           this.isOwner = this.job.clientId === this.userId;
-
+          console.log('this.isOwner', this.isOwner);
+          console.log('this.userId', this.userId);
           // Load applications if client is the owner
           if (this.isOwner) {
             this.loadApplications(jobId);
