@@ -38,50 +38,28 @@ export class JobListComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    // Get current user role first
-    this.userService
-      .getUserRole()
-      .pipe(
-        switchMap((role) => {
-          this.userRole = role || 'guest';
+    // Get current user role directly
+    this.userRole = this.userService.getUserRole() || 'talent';
 
-          // Based on the view and role, call the appropriate endpoint
-          if (this.isMyJobsView) {
-            return this.jobService.getMyJobs().pipe(
-              catchError((error) => {
-                // Handle role errors
-                if (error.status === 403) {
-                  this.errorMessage =
-                    'You need a client account to view your posted jobs.';
-                  // Suggest switching to client role if they're in talent role
-                  if (this.userRole === 'talent') {
-                    this.errorMessage +=
-                      ' Would you like to switch to client view?';
-                  }
-                } else {
-                  this.errorMessage =
-                    'Failed to load your jobs. Please try again.';
-                }
-                return of({
-                  success: false,
-                  data: [],
-                  userRole: this.userRole,
-                });
-              })
-            );
+    // Based on the view and role, call the appropriate endpoint
+    const request =
+      this.isMyJobsView || this.userRole === 'client'
+        ? this.jobService.getMyJobs()
+        : this.jobService.getAvailableJobs();
+
+    request
+      .pipe(
+        catchError((error) => {
+          if (error.status === 403) {
+            this.errorMessage =
+              'You need a client account to view your posted jobs.';
           } else {
-            // Regular jobs view - get available jobs for talents
-            return this.jobService.getAvailableJobs().pipe(
-              catchError((error) => {
-                this.errorMessage = 'Failed to load jobs. Please try again.';
-                return of({
-                  success: false,
-                  data: [],
-                  userRole: this.userRole,
-                });
-              })
-            );
+            this.errorMessage = 'Failed to load jobs. Please try again.';
           }
+          return of({
+            success: false,
+            data: [],
+          });
         })
       )
       .subscribe((response) => {

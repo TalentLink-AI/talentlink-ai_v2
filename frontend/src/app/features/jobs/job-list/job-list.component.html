@@ -5,19 +5,6 @@
       {{ isMyJobsView ? "My Posted Jobs" : "Available Jobs" }}
     </h1>
 
-    <!-- Error Message with Action Button -->
-    <div *ngIf="errorMessage" class="alert alert-danger">
-      <p>{{ errorMessage }}</p>
-      <!-- Only show the switch button if they're in talent role but need client role -->
-      <button
-        *ngIf="userRole === 'talent' && isMyJobsView"
-        class="btn btn-primary mt-3"
-        (click)="switchToClientRole()"
-      >
-        Switch to Client Role
-      </button>
-    </div>
-
     <!-- Loading State -->
     <div *ngIf="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
@@ -30,7 +17,8 @@
         !isLoading &&
         jobs.length === 0 &&
         !errorMessage &&
-        userRole === 'client' && isMyJobsView
+        userRole === 'client' &&
+        isMyJobsView
       "
     >
       <div class="empty-state">
@@ -50,7 +38,8 @@
         !isLoading &&
         jobs.length === 0 &&
         !errorMessage &&
-        userRole === 'talent' && !isMyJobsView
+        userRole === 'talent' &&
+        !isMyJobsView
       "
     >
       <div class="empty-state">
