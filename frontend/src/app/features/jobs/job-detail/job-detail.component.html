@@ -118,80 +118,112 @@
     <!-- For Talents - Job is assigned to this talent -->
     <div
       class="talent-actions"
-      *ngIf="userRole === 'talent' && job.assignedTo === userId"
+      *ngIf="
+        userRole === 'talent' && isAssignedToTalent && job.status === 'assigned'
+      "
     >
       <div class="assigned-notification">
         <h3>You've been assigned to this job!</h3>
         <p>Work with the client to complete this project.</p>
-      </div>
-    </div>
 
-    <!-- For Clients - View applications -->
-    <div class="client-actions" *ngIf="userRole === 'client' && isOwner">
-      <div *ngIf="job.status === 'published'">
-        <h3>Applications ({{ applications.length }})</h3>
-
-        <div class="no-applications" *ngIf="applications.length === 0">
-          <p>No applications yet.</p>
-        </div>
-
-        <div class="applications-list" *ngIf="applications.length > 0">
-          <div
-            class="application-card"
-            *ngFor="let application of applications"
-          >
-            <div class="application-header">
-              <h4>Talent ID: {{ application.talentId }}</h4>
-              <span class="application-date">{{
-                formatDate(application.createdAt)
+        <!-- Milestone status section for talents -->
+        <div
+          *ngIf="job.milestones && job.milestones.length > 0"
+          class="milestone-list talent-view"
+        >
+          <h4>Project Milestones</h4>
+          <div *ngFor="let milestone of job.milestones" class="milestone-item">
+            <div class="milestone-info">
+              <span class="milestone-description">{{
+                milestone.description
               }}</span>
-            </div>
-
-            <div class="application-body" *ngIf="application.coverLetter">
-              <p>{{ application.coverLetter }}</p>
-            </div>
-
-            <div class="application-actions">
-              <button
-                class="btn btn-success"
-                (click)="acceptApplication(application._id)"
-                [disabled]="job.status !== 'published'"
+              <span class="milestone-amount">${{ milestone.amount }}</span>
+              <span
+                class="milestone-status"
+                [ngClass]="'status-' + milestone.status"
               >
-                Accept Application
-              </button>
+                {{ milestone.status }}
+              </span>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Create milestone for assigned jobs -->
-      <div *ngIf="job.status === 'assigned' && job.assignedTo">
-        <div class="milestone-section">
-          <h3>Project Milestones</h3>
+    <!-- For Clients - View applications -->
+    <div
+      class="client-actions"
+      *ngIf="userRole === 'client' && isOwner && job.status === 'published'"
+    >
+      <h3>Applications ({{ applications.length }})</h3>
 
-          <div *ngIf="job.milestones && job.milestones.length > 0">
-            <div class="milestone-list">
-              <div
-                class="milestone-card"
-                *ngFor="let milestone of job.milestones"
-              >
-                <div class="milestone-header">
-                  <h4>{{ milestone.description }}</h4>
-                  <span
-                    class="milestone-status status-{{ milestone.status }}"
-                    >{{ milestone.status }}</span
-                  >
-                </div>
-                <div class="milestone-amount">
-                  ${{ milestone.amount.toFixed(2) }}
-                </div>
-                <div class="milestone-date" *ngIf="milestone.createdAt">
-                  Created: {{ formatDate(milestone.createdAt) }}
-                </div>
+      <div class="no-applications" *ngIf="applications.length === 0">
+        <p>No applications yet.</p>
+      </div>
+
+      <div class="applications-list" *ngIf="applications.length > 0">
+        <div class="application-card" *ngFor="let application of applications">
+          <div class="application-header">
+            <h4>Talent ID: {{ application.talentId }}</h4>
+            <span class="application-date">{{
+              formatDate(application.createdAt)
+            }}</span>
+          </div>
+
+          <div class="application-body" *ngIf="application.coverLetter">
+            <p>{{ application.coverLetter }}</p>
+          </div>
+
+          <div class="application-actions">
+            <button
+              class="btn btn-success"
+              (click)="acceptApplication(application._id)"
+              [disabled]="job.status !== 'published'"
+            >
+              Accept Application
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create milestone for assigned jobs -->
+    <div *ngIf="isOwner && job">
+      <div class="milestone-section">
+        <h3>Project Milestones</h3>
+
+        <div *ngIf="job.milestones && job.milestones.length > 0">
+          <div class="milestone-list">
+            <div
+              class="milestone-card"
+              *ngFor="let milestone of job.milestones"
+            >
+              <div class="milestone-header">
+                <h4>{{ milestone.description }}</h4>
+                <span class="milestone-status status-{{ milestone.status }}">
+                  {{ milestone.status }}
+                </span>
+              </div>
+              <div class="milestone-amount">
+                ${{ milestone.amount.toFixed(2) }}
+              </div>
+              <div class="milestone-date" *ngIf="milestone.createdAt">
+                Created: {{ formatDate(milestone.createdAt) }}
+              </div>
+
+              <div class="milestone-actions">
+                <button
+                  *ngIf="milestone.status === 'pending'"
+                  class="btn btn-primary"
+                  (click)="createMilestonePayment(milestone._id)"
+                  [disabled]="creatingPayment"
+                >
+                  Fund Milestone
+                </button>
 
                 <button
                   *ngIf="milestone.status === 'escrowed'"
-                  class="btn btn-primary"
+                  class="btn btn-success"
                   [routerLink]="['/milestone-payment']"
                   [queryParams]="{
                     jobId: job._id,
@@ -204,43 +236,95 @@
               </div>
             </div>
           </div>
-
-          <button
-            class="btn btn-primary"
-            (click)="createMilestone()"
-            [disabled]="creatingMilestone"
-          >
-            <span
-              *ngIf="creatingMilestone"
-              class="spinner-border spinner-border-sm"
-              role="status"
-              aria-hidden="true"
-            ></span>
-            {{ creatingMilestone ? "Creating..." : "Create Milestone Payment" }}
-          </button>
-
-          <p class="milestone-help">
-            Create a milestone payment to secure funds in escrow. Once the
-            talent completes the work, you can release the payment.
-          </p>
         </div>
+
+        <!-- Form to create a new milestone -->
+        <div class="create-milestone-form" *ngIf="!showMilestoneForm">
+          <button class="btn btn-primary" (click)="toggleMilestoneForm()">
+            Create New Milestone
+          </button>
+        </div>
+
+        <form
+          *ngIf="showMilestoneForm"
+          [formGroup]="milestoneForm"
+          (ngSubmit)="submitMilestone()"
+          class="milestone-form"
+        >
+          <div class="form-group">
+            <label for="description">Milestone Description</label>
+            <input
+              type="text"
+              id="description"
+              formControlName="description"
+              class="form-control"
+              placeholder="e.g., Design Phase, Development, Testing"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="amount">Amount ($)</label>
+            <input
+              type="number"
+              id="amount"
+              formControlName="amount"
+              class="form-control"
+              placeholder="Enter milestone amount"
+            />
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="milestoneForm.invalid || submittingMilestone"
+            >
+              <span
+                *ngIf="submittingMilestone"
+                class="spinner-border spinner-border-sm"
+              ></span>
+              {{ submittingMilestone ? "Creating..." : "Create Milestone" }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="toggleMilestoneForm()"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
 
       <!-- Mark job as completed -->
-      <div *ngIf="job.status === 'assigned' && job.assignedTo">
-        <div class="complete-job-section">
-          <h3>Complete Job</h3>
-
-          <button class="btn btn-success" (click)="markJobCompleted()">
-            Mark Job as Completed
-          </button>
-
-          <p class="complete-job-help">
-            Once all milestones have been completed and you're satisfied with
-            the work, mark the job as completed.
-          </p>
-        </div>
+      <div class="complete-job-section">
+        <h3>Complete Job</h3>
+        <button class="btn btn-success" (click)="markJobCompleted()">
+          Mark Job as Completed
+        </button>
+        <p class="complete-job-help">
+          Once all milestones have been completed and you're satisfied with the
+          work, mark the job as completed.
+        </p>
       </div>
     </div>
   </div>
+</div>
+<div
+  *ngIf="job"
+  style="
+    margin-top: 30px;
+    padding: 10px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+  "
+>
+  <h4>Debug Info</h4>
+  <p>Is Owner: {{ isOwner }}</p>
+  <p>Job Status: {{ job.status }}</p>
+  <p>Condition Test: {{ isOwner && job.status === "assigned" }}</p>
+
+  <button class="btn btn-sm btn-warning" (click)="testCreateMilestone()">
+    Test Create Milestone
+  </button>
 </div>

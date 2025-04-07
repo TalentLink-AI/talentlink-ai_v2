@@ -137,13 +137,13 @@ exports.createMilestonePaymentIntent = async (params) => {
  */
 exports.captureMilestonePaymentIntent = async (paymentIntentId) => {
   try {
+    // "Finalize" the payment
     const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
 
-    // Update DB status to "succeeded" (since capturing finalizes the charge)
-    await paymentRepository.updateStatusByIntentId(
-      paymentIntentId,
-      paymentIntent.status
-    );
+    // Update the DB record
+    await paymentRepository.updateByPaymentIntentId(paymentIntentId, {
+      status: paymentIntent.status,
+    });
 
     return paymentIntent;
   } catch (error) {

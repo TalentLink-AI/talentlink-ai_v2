@@ -1,5 +1,5 @@
 // src/app/features/payment/milestone-payment/milestone-payment.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -15,9 +15,12 @@ import { JobService } from '../../../services/job.service';
   templateUrl: './milestone-payment.component.html',
   styleUrls: ['./milestone-payment.component.scss'],
 })
-export class MilestonePaymentComponent implements OnInit {
+export class MilestonePaymentComponent
+  implements OnInit, AfterViewInit, OnDestroy
+{
   private stripe!: Stripe;
   private cardElement: any;
+  private _tempIntentId: string = '';
 
   clientSecret: string = '';
   intentIdToCapture = '';
@@ -51,9 +54,10 @@ export class MilestonePaymentComponent implements OnInit {
         this.loadJobDetails(this.jobId);
       }
     });
-
-    // Initialize Stripe and the card element
+  }
+  async ngAfterViewInit() {
     try {
+      // Initialize Stripe & elements
       const stripeInstance = await loadStripe(environment.stripePublishableKey);
       if (!stripeInstance) {
         this.statusMessage = 'Error: Stripe failed to load.';
@@ -61,6 +65,7 @@ export class MilestonePaymentComponent implements OnInit {
       }
       this.stripe = stripeInstance;
 
+      // Mount the card element
       const elements = this.stripe.elements();
       this.cardElement = elements.create('card');
       this.cardElement.mount('#card-element');
@@ -69,6 +74,13 @@ export class MilestonePaymentComponent implements OnInit {
     } catch (err) {
       console.error('Error initializing Stripe:', err);
       this.statusMessage = 'Error initializing payment system.';
+    }
+  }
+  ngOnDestroy(): void {
+    // Clean up Stripe elements
+    if (this.cardElement) {
+      this.cardElement.unmount();
+      this.cardElement = null;
     }
   }
 
@@ -127,17 +139,25 @@ export class MilestonePaymentComponent implements OnInit {
     this.statusMessage = 'Setting up payment...';
 
     try {
-      // Create milestone payment intent via job service
-      // This will call the payment service internally
+      // Create milestone payment intent
       const response: any = await this.jobService
         .createMilestonePayment(this.jobId, this.milestoneId)
         .toPromise();
 
       console.log('Payment intent created:', response);
 
-      if (response && response.data && response.data.paymentIntent) {
-        this.clientSecret = response.data.paymentIntent.client_secret;
-        this.intentIdToCapture = response.data.paymentIntent.id;
+      // Only set clientSecret here, DON'T set intentIdToCapture yet
+      if (response && response.data) {
+        this.clientSecret =
+          response.data.client_secret ||
+          (response.data.paymentIntent &&
+            response.data.paymentIntent.client_secret);
+
+        // Store temporary ID but don't set intentIdToCapture yet
+        this._tempIntentId =
+          response.data.id ||
+          (response.data.paymentIntent && response.data.paymentIntent.id);
+
         this.statusMessage =
           'Payment ready to confirm. Click "Confirm Payment" to proceed.';
       } else {
@@ -152,6 +172,11 @@ export class MilestonePaymentComponent implements OnInit {
   }
 
   async confirmPayment() {
+    // Make sure the element is still mounted
+    if (!this.cardElement) {
+      this.statusMessage = 'Payment form is not initialized.';
+      return;
+    }
     if (!this.clientSecret) {
       this.statusMessage = 'No payment set up yet';
       return;
@@ -170,18 +195,14 @@ export class MilestonePaymentComponent implements OnInit {
       if (result.error) {
         this.statusMessage = 'Error: ' + result.error.message;
       } else {
+        // Payment was confirmed
         const paymentIntent = result.paymentIntent;
-        this.statusMessage = `Payment authorized and held in escrow. Status: ${paymentIntent?.status}`;
-        this.intentIdToCapture = paymentIntent?.id || '';
-
-        // If we were successful, reload the job to get updated milestone status
-        if (this.jobId) {
-          this.loadJobDetails(this.jobId);
-        }
+        this.statusMessage = `Payment authorized. Status: ${paymentIntent?.status}`;
+        // Possibly reload job details or handle success
       }
     } catch (err: any) {
       console.error('Error confirming payment:', err);
-      this.statusMessage = 'Error processing payment.';
+      this.statusMessage = err.message || 'Error processing payment.';
     } finally {
       this.isProcessing = false;
     }
@@ -198,6 +219,7 @@ export class MilestonePaymentComponent implements OnInit {
 
     try {
       // Call the job service to release the milestone
+
       const response = await this.jobService
         .releaseMilestone(this.jobId, this.milestoneId)
         .toPromise();

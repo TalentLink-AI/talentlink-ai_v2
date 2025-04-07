@@ -1,7 +1,7 @@
 // src/app/services/job.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, switchMap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface Job {
@@ -157,9 +157,42 @@ export class JobService {
 
   // Create milestone payment intent
   createMilestonePayment(jobId: string, milestoneId: string): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/payment`,
-      {}
+    // First get the job to retrieve the milestone amount
+    return this.getJobById(jobId).pipe(
+      switchMap((jobResponse) => {
+        if (!jobResponse || !jobResponse.data) {
+          return throwError(() => new Error('Job not found'));
+        }
+
+        const job = jobResponse.data;
+
+        // Find the specific milestone to get its amount
+        const milestone = job.milestones?.find(
+          (m: any) => m._id === milestoneId
+        );
+
+        if (!milestone) {
+          return throwError(() => new Error('Milestone not found'));
+        }
+
+        // Convert the amount to cents for Stripe
+        const amountInCents = Math.round(milestone.amount * 100);
+
+        // Now make the payment intent request with the correct amount
+        return this.http.post(
+          `${environment.apiUrlpayment}/api/payment/milestone/intent`,
+          {
+            amount: amountInCents,
+            currency: 'usd',
+            customerId: 'cus_S4MTmqux34KQ6n', //FIGURE OUY HOT TO GET CUSTOMER ID TODO
+            payerId: job.clientId,
+            payeeId: job.assignedTo,
+            projectId: job._id,
+            milestoneId: milestoneId,
+            description: `Milestone payment for ${job.title}: ${milestone.description}`,
+          }
+        );
+      })
     );
   }
 

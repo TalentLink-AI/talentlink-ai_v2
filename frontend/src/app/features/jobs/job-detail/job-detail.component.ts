@@ -2,10 +2,16 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { JobService } from '../../../services/job.service';
 import { UserService } from '../../../services/user.service';
 import { PaymentService } from '../../../services/payment.service';
+import { filter, switchMap, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-job-detail',
@@ -21,8 +27,10 @@ export class JobDetailComponent implements OnInit {
   error = '';
   userRole = '';
   userId: any;
+  userAuth0Id: any;
   hasApplied = false;
   isOwner = false;
+  isAssignedToTalent = false;
 
   // For application
   showApplyForm = false;
@@ -33,6 +41,10 @@ export class JobDetailComponent implements OnInit {
   // For milestone
   creatingMilestone = false;
   milestoneCreated = false;
+  showMilestoneForm = false;
+  milestoneForm: FormGroup;
+  submittingMilestone = false;
+  creatingPayment = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -45,28 +57,31 @@ export class JobDetailComponent implements OnInit {
     this.applicationForm = this.fb.group({
       coverLetter: [''],
     });
+    this.milestoneForm = this.fb.group({
+      description: ['', [Validators.required]],
+      amount: ['', [Validators.required, Validators.min(1)]],
+    });
   }
 
   ngOnInit(): void {
     this.userRole = this.userService.getUserRole() || 'talent';
-    this.userService
-      .getCurrentUser() // <-- call the function
-      .subscribe({
-        next: (response) => {
-          this.userId = response?.user?._id;
-        },
-        error: (err) => {
-          console.error('Error fetching user data:', err);
-        },
-      });
+    this.userService.getCurrentUser().subscribe({
+      next: (response) => {
+        this.userId = response?.user?._id;
+        this.userAuth0Id = response?.user?.auth0Id;
 
-    const jobId = this.route.snapshot.paramMap.get('id');
-    if (jobId) {
-      this.loadJobDetails(jobId);
-    } else {
-      this.error = 'Job ID is missing';
-      this.isLoading = false;
-    }
+        const jobId = this.route.snapshot.paramMap.get('id');
+        if (jobId) {
+          this.loadJobDetails(jobId);
+        } else {
+          this.error = 'Job ID is missing';
+          this.isLoading = false;
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching user data:', err);
+      },
+    });
   }
 
   loadJobDetails(jobId: string): void {
@@ -77,16 +92,45 @@ export class JobDetailComponent implements OnInit {
         console.log('Job details loaded:', response);
         if (response && response.data) {
           this.job = response.data;
-          this.isOwner = this.job.clientId === this.userId;
-          console.log('this.isOwner', this.isOwner);
-          console.log('this.userId', this.userId);
+
+          // User IDs from authentication could be in different formats
+          const possibleClientIds = [
+            this.userId,
+            this.userAuth0Id,
+            // Add any additional ID formats your system might use
+          ].filter((id) => id); // Remove undefined/null values
+
+          const possibleTalentIds = [
+            this.userId,
+            this.userAuth0Id,
+            // Add any additional ID formats your system might use
+          ].filter((id) => id);
+
+          // Log all IDs for debugging
+          console.log('Client ID from job:', this.job.clientId);
+          console.log('User possible IDs:', possibleClientIds);
+          console.log('Assigned to from job:', this.job.assignedTo);
+          console.log('Talent possible IDs:', possibleTalentIds);
+
+          // Check ownership - true if ANY of the user's IDs match the job's clientId
+          this.isOwner = possibleClientIds.some(
+            (id) => id === this.job.clientId
+          );
+          console.log('Is Owner:', this.isOwner);
+
+          // Check if talent is assigned - true if ANY of the user's IDs match the job's assignedTo
+          this.isAssignedToTalent =
+            this.userRole === 'talent' &&
+            possibleTalentIds.some((id) => id === this.job.assignedTo);
+          console.log('Is assigned to talent:', this.isAssignedToTalent);
+
           // Load applications if client is the owner
           if (this.isOwner) {
             this.loadApplications(jobId);
           }
 
           // Check if talent has already applied
-          if (this.userRole === 'talent') {
+          if (this.userRole === 'talent' && this.job.status === 'published') {
             this.checkIfApplied(jobId);
           }
         } else {
@@ -106,7 +150,12 @@ export class JobDetailComponent implements OnInit {
     this.jobService.getApplicationsForJob(jobId).subscribe({
       next: (response) => {
         console.log('Applications loaded:', response);
-        this.applications = response.data;
+        if (response && response.data) {
+          this.applications = Array.isArray(response.data) ? response.data : [];
+          console.log('Applications array:', this.applications);
+        } else {
+          this.applications = [];
+        }
       },
       error: (err) => {
         console.error('Failed to load applications:', err);
@@ -115,9 +164,8 @@ export class JobDetailComponent implements OnInit {
   }
 
   checkIfApplied(jobId: string): void {
-    // In a real implementation, would check against current user
-    // For this example, checking if any application exists for the talent ID
-    this.jobService.getApplicationsByTalent(this.userId).subscribe({
+    // Check both user's MongoDB ID and Auth0 ID
+    this.jobService.getMyApplications().subscribe({
       next: (response) => {
         const applications = response.data;
         this.hasApplied = applications.some((app: any) => app.jobId === jobId);
@@ -211,6 +259,75 @@ export class JobDetailComponent implements OnInit {
       });
   }
 
+  // Format date with options for display
+  formatDate(date: string | Date): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+  toggleMilestoneForm(): void {
+    this.showMilestoneForm = !this.showMilestoneForm;
+  }
+
+  submitMilestone(): void {
+    if (this.milestoneForm.invalid) return;
+
+    this.submittingMilestone = true;
+
+    this.jobService
+      .createMilestone(
+        this.job._id,
+        this.milestoneForm.value.description,
+        this.milestoneForm.value.amount
+      )
+      .subscribe({
+        next: (response) => {
+          console.log('Milestone created:', response);
+          // Update job object with new milestone
+          if (response.data && response.data.job) {
+            this.job = response.data.job;
+          } else {
+            // Reload job as fallback
+            this.loadJobDetails(this.job._id);
+          }
+          this.submittingMilestone = false;
+          this.showMilestoneForm = false;
+          this.milestoneForm.reset();
+        },
+        error: (err) => {
+          console.error('Failed to create milestone:', err);
+          this.submittingMilestone = false;
+        },
+      });
+  }
+
+  createMilestonePayment(milestoneId: string): void {
+    if (!this.job) return;
+
+    this.creatingPayment = true;
+
+    // Navigate to the milestone payment page
+    this.router.navigate(['/milestone-payment'], {
+      queryParams: {
+        jobId: this.job._id,
+        milestoneId: milestoneId,
+        amount: this.getMilestoneAmount(milestoneId) * 100, // Convert to cents for Stripe
+      },
+    });
+  }
+
+  getMilestoneAmount(milestoneId: string): number {
+    if (!this.job || !this.job.milestones) return 0;
+
+    const milestone = this.job.milestones.find(
+      (m: any) => m._id === milestoneId
+    );
+    return milestone ? milestone.amount : 0;
+  }
+
   markJobCompleted(): void {
     if (!this.job) return;
 
@@ -229,14 +346,26 @@ export class JobDetailComponent implements OnInit {
       },
     });
   }
+  testCreateMilestone(): void {
+    console.log('Test creating milestone');
+    if (!this.job) {
+      console.error('No job object!');
+      return;
+    }
 
-  // Format date with options for display
-  formatDate(date: string | Date): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    console.log('Creating test milestone for job:', this.job._id);
+
+    this.jobService
+      .createMilestone(this.job._id, 'Test Milestone', this.job.budget || 10)
+      .subscribe({
+        next: (response) => {
+          console.log('Test milestone created:', response);
+          // Reload job details
+          this.loadJobDetails(this.job._id);
+        },
+        error: (err) => {
+          console.error('Failed to create test milestone:', err);
+        },
+      });
   }
 }

@@ -270,10 +270,152 @@
   p {
     color: vars.$color-text;
     margin: 0;
+    margin-bottom: vars.$spacing-4;
   }
 }
 
-.milestone-section,
+.milestone-list.talent-view {
+  margin-top: vars.$spacing-4;
+  
+  h4 {
+    margin-bottom: vars.$spacing-4;
+    color: vars.$color-text;
+  }
+  
+  .milestone-item {
+    padding: vars.$spacing-3;
+    background-color: vars.$color-white;
+    border-radius: vars.$border-radius-md;
+    margin-bottom: vars.$spacing-2;
+    
+    .milestone-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .milestone-description {
+      flex: 1;
+      font-weight: vars.$font-weight-medium;
+    }
+    
+    .milestone-amount {
+      margin: 0 vars.$spacing-4;
+      font-weight: vars.$font-weight-bold;
+    }
+    
+    .milestone-status {
+      padding: vars.$spacing-1 vars.$spacing-2;
+      border-radius: vars.$border-radius-sm;
+      font-size: vars.$font-size-sm;
+      
+      &.status-pending {
+        background-color: rgba(vars.$color-gray-500, 0.1);
+        color: vars.$color-gray-500;
+      }
+      
+      &.status-escrowed {
+        background-color: rgba(vars.$color-primary, 0.1);
+        color: vars.$color-primary;
+      }
+      
+      &.status-released {
+        background-color: rgba(vars.$color-success, 0.1);
+        color: vars.$color-success;
+      }
+      
+      &.status-cancelled {
+        background-color: rgba(vars.$color-danger, 0.1);
+        color: vars.$color-danger;
+      }
+    }
+  }
+}
+
+.milestone-section {
+  margin-top: vars.$spacing-8;
+  padding: vars.$spacing-6;
+  background-color: vars.$color-gray-100;
+  border-radius: vars.$border-radius-md;
+  
+  h3 {
+    margin-bottom: vars.$spacing-4;
+  }
+  
+  .milestone-list {
+    margin-bottom: vars.$spacing-6;
+  }
+  
+  .milestone-card {
+    background-color: vars.$color-white;
+    border-radius: vars.$border-radius-md;
+    padding: vars.$spacing-4;
+    margin-bottom: vars.$spacing-4;
+    border: 1px solid vars.$color-gray-200;
+    
+    .milestone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: vars.$spacing-2;
+      
+      h4 {
+        margin: 0;
+      }
+      
+      .milestone-status {
+        padding: vars.$spacing-1 vars.$spacing-2;
+        border-radius: vars.$border-radius-sm;
+        font-size: vars.$font-size-sm;
+        
+        &.status-pending {
+          background-color: rgba(vars.$color-gray-500, 0.1);
+          color: vars.$color-gray-500;
+        }
+        
+        &.status-escrowed {
+          background-color: rgba(vars.$color-primary, 0.1);
+          color: vars.$color-primary;
+        }
+        
+        &.status-released {
+          background-color: rgba(vars.$color-success, 0.1);
+          color: vars.$color-success;
+        }
+        
+        &.status-cancelled {
+          background-color: rgba(vars.$color-danger, 0.1);
+          color: vars.$color-danger;
+        }
+      }
+    }
+    
+    .milestone-amount {
+      font-weight: vars.$font-weight-bold;
+      margin-bottom: vars.$spacing-2;
+    }
+    
+    .milestone-date {
+      font-size: vars.$font-size-sm;
+      color: vars.$color-text-muted;
+      margin-bottom: vars.$spacing-3;
+    }
+    
+    .milestone-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+  
+  .milestone-form {
+    background-color: vars.$color-white;
+    border-radius: vars.$border-radius-md;
+    padding: vars.$spacing-4;
+    margin-top: vars.$spacing-4;
+    border: 1px solid vars.$color-gray-200;
+  }
+}
+
 .complete-job-section {
   margin-top: vars.$spacing-8;
   padding: vars.$spacing-6;
@@ -284,7 +426,6 @@
     margin-bottom: vars.$spacing-4;
   }
   
-  .milestone-help,
   .complete-job-help {
     margin-top: vars.$spacing-4;
     color: vars.$color-text-muted;

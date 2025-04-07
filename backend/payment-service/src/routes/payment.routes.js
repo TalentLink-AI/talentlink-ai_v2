@@ -23,10 +23,26 @@ router.post(
   "/milestone/intent",
   paymentController.createMilestonePaymentIntent
 );
-router.post(
-  "/milestone/capture",
-  paymentController.captureMilestonePaymentIntent
-);
+router.post("/milestone/capture", async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+
+    // Optional: do some checks to ensure user is actually the project owner
+    // or has permission to release funds, etc.
+
+    const capturedIntent = await stripeServices.captureMilestonePaymentIntent(
+      paymentIntentId
+    );
+
+    res.json({
+      success: true,
+      data: capturedIntent,
+    });
+  } catch (error) {
+    console.error("Error capturing milestone payment intent:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Payment intent endpoints
 router.post(

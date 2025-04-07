@@ -1,4 +1,3 @@
-<!-- src/app/features/payment/milestone-payment/milestone-payment.component.html -->
 <div class="milestone-payment-container">
   <div class="card">
     <div class="card-header">
@@ -13,11 +12,10 @@
         <div class="payment-meta">
           <div class="meta-item">
             <span class="meta-label">Amount:</span>
-            <span class="meta-value"
-              >${{ (paymentAmount / 100).toFixed(2) }}</span
-            >
+            <span class="meta-value">
+              ${{ (paymentAmount / 100).toFixed(2) }}
+            </span>
           </div>
-
           <div class="meta-item" *ngIf="milestoneId">
             <span class="meta-label">Milestone ID:</span>
             <span class="meta-value">{{ milestoneId }}</span>
@@ -30,16 +28,14 @@
         </p>
       </div>
 
-      <div class="payment-form" *ngIf="!clientSecret">
-        <div class="form-group">
-          <label for="card-element">Payment Information</label>
-          <div id="card-element" class="card-element-container"></div>
-          <div class="card-element-help">
-            Enter your credit card details. Your payment will only be authorized
-            and held in escrow.
-          </div>
-        </div>
+      <!-- One and only one card-element container -->
+      <div class="form-group">
+        <label for="card-element">Payment Information</label>
+        <div id="card-element" class="card-element-container"></div>
+      </div>
 
+      <div *ngIf="!clientSecret && !intentIdToCapture">
+        <!-- "Setup Payment" button is shown if we haven't created the intent yet -->
         <button
           (click)="createPaymentIntent()"
           class="btn btn-primary"
@@ -48,14 +44,13 @@
           <span
             *ngIf="isProcessing"
             class="spinner-border spinner-border-sm"
-            role="status"
-            aria-hidden="true"
           ></span>
-          <span>{{ isProcessing ? "Processing..." : "Setup Payment" }}</span>
+          {{ isProcessing ? "Processing..." : "Setup Payment" }}
         </button>
       </div>
 
-      <div class="payment-confirm" *ngIf="clientSecret && !intentIdToCapture">
+      <div *ngIf="clientSecret && !intentIdToCapture">
+        <!-- "Confirm Payment" button is shown after we have a clientSecret but haven't confirmed -->
         <button
           (click)="confirmPayment()"
           class="btn btn-success"
@@ -64,18 +59,17 @@
           <span
             *ngIf="isProcessing"
             class="spinner-border spinner-border-sm"
-            role="status"
-            aria-hidden="true"
           ></span>
-          <span>{{ isProcessing ? "Processing..." : "Confirm Payment" }}</span>
+          {{ isProcessing ? "Processing..." : "Confirm Payment" }}
         </button>
       </div>
 
-      <div class="release-milestone" *ngIf="intentIdToCapture">
+      <div *ngIf="intentIdToCapture">
+        <!-- "Release Funds" shown once the PaymentIntent is confirmed -->
         <h3>Release Milestone Payment</h3>
         <p>
-          Once the work is complete and you're satisfied with the results, you
-          can release the funds to the freelancer.
+          Once the work is complete and you're satisfied, release the funds to
+          the freelancer.
         </p>
         <button
           (click)="releaseFunds()"
@@ -85,10 +79,8 @@
           <span
             *ngIf="isProcessing"
             class="spinner-border spinner-border-sm"
-            role="status"
-            aria-hidden="true"
           ></span>
-          <span>{{ isProcessing ? "Processing..." : "Release Funds" }}</span>
+          {{ isProcessing ? "Processing..." : "Release Funds" }}
         </button>
       </div>
 
