@@ -29,6 +29,7 @@ const milestoneSchema = new mongoose.Schema({
       "completed",
       "released",
       "cancelled",
+      "escrowed",
     ],
     default: "pending",
   },

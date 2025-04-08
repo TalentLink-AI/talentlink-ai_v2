@@ -303,6 +303,41 @@ export class JobService {
     );
   }
 
+  approveMilestoneReview(
+    jobId: string,
+    milestoneId: string,
+    feedback: string,
+    approval: boolean
+  ): Observable<any> {
+    console.log(
+      `Calling approve-review with jobId: ${jobId}, milestoneId: ${milestoneId}`
+    );
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/approve-review`,
+      { feedback, approvalStatus: approval }
+    );
+  }
+
+  // Pay remaining milestone amount (escrow)
+  payRemainingMilestone(
+    jobId: string,
+    milestoneId: string,
+    paymentDetails: any
+  ): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/pay-remaining`,
+      paymentDetails
+    );
+  }
+
+  // Release escrowed funds
+  releaseMilestoneFunds(jobId: string, milestoneId: string): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/release-funds`,
+      {}
+    );
+  }
+
   /**
    * Create milestone payment intent for remaining amount
    * This is used after the client reviews and approves the work

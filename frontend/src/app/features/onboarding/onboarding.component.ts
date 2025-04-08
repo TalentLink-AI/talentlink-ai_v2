@@ -263,6 +263,10 @@ export class OnboardingComponent implements OnInit {
         this.loading = false;
         this.stepsCompleted['profile-details'] = true;
         this.router.navigate(['/profile']);
+        this.userService.startStripeConnectOnboarding().subscribe({
+          next: (res) => (window.location.href = res.url), // 🚀 Redirect to onboarding
+          error: () => this.router.navigate(['/profile']), // fallback
+        });
       },
       error: (err) => {
         console.error('Error updating talent profile:', err);

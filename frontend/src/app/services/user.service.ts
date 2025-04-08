@@ -209,6 +209,18 @@ export class UserService {
       );
   }
 
+  startStripeConnectOnboarding(): Observable<{ url: string }> {
+    return this.http
+      .post<{ accountId: string }>(`${this.apiUrl}/stripe/account`, {})
+      .pipe(
+        switchMap(() =>
+          this.http.get<{ url: string }>(
+            `${this.apiUrl}/stripe/onboarding-link`
+          )
+        )
+      );
+  }
+
   // Complete onboarding
   completeOnboarding(): Observable<UserData> {
     return this.updateOnboardingStep('completed');

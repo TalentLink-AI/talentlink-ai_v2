@@ -6,6 +6,8 @@ const ClientProfile = require("../models/client-profile.model");
 const router = express.Router();
 const axios = require("axios");
 const Joi = require("joi");
+const userController = require("../controllers/user.controller");
+const authMiddleware = require("../middlewares/auth");
 
 // Validation middleware
 const validateRequest = (schema) => {
@@ -438,5 +440,31 @@ function checkProfileCompleteness(profile, role) {
 
   return false;
 }
+
+router.post(
+  "/stripe/account",
+  authMiddleware,
+  userController.createStripeAccountForTalent
+);
+router.get(
+  "/stripe/onboarding-link",
+  authMiddleware,
+  userController.getStripeOnboardingLink
+);
+router.get("/admin/users/:auth0Id", authMiddleware, async (req, res) => {
+  try {
+    const { auth0Id } = req.params;
+    const user = await User.findOne({ auth0Id });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user by auth0Id:", error);
+    res.status(500).json({ message: "Error fetching user" });
+  }
+});
 
 module.exports = router;

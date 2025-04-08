@@ -241,50 +241,52 @@
                 </button>
 
                 <!-- Client actions -->
-                <ng-container *ngIf="isClient && isOwner">
-                  <!-- Pay deposit button - only for pending milestones -->
-                  <button
-                    *ngIf="milestone.status === 'pending'"
-                    class="btn btn-primary"
-                    [routerLink]="[
-                      '/jobs',
-                      job._id,
-                      'milestones',
-                      milestone._id
-                    ]"
-                  >
-                    Pay Deposit
-                  </button>
-
-                  <!-- Review completed work button -->
+                <<ng-container *ngIf="isClient && isOwner">
+                  <!-- For milestones that are completed by talent but not yet approved -->
                   <button
                     *ngIf="
                       milestone.talentStatus === 'completed' &&
                       milestone.status === 'in_progress'
                     "
-                    class="btn btn-success"
-                    [routerLink]="[
-                      '/jobs',
-                      job._id,
-                      'milestones',
-                      milestone._id
-                    ]"
+                    class="btn btn-primary"
+                    [routerLink]="['/escrow-payment']"
+                    [queryParams]="{
+                      jobId: job._id,
+                      milestoneId: milestone._id,
+                      step: 'review'
+                    }"
                   >
-                    Review Work
+                    Review & Fund
                   </button>
 
-                  <!-- Release payment button -->
+                  <!-- For approved milestones pending payment -->
                   <button
-                    *ngIf="milestone.status === 'completed'"
-                    class="btn btn-success"
-                    [routerLink]="[
-                      '/jobs',
-                      job._id,
-                      'milestones',
-                      milestone._id
-                    ]"
+                    *ngIf="
+                      milestone.status === 'pending' && milestone.clientApproved
+                    "
+                    class="btn btn-primary"
+                    [routerLink]="['/escrow-payment']"
+                    [queryParams]="{
+                      jobId: job._id,
+                      milestoneId: milestone._id,
+                      step: 'payment'
+                    }"
                   >
-                    Release Payment
+                    Fund Escrow
+                  </button>
+
+                  <!-- For escrowed milestones ready for release -->
+                  <button
+                    *ngIf="milestone.status === 'escrowed'"
+                    class="btn btn-success"
+                    [routerLink]="['/escrow-payment']"
+                    [queryParams]="{
+                      jobId: job._id,
+                      milestoneId: milestone._id,
+                      step: 'release'
+                    }"
+                  >
+                    Release Funds
                   </button>
                 </ng-container>
 

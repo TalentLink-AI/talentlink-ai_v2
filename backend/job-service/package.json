@@ -22,6 +22,7 @@
     "joi": "^17.9.1",
     "mongoose": "^7.0.4",
     "morgan": "^1.10.0",
+    "stripe": "^18.0.0",
     "winston": "^3.8.2"
   },
   "devDependencies": {

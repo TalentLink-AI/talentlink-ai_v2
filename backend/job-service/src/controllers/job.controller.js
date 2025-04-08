@@ -3,6 +3,7 @@ const Job = require("../models/job.model");
 const Application = require("../models/application.model");
 const axios = require("axios");
 const logger = require("../utils/logger");
+const getAuth0AccessToken = require("../utils/auth0client");
 
 // Helper function to call the payment service
 const callPaymentService = async (endpoint, data) => {
@@ -1192,111 +1193,314 @@ exports.reviewAndPayRemainingMilestone = async (req, res) => {
 };
 
 exports.approveMilestoneReview = async (req, res) => {
-  const milestoneId = req.params.id;
-  const { feedback, approvalStatus } = req.body;
-  const userId = req.user.id; // Assuming auth middleware provides user ID
+  try {
+    const { id, milestoneId } = req.params;
+    const { feedback, approvalStatus } = req.body;
+    const userId = req.auth.payload.sub;
 
-  // 1. Load the milestone from DB
-  const milestone = await Milestone.findById(milestoneId);
-  if (!milestone) return res.status(404).send("Milestone not found");
-  if (milestone.clientId !== userId)
-    return res.status(403).send("Not authorized");
+    // Find the job
+    const job = await Job.findById(id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
 
-  // 2. Check current status is pending (not already paid or released)
-  if (milestone.status !== "pending") {
-    return res.status(400).send("Milestone must be pending to approve review");
+    // Check authorization
+    if (job.clientId !== userId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized" });
+    }
+
+    // Find the milestone
+    const milestoneIndex = job.milestones.findIndex(
+      (m) => m._id.toString() === milestoneId
+    );
+
+    if (milestoneIndex === -1) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Milestone not found" });
+    }
+
+    const milestone = job.milestones[milestoneIndex];
+
+    // Check that the talent has marked work as completed
+    if (milestone.talentStatus !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "The talent has not marked this milestone as completed",
+      });
+    }
+
+    // Check current status allows review
+    if (!["in_progress"].includes(milestone.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Milestone in ${milestone.status} status cannot be reviewed`,
+      });
+    }
+
+    // Record approval or request changes
+    if (approvalStatus) {
+      // Client approves the work
+      job.milestones[milestoneIndex].clientApproved = true;
+      job.milestones[milestoneIndex].approvedAt = new Date();
+      job.milestones[milestoneIndex].status = "completed"; // Update status to completed
+    } else {
+      // Client requests changes
+      job.milestones[milestoneIndex].talentStatus = "in_progress"; // Send back to talent for changes
+      job.milestones[milestoneIndex].clientFeedback =
+        feedback || "Please make the requested changes";
+    }
+
+    // Always save feedback if provided
+    if (feedback) {
+      job.milestones[milestoneIndex].clientFeedback = feedback;
+    }
+
+    // Save changes
+    await job.save();
+
+    return res.status(200).json({
+      success: true,
+      milestone: job.milestones[milestoneIndex],
+    });
+  } catch (error) {
+    console.error("Error in approveMilestoneReview:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
-
-  // 3. Record the approval and feedback
-  milestone.clientApproved = true; // new boolean flag, or use existing field
-  milestone.approvedAt = new Date(); // timestamp when approved
-  milestone.feedbackFromClient = feedback; // save feedback/comment if provided
-  // (If there's an explicit field for approvalStatus or rating, set it too)
-
-  // 4. Persist changes (no status change yet, still 'pending')
-  await milestone.save();
-
-  return res.send({ success: true, milestoneStatus: milestone.status });
 };
 
 exports.payRemainingMilestone = async (req, res) => {
-  const milestoneId = req.params.id;
-  const userId = req.user.id;
-  const paymentDetails = req.body; // e.g., payment token or method info
+  try {
+    const { id, milestoneId } = req.params;
+    const paymentDetails = req.body;
+    const userId = req.auth.payload.sub;
 
-  const milestone = await Milestone.findById(milestoneId).populate("contract");
-  if (!milestone) return res.status(404).send("Milestone not found");
-  if (milestone.clientId !== userId)
-    return res.status(403).send("Not authorized");
+    // Find the job
+    const job = await Job.findById(id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
 
-  // 1. Ensure milestone is approved (or at least pending and ready for payment)
-  if (milestone.status !== "pending") {
-    return res.status(400).send("Milestone is not in a payable state");
+    // Check authorization
+    if (job.clientId !== userId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized" });
+    }
+
+    // Find the milestone
+    const milestoneIndex = job.milestones.findIndex(
+      (m) => m._id.toString() === milestoneId
+    );
+
+    if (milestoneIndex === -1) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Milestone not found" });
+    }
+
+    const milestone = job.milestones[milestoneIndex];
+
+    // Check the milestone is in a completed status (client approved)
+    if (milestone.status !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Milestone must be approved (completed) before payment",
+      });
+    }
+
+    // Calculate remaining amount to charge
+    const amountToCharge = milestone.amount - (milestone.depositAmount || 0);
+    if (amountToCharge <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No remaining balance to pay",
+      });
+    }
+
+    // Process payment using Stripe
+    // Using your existing Stripe service
+    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+    // If a payment method ID is provided
+    let paymentIntent;
+
+    if (paymentDetails.paymentMethodId) {
+      // Create a payment intent with the payment method
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amountToCharge * 100), // Convert to cents
+        currency: "usd",
+        payment_method: paymentDetails.paymentMethodId,
+        confirm: true,
+        return_url: "http://localhost:4200/payment-status",
+        description: `Remaining payment for job ${job.title} - Milestone: ${milestone.description}`,
+        metadata: {
+          jobId: job._id.toString(),
+          milestoneId: milestone._id.toString(),
+          paymentType: "milestone_remaining",
+        },
+      });
+    } else if (paymentDetails.clientSecret) {
+      // If a client secret is provided, the payment intent was created on the frontend
+      paymentIntent = await stripe.paymentIntents.retrieve(
+        paymentDetails.clientSecret.split("_secret_")[0]
+      );
+    } else {
+      // Create a payment intent without confirming
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amountToCharge * 100), // Convert to cents
+        currency: "usd",
+        description: `Remaining payment for job ${job.title} - Milestone: ${milestone.description}`,
+        metadata: {
+          jobId: job._id.toString(),
+          milestoneId: milestone._id.toString(),
+          paymentType: "milestone_remaining",
+        },
+      });
+    }
+
+    // Check payment intent status
+    if (
+      paymentIntent.status === "succeeded" ||
+      paymentIntent.status === "requires_capture"
+    ) {
+      // Update milestone status to escrowed
+      job.milestones[milestoneIndex].status = "escrowed";
+      job.milestones[milestoneIndex].amountPaid = milestone.amount;
+      job.milestones[milestoneIndex].escrowedAt = new Date();
+      job.milestones[milestoneIndex].paymentIntentId = paymentIntent.id;
+
+      await job.save();
+
+      return res.status(200).json({
+        success: true,
+        milestone: job.milestones[milestoneIndex],
+        paymentIntent: {
+          id: paymentIntent.id,
+          client_secret: paymentIntent.client_secret,
+          status: paymentIntent.status,
+        },
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        requiresAction: true,
+        paymentIntent: {
+          id: paymentIntent.id,
+          client_secret: paymentIntent.client_secret,
+          status: paymentIntent.status,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Error in payRemainingMilestone:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
-  // If using an approval flag:
-  // if (!milestone.clientApproved) return res.status(400).send("Milestone not approved yet");
-
-  // 2. Calculate remaining amount to charge
-  const amountToCharge = milestone.amount - (milestone.amountPaid || 0);
-  if (amountToCharge <= 0) {
-    return res.status(400).send("No remaining balance to pay");
-  }
-
-  // 3. Integrate with payment gateway to charge the client
-  // Example: create a payment intent or charge (pseudo-code)
-  const paymentResult = await PaymentService.charge(
-    userId,
-    amountToCharge,
-    paymentDetails
-  );
-  if (!paymentResult.success) {
-    return res.status(402).send("Payment failed: " + paymentResult.error);
-  }
-
-  // 4. Update milestone status to 'escrowed' and record payment transaction
-  milestone.status = "escrowed";
-  milestone.amountPaid = milestone.amount; // now fully paid
-  milestone.escrowedAt = new Date();
-  milestone.paymentTransactionId = paymentResult.transactionId; // record reference
-  await milestone.save();
-
-  // (Optionally create a separate Transaction record in DB for audit trail)
-
-  return res.send({ success: true, milestoneStatus: milestone.status });
 };
 
 exports.releaseMilestoneFunds = async (req, res) => {
-  const milestoneId = req.params.id;
-  const userId = req.user.id;
-  const milestone = await Milestone.findById(milestoneId);
-  if (!milestone) return res.status(404).send("Milestone not found");
-  if (milestone.clientId !== userId)
-    return res.status(403).send("Not authorized");
+  try {
+    const { id, milestoneId } = req.params;
+    const userId = req.auth.payload.sub;
 
-  // 1. Verify current status is escrowed (funds are available to release)
-  if (milestone.status !== "escrowed") {
-    return res.status(400).send("Funds cannot be released at this stage");
+    // Find the job
+    const job = await Job.findById(id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
+
+    // Check authorization
+    if (job.clientId !== userId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized" });
+    }
+
+    // Find the milestone
+    const milestoneIndex = job.milestones.findIndex(
+      (m) => m._id.toString() === milestoneId
+    );
+
+    if (milestoneIndex === -1) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Milestone not found" });
+    }
+
+    const milestone = job.milestones[milestoneIndex];
+
+    // Verify current status is escrowed
+    if (milestone.status !== "escrowed") {
+      return res.status(400).json({
+        success: false,
+        message: "Funds cannot be released at this stage",
+      });
+    }
+
+    // Using Stripe to release funds
+    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+    let transferResult;
+
+    // Check if you need to capture the payment first
+    if (milestone.paymentIntentId) {
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        milestone.paymentIntentId
+      );
+
+      if (paymentIntent.status === "requires_capture") {
+        // Capture the payment
+        await stripe.paymentIntents.capture(milestone.paymentIntentId);
+      }
+
+      // If using Stripe Connect, transfer funds to talent's connected account
+      if (job.assignedTo) {
+        const token = await getAuth0AccessToken();
+        const talentId = job.assignedTo;
+        const userServiceUrl = `${process.env.USER_SERVICE_URL}/api/users/admin/users/${talentId}`;
+        const { data: user } = await axios.get(userServiceUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const talentStripeAccountId = user.stripeConnectedAccountId;
+
+        if (talentStripeAccountId) {
+          transferResult = await stripe.transfers.create({
+            amount: Math.round(milestone.amount * 100),
+            currency: "usd",
+            destination: talentStripeAccountId,
+            transfer_group: `job_${job._id}_milestone_${milestone._id}`,
+            description: `Payment for job ${job.title} - Milestone: ${milestone.description}`,
+            metadata: {
+              jobId: job._id.toString(),
+              milestoneId: milestone._id.toString(),
+              paymentType: "milestone_release",
+            },
+          });
+        }
+      }
+    }
+
+    // Update milestone status to released
+    job.milestones[milestoneIndex].status = "released";
+    job.milestones[milestoneIndex].releasedAt = new Date();
+
+    if (transferResult && transferResult.id) {
+      job.milestones[milestoneIndex].transferId = transferResult.id;
+    }
+
+    await job.save();
+
+    return res.status(200).json({
+      success: true,
+      milestone: job.milestones[milestoneIndex],
+      transferId: transferResult?.id || null,
+    });
+  } catch (error) {
+    console.error("Error in releaseMilestoneFunds:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
-
-  // 2. Trigger payout to freelancer
-  // This could be an internal transfer or an external API call.
-  const payoutSuccess = await PaymentService.releaseEscrow(
-    milestone.paymentTransactionId,
-    milestone.freelancerId,
-    milestone.amount
-  );
-  if (!payoutSuccess) {
-    return res.status(500).send("Failed to release funds, please try again");
-  }
-
-  // 3. Update milestone status to 'released'
-  milestone.status = "released";
-  milestone.releasedAt = new Date();
-  await milestone.save();
-
-  // (Optional: create a Payout transaction record, notify freelancer, etc.)
-
-  return res.send({ success: true, milestoneStatus: milestone.status });
 };
 
 /**

@@ -1,0 +1,169 @@
+<!-- src/app/features/jobs/escrow-payment/escrow-payment.component.html -->
+<div class="escrow-payment-container">
+  <div class="card">
+    <div class="card-header">
+      <h2>
+        {{
+          currentStep === "review"
+            ? "Review Milestone"
+            : currentStep === "payment"
+            ? "Fund Milestone"
+            : "Release Funds"
+        }}
+      </h2>
+      <button class="btn btn-link" (click)="returnToJob()">Back to Job</button>
+    </div>
+
+    <div class="card-body">
+      <!-- Loading state -->
+      <div *ngIf="!milestone" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading milestone details...</p>
+      </div>
+
+      <!-- Error message -->
+      <div *ngIf="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Status message -->
+      <div *ngIf="statusMessage" class="alert alert-success">
+        {{ statusMessage }}
+      </div>
+
+      <!-- Milestone Details (shown in all steps) -->
+      <div *ngIf="milestone" class="milestone-details">
+        <h3>{{ job?.title }}</h3>
+        <div class="milestone-info">
+          <p><strong>Milestone:</strong> {{ milestone.description }}</p>
+          <p><strong>Amount:</strong> ${{ milestone.amount }}</p>
+          <p *ngIf="milestone.depositAmount">
+            <strong>Initial Deposit:</strong> ${{ milestone.depositAmount }}
+            <span *ngIf="milestone.depositPaid" class="badge badge-success"
+              >Paid</span
+            >
+          </p>
+        </div>
+      </div>
+
+      <!-- STEP 1: Review & Approve -->
+      <div *ngIf="currentStep === 'review'" class="review-step">
+        <h3>Review Completed Work</h3>
+        <p class="step-description">
+          The talent has marked this milestone as complete. Review the work and
+          provide feedback.
+        </p>
+
+        <form
+          [formGroup]="reviewForm"
+          (ngSubmit)="submitReview()"
+          class="review-form"
+        >
+          <div class="form-group">
+            <label for="feedback">Feedback (Optional)</label>
+            <textarea
+              id="feedback"
+              formControlName="feedback"
+              class="form-control"
+              rows="4"
+              placeholder="Provide feedback on the completed work..."
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <div class="form-check">
+              <input
+                type="radio"
+                id="approveWork"
+                formControlName="approval"
+                [value]="true"
+                class="form-check-input"
+              />
+              <label class="form-check-label" for="approveWork">
+                Approve the work and proceed to payment
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input
+                type="radio"
+                id="requestChanges"
+                formControlName="approval"
+                [value]="false"
+                class="form-check-input"
+              />
+              <label class="form-check-label" for="requestChanges">
+                Request changes from the talent
+              </label>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="reviewForm.invalid || isProcessing"
+          >
+            <span
+              *ngIf="isProcessing"
+              class="spinner-border spinner-border-sm"
+            ></span>
+            {{ isProcessing ? "Processing..." : "Submit Review" }}
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 2: Payment (Escrow) -->
+      <div *ngIf="currentStep === 'payment'" class="payment-step">
+        <h3>Fund Milestone Escrow</h3>
+        <p class="step-description">
+          You've approved the milestone. Now fund the escrow to secure payment
+          for the talent. Funds will be held in escrow until you release them.
+        </p>
+
+        <div class="form-group">
+          <label for="card-element">Payment Information</label>
+          <div id="card-element" class="card-element-container"></div>
+          <div id="card-errors" class="card-errors" role="alert"></div>
+        </div>
+
+        <button
+          (click)="processPayment()"
+          class="btn btn-primary"
+          [disabled]="isProcessing"
+        >
+          <span
+            *ngIf="isProcessing"
+            class="spinner-border spinner-border-sm"
+          ></span>
+          {{ isProcessing ? "Processing..." : "Fund Escrow" }}
+        </button>
+      </div>
+
+      <!-- STEP 3: Release -->
+      <div *ngIf="currentStep === 'release'" class="release-step">
+        <h3>Release Escrowed Funds</h3>
+        <p class="step-description">
+          You've funded the escrow for this milestone. When you're satisfied
+          with the work, release the funds to the talent.
+        </p>
+
+        <div class="alert alert-info">
+          <strong>Note:</strong> Once you release the funds, the payment will be
+          sent to the talent. This action cannot be undone.
+        </div>
+
+        <button
+          (click)="releaseFunds()"
+          class="btn btn-success"
+          [disabled]="isProcessing"
+        >
+          <span
+            *ngIf="isProcessing"
+            class="spinner-border spinner-border-sm"
+          ></span>
+          {{ isProcessing ? "Processing..." : "Release Funds to Talent" }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
