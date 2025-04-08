@@ -82,13 +82,13 @@ exports.createCustomer = async (params) => {
  * @param {string} params.customerId - Stripe Customer ID
  * @param {number} params.amount - Amount to charge
  * @param {string} params.currency - Currency (default: 'usd')
- * @param {string} [params.connectedAccountId] - (Optional) The freelancer’s Stripe Account ID
  * @param {string} [params.description] - Description for metadata
  * @returns {Promise<Object>} PaymentIntent object
  */
 exports.createMilestonePaymentIntent = async (params) => {
   try {
-    // Create the payment intent in Stripe
+    // Create the payment intent with manual capture mode
+    // This means the funds are authorized but not captured yet
     const paymentIntent = await stripe.paymentIntents.create({
       amount: params.amount,
       currency: params.currency || "usd",
@@ -99,6 +99,7 @@ exports.createMilestonePaymentIntent = async (params) => {
         payeeId: params.payeeId,
         projectId: params.projectId,
         milestoneId: params.milestoneId,
+        isEscrow: "true", // Flag this as an escrow payment
       },
     });
 
@@ -137,15 +138,24 @@ exports.createMilestonePaymentIntent = async (params) => {
  */
 exports.captureMilestonePaymentIntent = async (paymentIntentId) => {
   try {
-    // "Finalize" the payment
-    const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+    // First, retrieve the payment intent to get its metadata
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (!paymentIntent || paymentIntent.status !== "requires_capture") {
+      throw new Error(
+        `PaymentIntent ${paymentIntentId} cannot be captured. Status: ${paymentIntent?.status}`
+      );
+    }
+
+    // "Finalize" the payment by capturing the authorized amount
+    const capturedIntent = await stripe.paymentIntents.capture(paymentIntentId);
 
     // Update the DB record
     await paymentRepository.updateByPaymentIntentId(paymentIntentId, {
-      status: paymentIntent.status,
+      status: capturedIntent.status,
     });
 
-    return paymentIntent;
+    return capturedIntent;
   } catch (error) {
     logger.error(`Error capturing milestone PaymentIntent: ${error.message}`, {
       stack: error.stack,
@@ -361,6 +371,52 @@ exports.transferToConnectedAccount = async (params) => {
     return transfer;
   } catch (error) {
     console.error("Error transferring to connected account:", error);
+    throw error;
+  }
+};
+
+/**
+ * Transfer funds from platform to talent's connected account
+ * @param {Object} params - Transfer parameters
+ * @param {number} params.amount - Amount to transfer in cents
+ * @param {string} params.connectedAccountId - Destination connected account ID
+ * @param {string} params.transferGroup - Group identifier for the transfer (e.g. milestoneId)
+ * @param {string} params.description - Description of the transfer
+ * @returns {Promise<Object>} Transfer object
+ */
+exports.transferToTalent = async (params) => {
+  try {
+    // Create a transfer to the connected account
+    const transfer = await stripe.transfers.create({
+      amount: params.amount,
+      currency: config.STRIPE_CONFIG.CURRENCY || "usd",
+      destination: params.connectedAccountId,
+      transfer_group: params.transferGroup,
+      description: params.description,
+      metadata: params.metadata || {},
+    });
+
+    // Save transfer record in database if needed
+    if (params.saveToDb !== false && params.metadata?.payeeId) {
+      await transferRepository.create({
+        userId: params.metadata.payeeId,
+        stripeTransferId: transfer.id,
+        stripeAccountId: params.connectedAccountId,
+        amount: params.amount / 100, // Convert from cents to dollars for DB
+        currency: config.STRIPE_CONFIG.CURRENCY || "usd",
+        description: params.description,
+        status: "paid",
+        sourceType: "payment",
+        sourceId: params.metadata.milestoneId,
+        metadata: params.metadata,
+      });
+    }
+
+    return transfer;
+  } catch (error) {
+    logger.error(`Error creating transfer to talent: ${error.message}`, {
+      stack: error.stack,
+    });
     throw error;
   }
 };

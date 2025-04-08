@@ -1,3 +1,4 @@
+<!-- src/app/features/jobs/milestone-payment/milestone-payment.component.html -->
 <div class="milestone-payment-container">
   <div class="card">
     <div class="card-header">
@@ -38,83 +39,134 @@
           class="payment-instructions alert alert-info"
           *ngIf="paymentType === 'deposit'"
         >
-          This initial deposit will allow the talent to start work on the
-          milestone. The remainder will be due upon completion and approval of
-          the work.
+          <p>
+            This initial deposit will allow the talent to start work on the
+            milestone. The remainder will be due upon completion and approval of
+            the work.
+          </p>
         </div>
 
         <div
           class="payment-instructions alert alert-info"
           *ngIf="paymentType === 'remaining'"
         >
-          This payment is for the remaining amount after you've reviewed and
-          approved the completed work for this milestone.
+          <p>
+            This payment is for the remaining amount after you've reviewed and
+            approved the completed work for this milestone.
+          </p>
+          <p>
+            Funds will be held in escrow by TalentLink until you release them to
+            the talent.
+          </p>
         </div>
 
         <div
           class="payment-instructions alert alert-info"
           *ngIf="paymentType === 'full'"
         >
-          This payment will be held in escrow until the milestone is completed
-          and you release the funds.
+          <p>
+            This payment will be held in escrow by TalentLink until the
+            milestone is completed and you release the funds to the talent.
+          </p>
         </div>
       </div>
 
-      <!-- Card Element is *always* present in the DOM -->
-      <div class="form-group">
-        <label for="card-element">Payment Information</label>
-        <div id="card-element" class="card-element-container"></div>
+      <!-- Status message area - Show this prominently -->
+      <div class="status-message" *ngIf="statusMessage">
+        <div
+          [ngClass]="{
+            alert: true,
+            'alert-info': !statusMessage.includes('Error'),
+            'alert-danger': statusMessage.includes('Error'),
+            'alert-success':
+              statusMessage.includes('success') ||
+              statusMessage.includes('Success')
+          }"
+        >
+          {{ statusMessage }}
+        </div>
       </div>
 
       <!-- Payment setup step -->
-      <button
-        (click)="createPaymentIntent()"
-        class="btn btn-primary btn-lg"
-        [disabled]="isProcessing"
-      >
-        <span
-          *ngIf="isProcessing"
-          class="spinner-border spinner-border-sm"
-        ></span>
-        {{ isProcessing ? "Processing..." : "Setup Payment" }}
-      </button>
+      <div *ngIf="paymentStep === 'setup'" class="payment-step-container">
+        <!-- Card Element is always present in the DOM -->
+        <div class="form-group">
+          <label for="card-element">Payment Information</label>
+          <div id="card-element" class="card-element-container"></div>
+          <small class="card-element-help"
+            >Enter your card details securely above.</small
+          >
+        </div>
+
+        <button
+          (click)="createPaymentIntent()"
+          class="btn btn-primary btn-lg action-button"
+          [disabled]="isProcessing"
+        >
+          <span
+            *ngIf="isProcessing"
+            class="spinner-border spinner-border-sm"
+          ></span>
+          {{ isProcessing ? "Processing..." : "Setup Payment" }}
+        </button>
+      </div>
 
       <!-- Confirmation step -->
+      <div *ngIf="paymentStep === 'confirm'" class="payment-step-container">
+        <!-- Card Element is always present in the DOM -->
+        <div class="form-group" *ngIf="!intentIdToCapture">
+          <label for="card-element">Payment Information</label>
+          <div id="card-element" class="card-element-container"></div>
+          <small class="card-element-help"
+            >Enter your card details securely above.</small
+          >
+        </div>
 
-      <button
-        (click)="confirmPayment()"
-        class="btn btn-success btn-lg"
-        [disabled]="isProcessing"
-      >
-        <span
-          *ngIf="isProcessing"
-          class="spinner-border spinner-border-sm"
-        ></span>
-        {{ isProcessing ? "Processing..." : "Confirm Payment" }}
-      </button>
+        <div
+          class="escrow-explanation"
+          *ngIf="!statusMessage.includes('Error')"
+        >
+          <div class="alert alert-info">
+            <p><strong>About Escrow Payments:</strong></p>
+            <p>
+              Your payment will be securely held by TalentLink until the
+              milestone is completed and you're satisfied with the work.
+            </p>
+            <p>Only then will you release the funds to the talent.</p>
+          </div>
+        </div>
 
-      <!-- Release funds (only shown for full payments) -->
+        <button
+          (click)="confirmPayment()"
+          class="btn btn-success btn-lg action-button"
+          [disabled]="isProcessing"
+        >
+          <span
+            *ngIf="isProcessing"
+            class="spinner-border spinner-border-sm"
+          ></span>
+          {{ isProcessing ? "Processing..." : "Process Secure Payment" }}
+        </button>
+      </div>
 
-      <h3>Release Milestone Payment</h3>
-      <p>
-        Once the work is complete and you're satisfied, release the funds to the
-        freelancer.
-      </p>
-      <button
-        (click)="releaseFunds()"
-        class="btn btn-primary"
-        [disabled]="isProcessing"
-      >
-        <span
-          *ngIf="isProcessing"
-          class="spinner-border spinner-border-sm"
-        ></span>
-        {{ isProcessing ? "Processing..." : "Release Funds" }}
-      </button>
+      <!-- Payment complete - show message and offer navigation -->
+      <div *ngIf="paymentStep === 'done'" class="payment-step-container">
+        <div class="payment-success-message">
+          <div class="alert alert-success">
+            <h4>Payment Processed Successfully!</h4>
+            <p>
+              {{
+                paymentType === "deposit"
+                  ? "Your deposit has been processed and the talent can now begin work on this milestone."
+                  : "Funds are now securely held in escrow. You can release them to the talent once you approve the completed work."
+              }}
+            </p>
+          </div>
+        </div>
 
-      <!-- Status message area -->
-      <div *ngIf="statusMessage">
-        {{ statusMessage }}
+        <button (click)="returnToJob()" class="btn btn-primary action-button">
+          Return to Job Details
+        </button>
       </div>
     </div>
   </div>

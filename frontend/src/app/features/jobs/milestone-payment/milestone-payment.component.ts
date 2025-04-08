@@ -1,3 +1,4 @@
+// src/app/features/jobs/milestone-payment/milestone-payment.component.ts
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -36,6 +37,7 @@ export class MilestonePaymentComponent
   // Additional fields
   paymentType: string = 'full'; // 'deposit', 'remaining', or 'full'
   paymentIntentId: string | null = null;
+  paymentStep: 'setup' | 'confirm' | 'done' = 'setup';
 
   constructor(
     private http: HttpClient,
@@ -68,6 +70,7 @@ export class MilestonePaymentComponent
 
       if (this.paymentIntentId) {
         this.intentIdToCapture = this.paymentIntentId;
+        this.paymentStep = 'confirm';
       }
     });
   }
@@ -212,6 +215,7 @@ export class MilestonePaymentComponent
         const paymentIntentId =
           response.data.id || response.data.paymentIntent?.id;
 
+        this.paymentStep = 'confirm';
         console.log('Payment intent created:', paymentIntentId);
         this.statusMessage =
           'Payment ready to confirm. Click "Confirm Payment" to proceed.';
@@ -275,11 +279,23 @@ export class MilestonePaymentComponent
           if (this.paymentType === 'deposit') {
             await this.confirmDepositPayment(paymentIntent.id);
           } else if (this.paymentType === 'remaining') {
-            // Handle remaining payment confirmation
-            await this.releaseFunds();
+            // Update milestone with payment intent ID and mark as escrowed
+            await this.updateMilestoneWithPaymentIntent(
+              paymentIntent.id,
+              'escrowed'
+            );
+            this.statusMessage =
+              'Payment processed! Funds are now in escrow and can be released when work is completed.';
+            this.paymentStep = 'done';
           } else {
             // Handle regular milestone payment
-            this.updateMilestoneWithPaymentIntent(paymentIntent.id);
+            await this.updateMilestoneWithPaymentIntent(
+              paymentIntent.id,
+              'escrowed'
+            );
+            this.statusMessage =
+              'Payment processed! Funds are now in escrow and can be released when work is completed.';
+            this.paymentStep = 'done';
           }
         }
 
@@ -315,6 +331,7 @@ export class MilestonePaymentComponent
       console.log('Deposit payment confirmed:', response);
       this.statusMessage =
         'Deposit payment successful! Talent can now start work.';
+      this.paymentStep = 'done';
 
       setTimeout(() => {
         if (this.jobId) {
@@ -329,7 +346,10 @@ export class MilestonePaymentComponent
   }
 
   // Helper method to update the milestone with payment intent ID
-  private updateMilestoneWithPaymentIntent(paymentIntentId: string) {
+  private async updateMilestoneWithPaymentIntent(
+    paymentIntentId: string,
+    status: string
+  ) {
     if (!this.jobId || !this.milestoneId) return;
 
     // Get the milestone or find it in the job
@@ -343,24 +363,24 @@ export class MilestonePaymentComponent
     // Include all potentially required fields
     const updateData = {
       paymentIntentId: paymentIntentId,
-      status: 'escrowed',
+      status: status,
       description: milestone?.description || 'Milestone payment',
       amount: milestone?.amount || this.paymentAmount / 100, // Convert from cents back to dollars
     };
 
     console.log('Updating milestone with data:', updateData);
 
-    this.jobService
-      .updateMilestone(this.jobId, this.milestoneId, updateData)
-      .subscribe({
-        next: (response) => {
-          console.log('Milestone updated with payment intent ID:', response);
-        },
-        error: (err) => {
-          console.error('Error updating milestone:', err);
-          // Don't show this error to the user since the payment worked
-        },
-      });
+    try {
+      const response = await this.jobService
+        .updateMilestone(this.jobId, this.milestoneId, updateData)
+        .toPromise();
+
+      console.log('Milestone updated with payment intent ID:', response);
+      return response;
+    } catch (error) {
+      console.error('Error updating milestone:', error);
+      // Don't show this error to the user since the payment worked
+    }
   }
 
   async releaseFunds() {
@@ -373,23 +393,14 @@ export class MilestonePaymentComponent
     this.statusMessage = 'Releasing funds...';
 
     try {
-      // Load the milestone data if we don't have it yet
-      if (!this.milestone && this.job?.milestones) {
-        this.milestone = this.job.milestones.find(
-          (m: any) => m._id === this.milestoneId
-        );
-      }
-
-      console.log('Releasing funds for milestone:', this.milestone);
-      console.log('Job ID:', this.jobId, 'Milestone ID:', this.milestoneId);
-
-      // Call the job service to release the milestone
+      // Call the job service to release the milestone funds
       const response = await this.jobService
         .releaseMilestone(this.jobId, this.milestoneId)
         .toPromise();
 
       console.log('Funds released:', response);
-      this.statusMessage = `Funds released successfully!`;
+      this.statusMessage = 'Funds released successfully to the talent!';
+      this.paymentStep = 'done';
 
       // Navigate back to the job detail page after a delay
       setTimeout(() => {

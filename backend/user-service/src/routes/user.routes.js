@@ -8,6 +8,7 @@ const axios = require("axios");
 const Joi = require("joi");
 const userController = require("../controllers/user.controller");
 const authMiddleware = require("../middlewares/auth");
+const internalAuthMiddleware = require("../middlewares/internal-auth");
 
 // Validation middleware
 const validateRequest = (schema) => {
@@ -451,20 +452,34 @@ router.get(
   authMiddleware,
   userController.getStripeOnboardingLink
 );
-router.get("/admin/users/:auth0Id", authMiddleware, async (req, res) => {
-  try {
-    const { auth0Id } = req.params;
-    const user = await User.findOne({ auth0Id });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+router.get(
+  "/admin/users/:auth0Id",
+  internalAuthMiddleware,
+  async (req, res) => {
+    try {
+      const { auth0Id } = req.params;
+
+      // Find the user by auth0Id
+      const user = await User.findOne({ auth0Id });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return user data, including Stripe connected account ID
+      res.json({
+        _id: user._id,
+        auth0Id: user.auth0Id,
+        email: user.email,
+        role: user.role,
+        stripeConnectedAccountId: user.stripeConnectedAccountId,
+      });
+    } catch (error) {
+      console.error("Error fetching user by auth0Id:", error);
+      res.status(500).json({ message: "Error fetching user" });
     }
-
-    res.json(user);
-  } catch (error) {
-    console.error("Error fetching user by auth0Id:", error);
-    res.status(500).json({ message: "Error fetching user" });
   }
-});
+);
 
 module.exports = router;

@@ -1439,35 +1439,74 @@ exports.releaseMilestoneFunds = async (req, res) => {
       });
     }
 
-    // Using Stripe to release funds
+    // Using Stripe to release funds - TWO STEP PROCESS:
+    // 1. Capture the payment if needed (funds move from "authorized" to platform balance)
+    // 2. Transfer the funds to talent's connected account
     const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
+    // Track the results
+    let captureResult;
     let transferResult;
 
-    // Check if you need to capture the payment first
+    // Step 1: Capture the payment if it's not already captured
     if (milestone.paymentIntentId) {
       const paymentIntent = await stripe.paymentIntents.retrieve(
         milestone.paymentIntentId
       );
 
+      // If payment intent requires capture, capture it now
       if (paymentIntent.status === "requires_capture") {
-        // Capture the payment
-        await stripe.paymentIntents.capture(milestone.paymentIntentId);
+        captureResult = await stripe.paymentIntents.capture(
+          milestone.paymentIntentId
+        );
+        logger.info(
+          `Captured payment intent ${milestone.paymentIntentId} for milestone ${milestoneId}`
+        );
+      } else if (paymentIntent.status === "succeeded") {
+        captureResult = paymentIntent; // It's already captured
+        logger.info(
+          `Payment intent ${milestone.paymentIntentId} already captured`
+        );
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: `Payment is in ${paymentIntent.status} state and cannot be released`,
+        });
       }
 
-      // If using Stripe Connect, transfer funds to talent's connected account
+      // Step 2: Transfer funds to talent's connected account
       if (job.assignedTo) {
-        const token = await getAuth0AccessToken();
-        const talentId = job.assignedTo;
-        const userServiceUrl = `${process.env.USER_SERVICE_URL}/api/users/admin/users/${talentId}`;
-        const { data: user } = await axios.get(userServiceUrl, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const talentStripeAccountId = user.stripeConnectedAccountId;
+        try {
+          // Get the talent's Stripe connected account ID
+          const token = await getAuth0AccessToken();
+          const userServiceUrl =
+            process.env.USER_SERVICE_URL || "http://user-service:3001";
+          const { data: userData } = await axios.get(
+            `${userServiceUrl}/api/users/admin/users/${job.assignedTo}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "x-internal-api-key":
+                  process.env.INTERNAL_API_KEY || "no-key-set",
+              },
+            }
+          );
 
-        if (talentStripeAccountId) {
+          const talentStripeAccountId = userData.stripeConnectedAccountId;
+
+          if (!talentStripeAccountId) {
+            logger.warn(
+              `Talent ${job.assignedTo} does not have a connected Stripe account`
+            );
+            return res.status(400).json({
+              success: false,
+              message: "The talent does not have a payment account set up",
+            });
+          }
+
+          // Create a transfer from platform to the connected account
           transferResult = await stripe.transfers.create({
-            amount: Math.round(milestone.amount * 100),
+            amount: Math.round(milestone.amount * 100), // Convert to cents
             currency: "usd",
             destination: talentStripeAccountId,
             transfer_group: `job_${job._id}_milestone_${milestone._id}`,
@@ -1476,7 +1515,23 @@ exports.releaseMilestoneFunds = async (req, res) => {
               jobId: job._id.toString(),
               milestoneId: milestone._id.toString(),
               paymentType: "milestone_release",
+              payeeId: job.assignedTo,
             },
+          });
+
+          logger.info(
+            `Created transfer ${transferResult.id} to talent ${job.assignedTo}`
+          );
+        } catch (error) {
+          logger.error(`Error transferring funds to talent: ${error.message}`, {
+            stack: error.stack,
+          });
+
+          return res.status(500).json({
+            success: false,
+            message:
+              "Failed to transfer funds to talent. Please try again or contact support.",
+            error: error.message,
           });
         }
       }
@@ -1495,10 +1550,12 @@ exports.releaseMilestoneFunds = async (req, res) => {
     return res.status(200).json({
       success: true,
       milestone: job.milestones[milestoneIndex],
-      transferId: transferResult?.id || null,
+      transferResult: transferResult || null,
     });
   } catch (error) {
-    console.error("Error in releaseMilestoneFunds:", error);
+    logger.error(`Error in releaseMilestoneFunds: ${error.message}`, {
+      stack: error.stack,
+    });
     return res.status(500).json({ success: false, message: error.message });
   }
 };
