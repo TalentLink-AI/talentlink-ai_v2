@@ -84,4 +84,5 @@ exports.milestoneSchema = Joi.object({
   amount: Joi.number().required().min(1),
   status: Joi.string().valid("pending", "escrowed", "released", "cancelled"),
   paymentIntentId: Joi.string(),
+  depositAmount: Joi.number().min(0),
 });

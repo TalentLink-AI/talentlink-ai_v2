@@ -123,15 +123,19 @@ export class JobService {
     );
   }
 
-  // Create a milestone
+  /**
+   * Create a milestone
+   */
   createMilestone(
     jobId: string,
     description: string,
-    amount: number
+    amount: number,
+    depositAmount?: number
   ): Observable<any> {
     return this.http.post(`${this.apiUrl}/jobs/${jobId}/milestones`, {
       description,
       amount,
+      depositAmount,
     });
   }
 
@@ -225,5 +229,145 @@ export class JobService {
   // Complete a job
   completeJob(jobId: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/jobs/${jobId}/complete`, {});
+  }
+
+  /**
+   * Get milestone details
+   */
+  getMilestoneDetails(jobId: string, milestoneId: string): Observable<any> {
+    return this.http.get(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}`
+    );
+  }
+
+  /**
+   * Pay deposit for a milestone
+   */
+  payMilestoneDeposit(jobId: string, milestoneId: string): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/deposit`,
+      {}
+    );
+  }
+
+  /**
+   * Confirm milestone deposit payment
+   */
+  confirmMilestoneDeposit(
+    jobId: string,
+    milestoneId: string,
+    paymentIntentId: string
+  ): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/confirm-deposit`,
+      { paymentIntentId }
+    );
+  }
+
+  /**
+   * Talent starts work on a milestone
+   */
+  startMilestoneWork(jobId: string, milestoneId: string): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/start`,
+      {}
+    );
+  }
+
+  /**
+   * Talent completes work on a milestone
+   */
+  completeMilestoneWork(
+    jobId: string,
+    milestoneId: string,
+    submissionDetails?: string
+  ): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/complete`,
+      { submissionDetails }
+    );
+  }
+
+  /**
+   * Client reviews and pays remaining milestone amount
+   */
+  reviewAndPayRemainingMilestone(
+    jobId: string,
+    milestoneId: string,
+    approve: boolean,
+    clientFeedback?: string
+  ): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/review`,
+      { approve, clientFeedback }
+    );
+  }
+
+  /**
+   * Create milestone payment intent for remaining amount
+   * This is used after the client reviews and approves the work
+   */
+  createRemainingMilestonePayment(
+    jobId: string,
+    milestoneId: string,
+    paymentIntentId: string
+  ): Observable<any> {
+    // Get the job first to retrieve milestone data
+    return this.getJobById(jobId).pipe(
+      switchMap((jobResponse) => {
+        if (!jobResponse || !jobResponse.data) {
+          return throwError(() => new Error('Job not found'));
+        }
+
+        const job = jobResponse.data;
+        const milestone = job.milestones?.find(
+          (m: any) => m._id === milestoneId
+        );
+
+        if (!milestone) {
+          return throwError(() => new Error('Milestone not found'));
+        }
+
+        // Calculate remaining amount
+        const totalAmount = milestone.amount;
+        const depositAmount = milestone.depositAmount || totalAmount * 0.1;
+        const remainingAmount = Math.round((totalAmount - depositAmount) * 100);
+
+        // Now make the payment intent request for the remaining amount
+        return this.http.post(
+          `${environment.apiUrlpayment}/api/payment/milestone/intent`,
+          {
+            amount: remainingAmount,
+            currency: 'usd',
+            customerId: 'cus_123456', // TODO: Get from user profile
+            payerId: job.clientId,
+            payeeId: job.assignedTo,
+            projectId: job._id,
+            milestoneId: milestoneId,
+            description: `Remaining payment for milestone: ${milestone.description}`,
+          }
+        );
+      })
+    );
+  }
+
+  /**
+   * Process milestone payment by milestone status
+   */
+  processMilestonePayment(
+    jobId: string,
+    milestoneId: string,
+    status: string
+  ): Observable<any> {
+    if (status === 'pending') {
+      return this.payMilestoneDeposit(jobId, milestoneId);
+    } else if (status === 'completed') {
+      return this.reviewAndPayRemainingMilestone(jobId, milestoneId, true);
+    } else {
+      return throwError(
+        () =>
+          new Error(`Cannot process payment for milestone in ${status} status`)
+      );
+    }
   }
 }

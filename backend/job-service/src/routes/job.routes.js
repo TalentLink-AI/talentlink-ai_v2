@@ -98,4 +98,80 @@ router.post(
   jobController.completeJob
 );
 
+// Get milestone details
+router.get(
+  "/:id/milestones/:milestoneId",
+  setUserRole(),
+  jobController.getMilestoneDetails
+);
+
+// Client routes for milestone management
+// Pay deposit for milestone
+router.post(
+  "/:id/milestones/:milestoneId/deposit",
+  isClient(),
+  isJobOwner(Job),
+  jobController.payMilestoneDeposit
+);
+
+// Confirm deposit payment
+router.post(
+  "/:id/milestones/:milestoneId/confirm-deposit",
+  isClient(),
+  isJobOwner(Job),
+  jobController.confirmMilestoneDeposit
+);
+
+// Client reviews and pays remaining milestone amount
+router.post(
+  "/:id/milestones/:milestoneId/review",
+  isClient(),
+  isJobOwner(Job),
+  jobController.reviewAndPayRemainingMilestone
+);
+
+router.post(
+  "/:id/milestones/:milestoneId/approve-review",
+  isClient(),
+  isJobOwner(Job),
+  jobController.approveMilestoneReview
+);
+
+router.post(
+  "/:id/milestones/:milestoneId/pay-remaining",
+  isClient(),
+  isJobOwner(Job),
+  jobController.payRemainingMilestone
+);
+
+router.post(
+  "/:id/milestones/:milestoneId/release-funds",
+  isClient(),
+  isJobOwner(Job),
+  jobController.releaseMilestoneFunds
+);
+
+// Talent routes for milestone management
+// Start work on milestone
+router.post(
+  "/:id/milestones/:milestoneId/start",
+  isTalent(),
+  jobController.startMilestoneWork
+);
+
+// Complete work on milestone
+router.post(
+  "/:id/milestones/:milestoneId/complete",
+  isTalent(),
+  jobController.completeMilestoneWork
+);
+
+// Release milestone payment (unchanged from your existing implementation, just included for completeness)
+router.post(
+  "/:id/milestones/:milestoneId/release",
+  isClient(),
+  isJobOwner(Job),
+  jobController.releaseMilestone
+);
+
 module.exports = router;

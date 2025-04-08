@@ -1,0 +1,188 @@
+/* src/app/features/payment/milestone-payment/milestone-payment.component.scss */
+@use '../../../../styles/variables' as vars;
+@use '../../../../styles/mixins' as mixins;
+
+.milestone-payment-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: vars.$spacing-6;
+}
+
+.card {
+  @include mixins.card;
+  
+  &-header {
+    @include mixins.flex-between;
+    padding-bottom: vars.$spacing-4;
+    margin-bottom: vars.$spacing-6;
+    border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+    
+    h2 {
+      margin: 0;
+      color: vars.$color-primary;
+    }
+  }
+  
+  &-body {
+    padding: vars.$spacing-4 0;
+  }
+}
+
+.payment-details {
+  margin-bottom: vars.$spacing-8;
+  
+  h3 {
+    margin-bottom: vars.$spacing-4;
+    color: vars.$color-text;
+  }
+  
+  .payment-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: vars.$spacing-4;
+    margin-bottom: vars.$spacing-6;
+    
+    .meta-item {
+      background-color: vars.$color-gray-100;
+      padding: vars.$spacing-2 vars.$spacing-4;
+      border-radius: vars.$border-radius-md;
+      
+      .meta-label {
+        font-weight: vars.$font-weight-medium;
+        margin-right: vars.$spacing-2;
+        color: vars.$color-text-muted;
+      }
+      
+      .meta-value {
+        font-weight: vars.$font-weight-bold;
+        color: vars.$color-text;
+      }
+      
+      .payment-type-badge {
+        display: inline-block;
+        padding: vars.$spacing-1 vars.$spacing-2;
+        border-radius: vars.$border-radius-sm;
+        font-size: vars.$font-size-sm;
+        font-weight: vars.$font-weight-medium;
+        
+        &.deposit {
+          background-color: rgba(vars.$color-info, 0.1);
+          color: vars.$color-info;
+        }
+        
+        &.remaining {
+          background-color: rgba(vars.$color-success, 0.1);
+          color: vars.$color-success;
+        }
+      }
+    }
+  }
+  
+  .payment-instructions {
+    padding: vars.$spacing-4;
+    margin-bottom: vars.$spacing-6;
+    border-radius: vars.$border-radius-md;
+    
+    &.alert-info {
+      background-color: rgba(vars.$color-info, 0.1);
+      color: vars.$color-info;
+    }
+  }
+}
+
+.form-group {
+  margin-bottom: vars.$spacing-6;
+
+  label {
+    @include mixins.form-label;
+    margin-bottom: vars.$spacing-2;
+  }
+}
+
+.card-element-container {
+  padding: vars.$spacing-4;
+  border: vars.$border-width-default solid vars.$color-gray-300;
+  border-radius: vars.$border-radius-md;
+  background-color: vars.$color-white;
+  min-height: 40px;
+  margin-bottom: vars.$spacing-2;
+}
+
+.card-element-help {
+  font-size: vars.$font-size-sm;
+  color: vars.$color-text-muted;
+  margin-top: vars.$spacing-2;
+}
+
+.release-milestone {
+  margin-top: vars.$spacing-8;
+  padding: vars.$spacing-6;
+  background-color: vars.$color-gray-100;
+  border-radius: vars.$border-radius-md;
+  
+  h3 {
+    margin-bottom: vars.$spacing-4;
+    color: vars.$color-text;
+  }
+  
+  p {
+    margin-bottom: vars.$spacing-4;
+    color: vars.$color-text;
+  }
+}
+
+.status-message {
+  margin-top: vars.$spacing-6;
+  
+  .alert {
+    padding: vars.$spacing-4;
+    border-radius: vars.$border-radius-md;
+    
+    &.alert-info {
+      background-color: rgba(vars.$color-info, 0.1);
+      color: vars.$color-info;
+    }
+    
+    &.alert-danger {
+      background-color: rgba(vars.$color-danger, 0.1);
+      color: vars.$color-danger;
+    }
+    
+    &.alert-success {
+      background-color: rgba(vars.$color-success, 0.1);
+      color: vars.$color-success;
+    }
+  }
+}
+
+.spinner-border {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 0.2em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner 1s linear infinite;
+  margin-right: vars.$spacing-2;
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Add responsive adjustments
+@media (max-width: 768px) {
+  .milestone-payment-container {
+    padding: vars.$spacing-4;
+  }
+  
+  .payment-meta {
+    flex-direction: column;
+    
+    .meta-item {
+      width: 100%;
+    }
+  }
+}

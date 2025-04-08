@@ -1,0 +1,370 @@
+<!-- src/app/features/jobs/milestone-detail/milestone-detail.component.html -->
+<div class="milestone-detail-container">
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading milestone details...</p>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="milestone-card" *ngIf="!isLoading && milestone">
+    <div class="milestone-header">
+      <div class="milestone-title-section">
+        <h2>Milestone: {{ milestone.description }}</h2>
+        <div class="badge-container">
+          <span
+            class="milestone-status"
+            [ngClass]="getStatusClass(milestone.status)"
+          >
+            {{ milestone.status | titlecase }}
+          </span>
+          <span
+            class="talent-status"
+            *ngIf="milestone.talentStatus !== 'not_started'"
+          >
+            Work: {{ milestone.talentStatus | titlecase }}
+          </span>
+        </div>
+      </div>
+      <button class="btn btn-outline-secondary" (click)="backToJob()">
+        Back to Job
+      </button>
+    </div>
+
+    <div class="milestone-info">
+      <div class="milestone-amount">
+        <span class="info-label">Amount:</span>
+        <span class="info-value">${{ milestone.amount }}</span>
+      </div>
+
+      <div class="milestone-deposit" *ngIf="milestone.depositAmount">
+        <span class="info-label">Initial Deposit:</span>
+        <span class="info-value">${{ milestone.depositAmount }}</span>
+        <span class="deposit-status" *ngIf="milestone.depositPaid">Paid</span>
+      </div>
+
+      <div class="milestone-remaining" *ngIf="milestone.depositAmount">
+        <span class="info-label">Remaining:</span>
+        <span class="info-value"
+          >${{ milestone.amount - milestone.depositAmount }}</span
+        >
+      </div>
+
+      <div class="milestone-dates">
+        <div *ngIf="milestone.createdAt">
+          <span class="info-label">Created:</span>
+          <span class="info-value">{{ formatDate(milestone.createdAt) }}</span>
+        </div>
+
+        <div *ngIf="milestone.startedAt">
+          <span class="info-label">Started:</span>
+          <span class="info-value">{{ formatDate(milestone.startedAt) }}</span>
+        </div>
+
+        <div *ngIf="milestone.completedAt">
+          <span class="info-label">Completed:</span>
+          <span class="info-value">{{
+            formatDate(milestone.completedAt)
+          }}</span>
+        </div>
+
+        <div *ngIf="milestone.clientReviewedAt">
+          <span class="info-label">Reviewed:</span>
+          <span class="info-value">{{
+            formatDate(milestone.clientReviewedAt)
+          }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submission details from talent -->
+    <div class="submission-details" *ngIf="milestone.submissionDetails">
+      <h3>Submission Details</h3>
+      <div class="submission-content">
+        {{ milestone.submissionDetails }}
+      </div>
+    </div>
+
+    <!-- Client feedback section -->
+    <div class="client-feedback" *ngIf="milestone.clientFeedback">
+      <h3>Client Feedback</h3>
+      <div class="feedback-content">
+        {{ milestone.clientFeedback }}
+      </div>
+    </div>
+
+    <!-- Client Actions -->
+    <div class="client-actions" *ngIf="isClient">
+      <!-- Pay deposit action -->
+      <div class="action-section" *ngIf="milestone.status === 'pending'">
+        <h3>Pay Initial Deposit</h3>
+        <p class="action-description">
+          Pay a
+          {{
+            milestone.depositAmount
+              ? ((milestone.depositAmount / milestone.amount) * 100).toFixed(
+                  0
+                ) + "%"
+              : "10%"
+          }}
+          deposit ({{
+            milestone.depositAmount || milestone.amount * 0.1 | currency
+          }}) to allow the talent to start work on this milestone.
+        </p>
+        <button
+          class="btn btn-primary"
+          (click)="payDeposit()"
+          [disabled]="isProcessingAction"
+        >
+          <span
+            *ngIf="isProcessingAction"
+            class="spinner-border spinner-border-sm"
+          ></span>
+          {{ isProcessingAction ? "Processing..." : "Pay Deposit" }}
+        </button>
+      </div>
+
+      <!-- Review completed work -->
+      <div
+        class="action-section"
+        *ngIf="milestone.talentStatus === 'completed' && !showReviewForm"
+      >
+        <h3>Review Completed Work</h3>
+        <p class="action-description">
+          The talent has marked this milestone as complete. Review the work and
+          approve or request changes.
+        </p>
+        <button class="btn btn-primary" (click)="reviewWork()">
+          Review Work
+        </button>
+      </div>
+
+      <!-- Review form -->
+      <div class="review-form" *ngIf="showReviewForm">
+        <h3>Review Milestone Work</h3>
+        <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+          <div class="form-group">
+            <label for="clientFeedback">Feedback (optional)</label>
+            <textarea
+              id="clientFeedback"
+              formControlName="clientFeedback"
+              class="form-control"
+              rows="4"
+              placeholder="Provide feedback on the work completed..."
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <div class="form-check">
+              <input
+                type="radio"
+                id="approveWork"
+                formControlName="approve"
+                [value]="true"
+                class="form-check-input"
+              />
+              <label class="form-check-label" for="approveWork">
+                Approve and pay remaining amount
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input
+                type="radio"
+                id="requestChanges"
+                formControlName="approve"
+                [value]="false"
+                class="form-check-input"
+              />
+              <label class="form-check-label" for="requestChanges">
+                Request changes
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="reviewForm.invalid || isProcessingAction"
+            >
+              <span
+                *ngIf="isProcessingAction"
+                class="spinner-border spinner-border-sm"
+              ></span>
+              {{ isProcessingAction ? "Processing..." : "Submit Review" }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="cancelAction()"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Release payment button (for final payment) -->
+      <div class="action-section" *ngIf="milestone.status === 'completed'">
+        <h3>Release Payment</h3>
+        <p class="action-description">
+          Release the payment to the talent once you're satisfied with the work.
+        </p>
+        <button
+          class="btn btn-success"
+          (click)="releaseFunds()"
+          [disabled]="isProcessingAction"
+        >
+          <span
+            *ngIf="isProcessingAction"
+            class="spinner-border spinner-border-sm"
+          ></span>
+          {{ isProcessingAction ? "Processing..." : "Release Payment" }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Talent Actions -->
+    <div class="talent-actions" *ngIf="isTalent">
+      <!-- Start work button -->
+      <div
+        class="action-section"
+        *ngIf="
+          milestone.status === 'deposit_paid' &&
+          milestone.talentStatus === 'not_started'
+        "
+      >
+        <h3>Start Work</h3>
+        <p class="action-description">
+          The client has paid the initial deposit of ${{
+            milestone.depositAmount
+          }}. Click the button below to start working on this milestone.
+        </p>
+        <button
+          class="btn btn-primary"
+          (click)="startWork()"
+          [disabled]="isProcessingAction"
+        >
+          <span
+            *ngIf="isProcessingAction"
+            class="spinner-border spinner-border-sm"
+          ></span>
+          {{ isProcessingAction ? "Processing..." : "Start Work" }}
+        </button>
+      </div>
+
+      <!-- Mark work as complete -->
+      <div
+        class="action-section"
+        *ngIf="
+          milestone.status === 'in_progress' &&
+          milestone.talentStatus === 'in_progress' &&
+          !showSubmitWorkForm
+        "
+      >
+        <h3>Complete Work</h3>
+        <p class="action-description">
+          Mark this milestone as complete once you've finished the work.
+        </p>
+        <button class="btn btn-primary" (click)="markWorkComplete()">
+          Mark as Complete
+        </button>
+      </div>
+
+      <!-- Submit completed work form -->
+      <div class="complete-work-form" *ngIf="showSubmitWorkForm">
+        <h3>Submit Completed Work</h3>
+        <form [formGroup]="submitWorkForm" (ngSubmit)="submitCompletedWork()">
+          <div class="form-group">
+            <label for="submissionDetails">Submission Details</label>
+            <textarea
+              id="submissionDetails"
+              formControlName="submissionDetails"
+              class="form-control"
+              rows="4"
+              placeholder="Describe the work you've completed and any relevant details or links..."
+            ></textarea>
+            <div
+              class="invalid-feedback"
+              *ngIf="
+                submitWorkForm.get('submissionDetails')?.invalid &&
+                submitWorkForm.get('submissionDetails')?.touched
+              "
+            >
+              Please provide submission details
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="submitWorkForm.invalid || isProcessingAction"
+            >
+              <span
+                *ngIf="isProcessingAction"
+                class="spinner-border spinner-border-sm"
+              ></span>
+              {{ isProcessingAction ? "Processing..." : "Submit Work" }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="cancelAction()"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- In review state -->
+      <div
+        class="action-section"
+        *ngIf="
+          milestone.talentStatus === 'completed' &&
+          milestone.status !== 'released'
+        "
+      >
+        <div class="status-info">
+          <h3>Work Under Review</h3>
+          <p class="status-description">
+            Your work has been submitted and is awaiting client review.
+          </p>
+        </div>
+      </div>
+
+      <!-- Client requested changes -->
+      <div
+        class="action-section"
+        *ngIf="
+          milestone.clientFeedback && milestone.talentStatus === 'in_progress'
+        "
+      >
+        <div class="status-info">
+          <h3>Changes Requested</h3>
+          <p class="status-description">
+            The client has reviewed your work and requested changes. Please
+            review their feedback and update your work.
+          </p>
+          <button class="btn btn-primary" (click)="markWorkComplete()">
+            Resubmit Work
+          </button>
+        </div>
+      </div>
+
+      <!-- Work completed and payment released -->
+      <div class="action-section" *ngIf="milestone.status === 'released'">
+        <div class="status-info success">
+          <h3>Payment Received</h3>
+          <p class="status-description">
+            This milestone has been completed and payment has been released!
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

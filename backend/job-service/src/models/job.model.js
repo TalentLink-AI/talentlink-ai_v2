@@ -1,5 +1,6 @@
 // backend/job-service/src/models/job.model.js
 const mongoose = require("mongoose");
+const { milestoneSchema } = require("./milestone.model");
 
 const jobSchema = new mongoose.Schema(
   {
@@ -60,20 +61,7 @@ const jobSchema = new mongoose.Schema(
       default: "remote",
     },
     milestones: {
-      type: [
-        {
-          description: String,
-          amount: Number,
-          status: {
-            type: String,
-            enum: ["pending", "escrowed", "released", "cancelled"],
-            default: "pending",
-          },
-          paymentIntentId: String,
-          createdAt: { type: Date, default: Date.now },
-          completedAt: Date,
-        },
-      ],
+      type: [milestoneSchema],
       default: [],
     },
     visibility: {

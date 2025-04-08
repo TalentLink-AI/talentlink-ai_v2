@@ -12,9 +12,8 @@ import {
   onboardingCompletedGuard,
 } from './core/guards/onboarding.guard';
 import { ADMIN_ROUTES } from './features/admin/admin.routes';
-import { PaymentFormComponent } from './features/payment/payment-form/payment-form.component';
-import { CheckoutComponent } from './features/payment/checkout/checkout.component';
-import { MilestonePaymentComponent } from './features/payment/milestone-payment/milestone-payment.component';
+import { MilestonePaymentComponent } from './features/jobs/milestone-payment/milestone-payment.component';
+import { MilestoneDetailComponent } from './features/jobs/milestone-detail/milestone-detail.component';
 
 // Job Feature Components
 import { JobListComponent } from './features/jobs/job-list/job-list.component';
@@ -71,17 +70,12 @@ export const routes: Routes = [
         component: JobDetailComponent,
         canActivate: [authGuard, onboardingGuard],
       },
+      {
+        path: 'jobs/:jobId/milestones/:milestoneId',
+        component: MilestoneDetailComponent,
+        canActivate: [authGuard],
+      },
       // Payment routes
-      {
-        path: 'payment-form',
-        component: PaymentFormComponent,
-        canActivate: [authGuard, onboardingGuard],
-      },
-      {
-        path: 'checkout',
-        component: CheckoutComponent,
-        canActivate: [authGuard, onboardingGuard],
-      },
       {
         path: 'milestone-payment',
         component: MilestonePaymentComponent,

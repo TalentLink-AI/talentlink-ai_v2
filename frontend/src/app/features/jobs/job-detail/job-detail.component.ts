@@ -30,6 +30,8 @@ export class JobDetailComponent implements OnInit {
   userAuth0Id: any;
   hasApplied = false;
   isOwner = false;
+  isClient = false;
+  isTalent = false;
   isAssignedToTalent = false;
 
   // For application
@@ -60,15 +62,23 @@ export class JobDetailComponent implements OnInit {
     this.milestoneForm = this.fb.group({
       description: ['', [Validators.required]],
       amount: ['', [Validators.required, Validators.min(1)]],
+      depositAmount: [''], // Optional, will default to 10% if empty
     });
   }
 
   ngOnInit(): void {
     this.userRole = this.userService.getUserRole() || 'talent';
+    this.isClient = this.userRole === 'client';
+    this.isTalent = this.userRole === 'talent';
+
     this.userService.getCurrentUser().subscribe({
       next: (response) => {
         this.userId = response?.user?._id;
         this.userAuth0Id = response?.user?.auth0Id;
+
+        // update roles again in case the user service provides different info
+        this.isClient = this.userRole === 'client';
+        this.isTalent = this.userRole === 'talent';
 
         const jobId = this.route.snapshot.paramMap.get('id');
         if (jobId) {
@@ -106,23 +116,15 @@ export class JobDetailComponent implements OnInit {
             // Add any additional ID formats your system might use
           ].filter((id) => id);
 
-          // Log all IDs for debugging
-          console.log('Client ID from job:', this.job.clientId);
-          console.log('User possible IDs:', possibleClientIds);
-          console.log('Assigned to from job:', this.job.assignedTo);
-          console.log('Talent possible IDs:', possibleTalentIds);
-
           // Check ownership - true if ANY of the user's IDs match the job's clientId
           this.isOwner = possibleClientIds.some(
             (id) => id === this.job.clientId
           );
-          console.log('Is Owner:', this.isOwner);
 
           // Check if talent is assigned - true if ANY of the user's IDs match the job's assignedTo
           this.isAssignedToTalent =
             this.userRole === 'talent' &&
             possibleTalentIds.some((id) => id === this.job.assignedTo);
-          console.log('Is assigned to talent:', this.isAssignedToTalent);
 
           // Load applications if client is the owner
           if (this.isOwner) {
@@ -277,11 +279,17 @@ export class JobDetailComponent implements OnInit {
 
     this.submittingMilestone = true;
 
+    const { description, amount, depositAmount } = this.milestoneForm.value;
+
+    // Calculate depositAmount if not provided (default to 10%)
+    const calculatedDepositAmount = depositAmount || amount * 0.1;
+
     this.jobService
       .createMilestone(
         this.job._id,
-        this.milestoneForm.value.description,
-        this.milestoneForm.value.amount
+        description,
+        amount,
+        calculatedDepositAmount
       )
       .subscribe({
         next: (response) => {
