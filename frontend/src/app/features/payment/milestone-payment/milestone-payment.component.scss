@@ -62,15 +62,9 @@
   
   .payment-instructions {
     background-color: rgba(vars.$color-info, 0.1);
-    padding: vars.$spacing-4;
-    border-radius: vars.$border-radius-md;
     color: vars.$color-info;
     margin-bottom: vars.$spacing-6;
   }
-}
-
-.payment-form {
-  margin-bottom: vars.$spacing-8;
 }
 
 .form-group {
@@ -129,6 +123,11 @@
     &-danger {
       background-color: rgba(vars.$color-danger, 0.1);
       color: vars.$color-danger;
+    }
+    
+    &-success {
+      background-color: rgba(vars.$color-success, 0.1);
+      color: vars.$color-success;
     }
   }
 }

@@ -149,9 +149,35 @@ export class JobService {
 
   // Release milestone payment
   releaseMilestone(jobId: string, milestoneId: string): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/release`,
-      {}
+    // First, get the milestone details to include in the request
+    return this.getJobById(jobId).pipe(
+      switchMap((jobResponse) => {
+        if (!jobResponse || !jobResponse.data) {
+          return throwError(() => new Error('Job not found'));
+        }
+
+        const job = jobResponse.data;
+
+        // Find the milestone
+        const milestone = job.milestones?.find(
+          (m: any) => m._id === milestoneId
+        );
+
+        if (!milestone) {
+          return throwError(() => new Error('Milestone not found'));
+        }
+
+        // Send all possible required fields with the release request
+        return this.http.post(
+          `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/release`,
+          {
+            description: milestone.description || 'Milestone payment',
+            paymentIntentId: milestone.paymentIntentId,
+            amount: milestone.amount,
+            status: milestone.status,
+          }
+        );
+      })
     );
   }
 

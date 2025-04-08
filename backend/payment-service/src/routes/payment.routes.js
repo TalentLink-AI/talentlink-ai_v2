@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/payment.controller");
 const { validateRequest } = require("../middlewares/validation.middleware");
+const stripeService = require("../services/stripe.services");
 const {
   cardPaymentSchema,
   customerSchema,
@@ -30,7 +31,7 @@ router.post("/milestone/capture", async (req, res) => {
     // Optional: do some checks to ensure user is actually the project owner
     // or has permission to release funds, etc.
 
-    const capturedIntent = await stripeServices.captureMilestonePaymentIntent(
+    const capturedIntent = await stripeService.captureMilestonePaymentIntent(
       paymentIntentId
     );
 

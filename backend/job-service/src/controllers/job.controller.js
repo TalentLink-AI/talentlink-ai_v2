@@ -690,7 +690,6 @@ exports.releaseMilestone = async (req, res) => {
 
     // Update milestone status
     job.milestones[milestoneIndex].status = "released";
-    job.milestones[milestoneIndex].completedAt = new Date();
 
     await job.save();
 

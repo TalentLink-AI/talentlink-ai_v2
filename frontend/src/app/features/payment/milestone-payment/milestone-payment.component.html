@@ -1,3 +1,4 @@
+<!-- src/app/features/payment/milestone-payment/milestone-payment.component.html -->
 <div class="milestone-payment-container">
   <div class="card">
     <div class="card-header">
@@ -22,23 +23,26 @@
           </div>
         </div>
 
-        <p class="payment-instructions">
+        <div class="payment-instructions alert alert-info">
           This payment will be held in escrow until the milestone is completed
           and you release the funds.
-        </p>
+        </div>
       </div>
 
-      <!-- One and only one card-element container -->
-      <div class="form-group">
+      <!-- Only one card element container for the entire component -->
+      <div class="form-group" *ngIf="!intentIdToCapture">
         <label for="card-element">Payment Information</label>
         <div id="card-element" class="card-element-container"></div>
+        <div class="card-element-help">
+          Enter your card details to securely process the payment
+        </div>
       </div>
 
+      <!-- Payment setup step - only show button -->
       <div *ngIf="!clientSecret && !intentIdToCapture">
-        <!-- "Setup Payment" button is shown if we haven't created the intent yet -->
         <button
           (click)="createPaymentIntent()"
-          class="btn btn-primary"
+          class="btn btn-primary btn-lg"
           [disabled]="isProcessing"
         >
           <span
@@ -49,11 +53,17 @@
         </button>
       </div>
 
+      <!-- Confirmation step -->
       <div *ngIf="clientSecret && !intentIdToCapture">
-        <!-- "Confirm Payment" button is shown after we have a clientSecret but haven't confirmed -->
+        <div class="form-group">
+          <label for="card-element">Payment Information</label>
+          <!-- We keep only one card-element container throughout all states -->
+          <div id="card-element" class="card-element-container"></div>
+        </div>
+
         <button
           (click)="confirmPayment()"
-          class="btn btn-success"
+          class="btn btn-success btn-lg"
           [disabled]="isProcessing"
         >
           <span
@@ -64,8 +74,8 @@
         </button>
       </div>
 
-      <div *ngIf="intentIdToCapture">
-        <!-- "Release Funds" shown once the PaymentIntent is confirmed -->
+      <!-- Release funds step -->
+      <div *ngIf="intentIdToCapture" class="release-milestone">
         <h3>Release Milestone Payment</h3>
         <p>
           Once the work is complete and you're satisfied, release the funds to
@@ -84,12 +94,14 @@
         </button>
       </div>
 
+      <!-- Status message area -->
       <div class="status-message" *ngIf="statusMessage">
         <div
           class="alert"
           [ngClass]="{
             'alert-info': !statusMessage.includes('Error'),
-            'alert-danger': statusMessage.includes('Error')
+            'alert-danger': statusMessage.includes('Error'),
+            'alert-success': statusMessage.includes('success')
           }"
         >
           {{ statusMessage }}

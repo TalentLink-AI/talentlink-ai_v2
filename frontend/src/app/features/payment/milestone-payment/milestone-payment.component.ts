@@ -20,7 +20,6 @@ export class MilestonePaymentComponent
 {
   private stripe!: Stripe;
   private cardElement: any;
-  private _tempIntentId: string = '';
 
   clientSecret: string = '';
   intentIdToCapture = '';
@@ -55,9 +54,10 @@ export class MilestonePaymentComponent
       }
     });
   }
+
   async ngAfterViewInit() {
     try {
-      // Initialize Stripe & elements
+      // Initialize Stripe
       const stripeInstance = await loadStripe(environment.stripePublishableKey);
       if (!stripeInstance) {
         this.statusMessage = 'Error: Stripe failed to load.';
@@ -65,10 +65,10 @@ export class MilestonePaymentComponent
       }
       this.stripe = stripeInstance;
 
-      // Mount the card element
-      const elements = this.stripe.elements();
-      this.cardElement = elements.create('card');
-      this.cardElement.mount('#card-element');
+      // Initialize card element after a slight delay to ensure the DOM is ready
+      setTimeout(() => {
+        this.initializeCardElement();
+      }, 100);
 
       this.statusMessage = 'Enter payment details and click "Setup Payment"';
     } catch (err) {
@@ -76,6 +76,32 @@ export class MilestonePaymentComponent
       this.statusMessage = 'Error initializing payment system.';
     }
   }
+
+  private initializeCardElement() {
+    try {
+      // First unmount if it exists to prevent duplicate elements
+      if (this.cardElement) {
+        this.cardElement.unmount();
+      }
+
+      // Create fresh elements
+      const elements = this.stripe.elements();
+      this.cardElement = elements.create('card');
+
+      // Find the element and mount
+      const cardElement = document.getElementById('card-element');
+      if (cardElement) {
+        this.cardElement.mount('#card-element');
+        console.log('Card element mounted successfully');
+      } else {
+        console.error('Card element container not found in the DOM');
+      }
+    } catch (err) {
+      console.error('Error initializing card element:', err);
+      this.statusMessage = 'Error initializing payment form.';
+    }
+  }
+
   ngOnDestroy(): void {
     // Clean up Stripe elements
     if (this.cardElement) {
@@ -146,17 +172,25 @@ export class MilestonePaymentComponent
 
       console.log('Payment intent created:', response);
 
-      // Only set clientSecret here, DON'T set intentIdToCapture yet
       if (response && response.data) {
+        // Extract client_secret and payment intent ID
         this.clientSecret =
           response.data.client_secret ||
           (response.data.paymentIntent &&
             response.data.paymentIntent.client_secret);
 
-        // Store temporary ID but don't set intentIdToCapture yet
-        this._tempIntentId =
+        // Store the ID but don't set intentIdToCapture yet - that happens after confirmation
+        const paymentIntentId =
           response.data.id ||
           (response.data.paymentIntent && response.data.paymentIntent.id);
+
+        console.log('Payment intent ID:', paymentIntentId);
+        console.log('Client secret:', this.clientSecret ? 'Set' : 'Not set');
+
+        // Reinitialize the card element to ensure it's fresh
+        setTimeout(() => {
+          this.initializeCardElement();
+        }, 100);
 
         this.statusMessage =
           'Payment ready to confirm. Click "Confirm Payment" to proceed.';
@@ -172,11 +206,18 @@ export class MilestonePaymentComponent
   }
 
   async confirmPayment() {
-    // Make sure the element is still mounted
+    // Additional logging to help diagnose issues
+    console.log('Confirming payment...');
+    console.log('Client secret exists:', !!this.clientSecret);
+    console.log('Card element exists:', !!this.cardElement);
+
+    // Make sure the element is initialized
     if (!this.cardElement) {
-      this.statusMessage = 'Payment form is not initialized.';
+      this.statusMessage =
+        'Payment form is not initialized. Please refresh and try again.';
       return;
     }
+
     if (!this.clientSecret) {
       this.statusMessage = 'No payment set up yet';
       return;
@@ -186,6 +227,13 @@ export class MilestonePaymentComponent
     this.statusMessage = 'Processing payment...';
 
     try {
+      // First check if the card element is mounted properly
+      if (!document.getElementById('card-element')?.childNodes.length) {
+        console.log('Card element appears to be empty, trying to re-mount');
+        this.initializeCardElement();
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Wait a bit for mounting
+      }
+
       const result = await this.stripe.confirmCardPayment(this.clientSecret, {
         payment_method: {
           card: this.cardElement,
@@ -193,19 +241,87 @@ export class MilestonePaymentComponent
       });
 
       if (result.error) {
+        console.error('Payment confirmation error:', result.error);
         this.statusMessage = 'Error: ' + result.error.message;
       } else {
         // Payment was confirmed
         const paymentIntent = result.paymentIntent;
-        this.statusMessage = `Payment authorized. Status: ${paymentIntent?.status}`;
-        // Possibly reload job details or handle success
+
+        // IMPORTANT: Set the intentIdToCapture here
+        this.intentIdToCapture = paymentIntent.id;
+
+        console.log(
+          'Payment confirmed successfully. Intent ID:',
+          this.intentIdToCapture
+        );
+        console.log('Payment status:', paymentIntent.status);
+
+        // Check if the milestone needs to be updated in the database
+        if (
+          this.milestone &&
+          !this.milestone.paymentIntentId &&
+          this.jobId &&
+          this.milestoneId
+        ) {
+          // Update the milestone with the payment intent ID
+          this.updateMilestoneWithPaymentIntent(paymentIntent.id);
+        }
+
+        this.statusMessage = `Payment authorized and held in escrow. Status: ${paymentIntent.status}`;
+
+        // Clear the client secret to prevent trying to confirm again
+        this.clientSecret = '';
       }
     } catch (err: any) {
       console.error('Error confirming payment:', err);
-      this.statusMessage = err.message || 'Error processing payment.';
+      this.statusMessage =
+        'Error: ' +
+        (err.message || 'Error processing payment. Please try again.');
+
+      // If there's an issue with the card element, try to reinitialize it
+      if (err.message && err.message.includes('Element')) {
+        setTimeout(() => {
+          this.initializeCardElement();
+        }, 100);
+      }
     } finally {
       this.isProcessing = false;
     }
+  }
+
+  // Helper method to update the milestone with payment intent ID
+  private updateMilestoneWithPaymentIntent(paymentIntentId: string) {
+    if (!this.jobId || !this.milestoneId) return;
+
+    // Get the milestone or find it in the job
+    let milestone = this.milestone;
+    if (!milestone && this.job?.milestones) {
+      milestone = this.job.milestones.find(
+        (m: any) => m._id === this.milestoneId
+      );
+    }
+
+    // Include all potentially required fields
+    const updateData = {
+      paymentIntentId: paymentIntentId,
+      status: 'escrowed',
+      description: milestone?.description || 'Milestone payment',
+      amount: milestone?.amount || this.paymentAmount / 100, // Convert from cents back to dollars
+    };
+
+    console.log('Updating milestone with data:', updateData);
+
+    this.jobService
+      .updateMilestone(this.jobId, this.milestoneId, updateData)
+      .subscribe({
+        next: (response) => {
+          console.log('Milestone updated with payment intent ID:', response);
+        },
+        error: (err) => {
+          console.error('Error updating milestone:', err);
+          // Don't show this error to the user since the payment worked
+        },
+      });
   }
 
   async releaseFunds() {
@@ -218,8 +334,17 @@ export class MilestonePaymentComponent
     this.statusMessage = 'Releasing funds...';
 
     try {
-      // Call the job service to release the milestone
+      // Load the milestone data if we don't have it yet
+      if (!this.milestone && this.job?.milestones) {
+        this.milestone = this.job.milestones.find(
+          (m: any) => m._id === this.milestoneId
+        );
+      }
 
+      console.log('Releasing funds for milestone:', this.milestone);
+      console.log('Job ID:', this.jobId, 'Milestone ID:', this.milestoneId);
+
+      // Call the job service to release the milestone
       const response = await this.jobService
         .releaseMilestone(this.jobId, this.milestoneId)
         .toPromise();
@@ -233,9 +358,15 @@ export class MilestonePaymentComponent
       }, 3000);
     } catch (err: any) {
       console.error('Error releasing funds:', err);
-      this.statusMessage = `Error: ${
-        err.error?.message || 'Failed to release funds'
-      }`;
+      // Show a more user-friendly error message
+      if (err.error?.message) {
+        this.statusMessage = `Error: ${err.error.message}`;
+      } else if (err.status === 400) {
+        this.statusMessage =
+          'Error: The server rejected the request. Please ensure the milestone is in the correct state.';
+      } else {
+        this.statusMessage = `Error: Failed to release funds. Please try again later.`;
+      }
     } finally {
       this.isProcessing = false;
     }
