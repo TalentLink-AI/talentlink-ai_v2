@@ -240,8 +240,8 @@
                   View Details
                 </button>
 
-                <!-- Client actions -->
-                <<ng-container *ngIf="isClient && isOwner">
+                <!-- For client actions -->
+                <ng-container *ngIf="isClient && isOwner">
                   <!-- For milestones that are completed by talent but not yet approved -->
                   <button
                     *ngIf="
@@ -275,18 +275,34 @@
                     Fund Escrow
                   </button>
 
-                  <!-- For escrowed milestones ready for release -->
+                  <!-- For escrowed milestones - clients can only request release -->
+                  <button
+                    *ngIf="milestone.status === 'escrowed'"
+                    class="btn btn-outline-primary"
+                    (click)="requestFundRelease(milestone._id)"
+                  >
+                    Request Fund Release
+                  </button>
+                </ng-container>
+
+                <!-- Admin-only section for releasing funds -->
+                <ng-container *ngIf="isAdmin">
+                  <!-- For escrowed milestones ready for admin release -->
                   <button
                     *ngIf="milestone.status === 'escrowed'"
                     class="btn btn-success"
-                    [routerLink]="['/escrow-payment']"
-                    [queryParams]="{
-                      jobId: job._id,
-                      milestoneId: milestone._id,
-                      step: 'release'
-                    }"
+                    (click)="releaseEscrowedFunds(job._id, milestone._id)"
                   >
-                    Release Funds
+                    Release Funds (Admin)
+                  </button>
+
+                  <!-- Additional admin actions can go here -->
+                  <button
+                    *ngIf="milestone.status !== 'released'"
+                    class="btn btn-outline-secondary ms-2"
+                    (click)="viewMilestoneDetails(milestone._id)"
+                  >
+                    View Details
                   </button>
                 </ng-container>
 

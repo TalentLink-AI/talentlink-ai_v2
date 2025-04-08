@@ -8,7 +8,7 @@ import { environment } from '../../../../environments/environment';
   providedIn: 'root',
 })
 export class AdminService {
-  private apiUrl = `${environment.apiUrl}/api/admin`;
+  private apiUrl = `${environment.apiUrlJob}/api/admin`;
 
   constructor(private http: HttpClient) {}
 
@@ -104,5 +104,95 @@ export class AdminService {
 
   updateSystemSettings(settings: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/settings`, settings);
+  }
+  /**
+   * Get all jobs with pending milestone payments
+   */
+  getMilestoneJobs(page = 1, limit = 10, filters = {}): Observable<any> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    queryParams.append('limit', limit.toString());
+    queryParams.append('hasMilestones', 'true'); // Add a flag to filter jobs with milestones
+
+    Object.entries(filters).forEach(([key, value]) => {
+      queryParams.append(key, value as string);
+    });
+
+    return this.http.get<any>(`${this.apiUrl}/jobs?${queryParams.toString()}`);
+  }
+
+  /**
+   * Get all milestones across all jobs (for admin management)
+   */
+  getAllMilestones(page = 1, limit = 10, filters = {}): Observable<any> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    queryParams.append('limit', limit.toString());
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value as string);
+    });
+
+    return this.http.get<any>(
+      `${this.apiUrl}/milestones?${queryParams.toString()}`
+    );
+  }
+
+  /**
+   * Release funds for a milestone (admin only)
+   */
+  releaseMilestoneFunds(jobId: string, milestoneId: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/release-funds`,
+      {}
+    );
+  }
+
+  /**
+   * Get milestone details by ID
+   */
+  getMilestoneById(jobId: string, milestoneId: string): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}`
+    );
+  }
+
+  /**
+   * Get release requests
+   * In a real app, you would have a separate endpoint for milestone release requests
+   */
+  getReleaseRequests(
+    page = 1,
+    limit = 10,
+    status = 'pending'
+  ): Observable<any> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    queryParams.append('limit', limit.toString());
+    queryParams.append('status', status);
+
+    return this.http.get<any>(
+      `${this.apiUrl}/milestone-release-requests?${queryParams.toString()}`
+    );
+  }
+
+  /**
+   * Approve a milestone release request
+   */
+  approveReleaseRequest(requestId: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/milestone-release-requests/${requestId}/approve`,
+      {}
+    );
+  }
+
+  /**
+   * Deny a milestone release request
+   */
+  denyReleaseRequest(requestId: string, reason: string): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/milestone-release-requests/${requestId}/deny`,
+      { reason }
+    );
   }
 }

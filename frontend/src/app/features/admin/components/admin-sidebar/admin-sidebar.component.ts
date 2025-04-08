@@ -19,6 +19,7 @@ interface NavItem {
 export class AdminSidebarComponent {
   navItems: NavItem[] = [
     { label: 'Dashboard', route: '/admin/dashboard', icon: 'dashboard' },
+    { label: 'Milestones', route: '/admin/milestones', icon: 'payments' },
     { label: 'Users', route: '/admin/users', icon: 'people' },
     { label: 'Jobs', route: '/admin/jobs', icon: 'work' },
     { label: 'Payments', route: '/admin/payments', icon: 'payments' },

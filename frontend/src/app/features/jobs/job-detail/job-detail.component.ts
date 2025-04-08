@@ -32,6 +32,8 @@ export class JobDetailComponent implements OnInit {
   isOwner = false;
   isClient = false;
   isTalent = false;
+  isAdmin = false;
+  releaseRequestSent = false;
   isAssignedToTalent = false;
 
   // For application
@@ -70,6 +72,10 @@ export class JobDetailComponent implements OnInit {
     this.userRole = this.userService.getUserRole() || 'talent';
     this.isClient = this.userRole === 'client';
     this.isTalent = this.userRole === 'talent';
+    // Check if user is admin
+    this.userService.isAdmin().subscribe((isAdmin) => {
+      this.isAdmin = isAdmin;
+    });
 
     this.userService.getCurrentUser().subscribe({
       next: (response) => {
@@ -375,5 +381,116 @@ export class JobDetailComponent implements OnInit {
           console.error('Failed to create test milestone:', err);
         },
       });
+  }
+  /**
+   * Client requests fund release for a milestone
+   * In a real app, this would create a notification or support ticket
+   */
+  requestFundRelease(milestoneId: string): void {
+    // Get the milestone details
+    const milestone = this.job.milestones.find(
+      (m: any) => m._id === milestoneId
+    );
+    if (!milestone) return;
+
+    // In a real implementation, you would call an API to create a fund release request
+    // For now, we'll just show a confirmation message
+    this.releaseRequestSent = true;
+
+    // Simple alert for demonstration
+    alert(
+      `Your request to release funds for milestone "${milestone.description}" has been sent to admins.`
+    );
+
+    // In a real implementation, you might make an API call:
+    /*
+  this.jobService.requestFundRelease(this.job._id, milestoneId).subscribe({
+    next: (response) => {
+      this.releaseRequestSent = true;
+      // Show confirmation to user
+    },
+    error: (err) => {
+      console.error('Error requesting fund release:', err);
+      // Show error to user
+    }
+  });
+  */
+  }
+
+  /**
+   * Admin-only function to release funds for a milestone
+   */
+  releaseEscrowedFunds(jobId: string, milestoneId: string): void {
+    // First confirm the action
+    if (
+      !confirm('Are you sure you want to release these funds to the talent?')
+    ) {
+      return;
+    }
+
+    // Find the milestone
+    const milestone = this.job.milestones.find(
+      (m: any) => m._id === milestoneId
+    );
+    if (!milestone) return;
+
+    // Call the service to release funds
+    this.jobService.releaseMilestoneFunds(jobId, milestoneId).subscribe({
+      next: (response) => {
+        // Update the milestone status in the UI
+        const index = this.job.milestones.findIndex(
+          (m: any) => m._id === milestoneId
+        );
+        if (index !== -1) {
+          this.job.milestones[index].status = 'released';
+          this.job.milestones[index].releasedAt = new Date();
+        }
+
+        // Show success message
+        alert(
+          `Funds for milestone "${milestone.description}" have been successfully released to the talent.`
+        );
+      },
+      error: (err) => {
+        console.error('Error releasing funds:', err);
+        alert(
+          `Error releasing funds: ${
+            err.error?.message || 'An unknown error occurred'
+          }`
+        );
+      },
+    });
+  }
+
+  /**
+   * View detailed milestone information (admin function)
+   */
+  viewMilestoneDetails(milestoneId: string): void {
+    const milestone = this.job.milestones.find(
+      (m: any) => m._id === milestoneId
+    );
+    if (!milestone) return;
+
+    // For simplicity, we'll just log the details to console and show an alert
+    // In a real app, you might open a modal or navigate to a detailed view
+    console.log('Milestone details:', milestone);
+
+    const details = `
+Milestone: ${milestone.description}
+Amount: $${milestone.amount}
+Status: ${milestone.status}
+Created: ${
+      milestone.createdAt
+        ? new Date(milestone.createdAt).toLocaleString()
+        : 'N/A'
+    }
+Payment Intent ID: ${milestone.paymentIntentId || 'None'}
+`;
+
+    // Display the details in an alert (in a real app, use a proper UI component)
+    alert(details);
+
+    // To navigate to a detailed view instead:
+    // this.router.navigate(['/admin/jobs/milestones', milestoneId]);
   }
 }

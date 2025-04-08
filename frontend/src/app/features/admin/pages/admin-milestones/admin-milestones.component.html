@@ -1,0 +1,146 @@
+<!-- src/app/features/admin/pages/admin-milestones/admin-milestones.component.html -->
+<div class="admin-milestone-page">
+  <div class="dashboard-header">
+    <h1>Manage Payment Milestones</h1>
+    <p class="subtitle">Control and manage all job milestone payments</p>
+  </div>
+
+  <!-- Filter options -->
+  <div class="filter-container">
+    <div class="filter-title">Filter by Status:</div>
+    <div class="filter-options">
+      <button
+        class="filter-btn"
+        [class.active]="statusFilter === ''"
+        (click)="applyFilter('')"
+      >
+        All
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="statusFilter === 'escrowed'"
+        (click)="applyFilter('escrowed')"
+      >
+        Escrowed
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="statusFilter === 'completed'"
+        (click)="applyFilter('completed')"
+      >
+        Completed
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="statusFilter === 'in_progress'"
+        (click)="applyFilter('in_progress')"
+      >
+        In Progress
+      </button>
+      <button
+        class="filter-btn"
+        [class.active]="statusFilter === 'released'"
+        (click)="applyFilter('released')"
+      >
+        Released
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading milestone data...</p>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- No milestones message -->
+  <div *ngIf="!loading && milestones.length === 0" class="empty-state">
+    <h3>No milestones found</h3>
+    <p>There are no milestones matching your filters.</p>
+  </div>
+
+  <!-- Milestones table -->
+  <div
+    *ngIf="!loading && milestones.length > 0"
+    class="milestone-table-container"
+  >
+    <table class="milestone-table">
+      <thead>
+        <tr>
+          <th>Milestone</th>
+          <th>Job</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Talent</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let milestone of milestones">
+          <td>{{ milestone.description }}</td>
+          <td>
+            <a [routerLink]="['/jobs', milestone.jobId]">{{
+              milestone.jobTitle
+            }}</a>
+          </td>
+          <td>${{ milestone.amount }}</td>
+          <td>
+            <span
+              class="status-badge"
+              [ngClass]="getStatusClass(milestone.status)"
+            >
+              {{ milestone.status }}
+            </span>
+          </td>
+          <td>{{ formatDate(milestone.createdAt) }}</td>
+          <td>{{ milestone.talentId || "Not assigned" }}</td>
+          <td class="actions-cell">
+            <!-- Release funds button (only for escrowed milestones) -->
+            <button
+              *ngIf="milestone.status === 'escrowed'"
+              class="btn btn-success btn-sm"
+              (click)="releaseFunds(milestone.jobId, milestone._id)"
+            >
+              Release Funds
+            </button>
+
+            <!-- View details button -->
+            <a
+              [routerLink]="['/jobs', milestone.jobId]"
+              class="btn btn-outline-secondary btn-sm"
+            >
+              View Job
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="total > limit" class="pagination-container">
+    <button
+      class="btn btn-outline-secondary"
+      [disabled]="page === 1"
+      (click)="changePage(page - 1)"
+    >
+      Previous
+    </button>
+    <span class="page-info"
+      >Page {{ page }} of {{ Math.ceil(total / limit) }}</span
+    >
+    <button
+      class="btn btn-outline-secondary"
+      [disabled]="page >= Math.ceil(total / limit)"
+      (click)="changePage(page + 1)"
+    >
+      Next
+    </button>
+  </div>
+</div>
