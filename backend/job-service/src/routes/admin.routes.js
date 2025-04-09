@@ -1,6 +1,5 @@
-// Add these routes to the backend/job-service/src/routes/admin.routes.js file
-
-// Import controllers
+const express = require("express");
+const router = express.Router();
 const adminMilestoneController = require("../controllers/admin-milestone.controller");
 
 // Admin routes for milestone management
@@ -27,3 +26,5 @@ router.post(
   "/milestone-release-requests/:requestId/deny",
   adminMilestoneController.denyReleaseRequest
 );
+
+module.exports = router;

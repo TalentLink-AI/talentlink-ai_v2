@@ -1,5 +1,12 @@
 // src/app/features/jobs/milestone-payment/milestone-payment.component.ts
-import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  AfterViewChecked,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -16,9 +23,11 @@ import { JobService } from '../../../services/job.service';
   styleUrls: ['./milestone-payment.component.scss'],
 })
 export class MilestonePaymentComponent
-  implements OnInit, AfterViewInit, OnDestroy
+  implements OnInit, AfterViewChecked, OnDestroy
 {
-  private stripe!: Stripe;
+  @ViewChild('cardElementContainer') cardElementContainerRef!: ElementRef;
+  private cardInitialized = false;
+  private stripe: Stripe | null = null;
   private cardElement: any;
 
   clientSecret: string = '';
@@ -70,48 +79,46 @@ export class MilestonePaymentComponent
 
       if (this.paymentIntentId) {
         this.intentIdToCapture = this.paymentIntentId;
-        this.paymentStep = 'confirm';
       }
     });
   }
 
-  async ngAfterViewInit() {
-    try {
-      const stripeInstance = await loadStripe(environment.stripePublishableKey);
-      if (!stripeInstance) {
-        this.statusMessage = 'Error: Stripe failed to load.';
-        return;
-      }
-      this.stripe = stripeInstance;
-
-      // Initialize the card element now that we know the DOM is loaded
-      this.initializeCardElement();
-    } catch (err) {
-      console.error('Error initializing Stripe:', err);
-      this.statusMessage = 'Error initializing payment system.';
+  ngAfterViewChecked(): void {
+    if (
+      !this.cardInitialized &&
+      this.cardElementContainerRef &&
+      this.paymentStep !== 'done'
+    ) {
+      this.initializeCardSafely();
     }
   }
 
-  private initializeCardElement() {
+  private async initializeCardSafely() {
     try {
-      const cardElementContainer = document.getElementById('card-element');
-      if (!cardElementContainer) {
-        console.error('Card element container not found in the DOM');
-        this.statusMessage = 'Error initializing payment form.';
+      if (!this.stripe) {
+        this.stripe = await loadStripe(environment.stripePublishableKey);
+        if (!this.stripe) {
+          this.statusMessage = 'Error loading Stripe.';
+          return;
+        }
+      }
+
+      if (!this.cardElementContainerRef?.nativeElement) {
         return;
       }
 
-      // If the element is already mounted, unmount it first
+      // Unmount previous if any
       if (this.cardElement) {
         this.cardElement.unmount();
       }
 
       const elements = this.stripe.elements();
       this.cardElement = elements.create('card');
-      this.cardElement.mount(cardElementContainer);
-      console.log('Card element mounted successfully');
+      this.cardElement.mount(this.cardElementContainerRef.nativeElement);
+      this.cardInitialized = true;
+      console.log('Stripe card initialized');
     } catch (err) {
-      console.error('Error initializing card element:', err);
+      console.error('Error initializing card:', err);
       this.statusMessage = 'Error initializing payment form.';
     }
   }
@@ -252,6 +259,11 @@ export class MilestonePaymentComponent
     this.statusMessage = 'Processing payment...';
 
     try {
+      if (!this.stripe) {
+        this.statusMessage =
+          'Payment system not ready. Please refresh and try again.';
+        return;
+      }
       const result = await this.stripe.confirmCardPayment(this.clientSecret, {
         payment_method: {
           card: this.cardElement,
@@ -311,7 +323,7 @@ export class MilestonePaymentComponent
       // If there's an issue with the card element, try to reinitialize it
       if (err.message && err.message.includes('Element')) {
         setTimeout(() => {
-          this.initializeCardElement();
+          this.initializeCardSafely();
         }, 100);
       }
     } finally {

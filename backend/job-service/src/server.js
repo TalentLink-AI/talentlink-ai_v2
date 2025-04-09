@@ -11,6 +11,7 @@ const rateLimit = require("express-rate-limit");
 // Import routes
 const jobRoutes = require("./routes/job.routes");
 const applicationRoutes = require("./routes/application.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 // Initialize Express app
 const app = express();
@@ -63,6 +64,7 @@ const authMiddleware = auth({
 // Routes
 app.use("/api/jobs", authMiddleware, jobRoutes);
 app.use("/api/applications", authMiddleware, applicationRoutes);
+app.use("/api/admin", authMiddleware, adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
