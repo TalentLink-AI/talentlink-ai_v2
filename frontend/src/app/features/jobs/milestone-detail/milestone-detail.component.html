@@ -113,11 +113,7 @@
             milestone.depositAmount || milestone.amount * 0.1 | currency
           }}) to allow the talent to start work on this milestone.
         </p>
-        <button
-          class="btn btn-primary"
-          (click)="payDeposit()"
-          [disabled]="isProcessingAction"
-        >
+        <button class="btn btn-primary" [disabled]="isProcessingAction">
           <span
             *ngIf="isProcessingAction"
             class="spinner-border spinner-border-sm"
@@ -136,15 +132,13 @@
           The talent has marked this milestone as complete. Review the work and
           approve or request changes.
         </p>
-        <button class="btn btn-primary" (click)="reviewWork()">
-          Review Work
-        </button>
+        <button class="btn btn-primary">Review Work</button>
       </div>
 
       <!-- Review form -->
       <div class="review-form" *ngIf="showReviewForm">
         <h3>Review Milestone Work</h3>
-        <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+        <form [formGroup]="reviewForm">
           <div class="form-group">
             <label for="clientFeedback">Feedback (optional)</label>
             <textarea
@@ -213,11 +207,7 @@
         <p class="action-description">
           Release the payment to the talent once you're satisfied with the work.
         </p>
-        <button
-          class="btn btn-success"
-          (click)="releaseFunds()"
-          [disabled]="isProcessingAction"
-        >
+        <button class="btn btn-success" [disabled]="isProcessingAction">
           <span
             *ngIf="isProcessingAction"
             class="spinner-border spinner-border-sm"

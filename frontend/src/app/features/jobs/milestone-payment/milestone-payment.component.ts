@@ -14,6 +14,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { environment } from '../../../../environments/environment';
 import { JobService } from '../../../services/job.service';
+import { MilestonePaymentService } from '../../../services/milestone-payment.service';
 
 @Component({
   selector: 'app-milestone-payment',
@@ -52,7 +53,8 @@ export class MilestonePaymentComponent
     private http: HttpClient,
     private route: ActivatedRoute,
     private router: Router,
-    private jobService: JobService
+    private jobService: JobService,
+    private paymentService: MilestonePaymentService // Use the new consolidated service
   ) {}
 
   ngOnInit() {
@@ -201,26 +203,25 @@ export class MilestonePaymentComponent
 
     try {
       let response: any;
+
+      // Use the consolidated payment service instead of job service
       if (this.paymentType === 'deposit') {
-        response = await this.jobService
-          .payMilestoneDeposit(this.jobId, this.milestoneId)
+        response = await this.paymentService
+          .createDepositPayment(this.jobId, this.milestoneId)
           .toPromise();
       } else if (this.paymentType === 'remaining') {
-        response = await this.jobService
-          .reviewAndPayRemainingMilestone(this.jobId, this.milestoneId, true)
+        response = await this.paymentService
+          .approveAndPayRemaining(this.jobId, this.milestoneId, true)
           .toPromise();
       } else {
-        response = await this.jobService
-          .createMilestonePayment(this.jobId, this.milestoneId)
+        response = await this.paymentService
+          .createFullPayment(this.jobId, this.milestoneId)
           .toPromise();
       }
 
-      if (response && response.data) {
-        this.clientSecret =
-          response.data.client_secret ||
-          response.data.paymentIntent?.client_secret;
-        const paymentIntentId =
-          response.data.id || response.data.paymentIntent?.id;
+      if (response && response.paymentIntent) {
+        this.clientSecret = response.paymentIntent.client_secret;
+        const paymentIntentId = response.paymentIntent.id;
 
         this.paymentStep = 'confirm';
         console.log('Payment intent created:', paymentIntentId);
@@ -291,11 +292,8 @@ export class MilestonePaymentComponent
           if (this.paymentType === 'deposit') {
             await this.confirmDepositPayment(paymentIntent.id);
           } else if (this.paymentType === 'remaining') {
-            // Update milestone with payment intent ID and mark as escrowed
-            await this.updateMilestoneWithPaymentIntent(
-              paymentIntent.id,
-              'escrowed'
-            );
+            // Process the remaining payment with the unified service
+            await this.processRemainingPayment(paymentIntent.id);
             this.statusMessage =
               'Payment processed! Funds are now in escrow and can be released when work is completed.';
             this.paymentStep = 'done';
@@ -336,8 +334,8 @@ export class MilestonePaymentComponent
     if (!this.jobId || !this.milestoneId) return;
 
     try {
-      const response = await this.jobService
-        .confirmMilestoneDeposit(this.jobId, this.milestoneId, paymentIntentId)
+      const response = await this.paymentService
+        .confirmDepositPayment(this.jobId, this.milestoneId, paymentIntentId)
         .toPromise();
 
       console.log('Deposit payment confirmed:', response);
@@ -357,7 +355,26 @@ export class MilestonePaymentComponent
     }
   }
 
-  // Helper method to update the milestone with payment intent ID
+  // Helper method to process remaining payment after work is completed
+  private async processRemainingPayment(paymentIntentId: string) {
+    if (!this.jobId || !this.milestoneId) return;
+
+    try {
+      const response = await this.paymentService
+        .processRemainingPayment(this.jobId, this.milestoneId, {
+          paymentIntentId: paymentIntentId,
+        })
+        .toPromise();
+
+      console.log('Remaining payment processed:', response);
+      return response;
+    } catch (error) {
+      console.error('Error processing remaining payment:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to update the milestone with payment intent ID (fallback method)
   private async updateMilestoneWithPaymentIntent(
     paymentIntentId: string,
     status: string
@@ -377,7 +394,8 @@ export class MilestonePaymentComponent
       paymentIntentId: paymentIntentId,
       status: status,
       description: milestone?.description || 'Milestone payment',
-      amount: milestone?.amount || this.paymentAmount / 100, // Convert from cents back to dollars
+      amount: milestone?.amount || this.paymentAmount / 100,
+      // Convert from cents back to dollars
     };
 
     console.log('Updating milestone with data:', updateData);
@@ -405,9 +423,9 @@ export class MilestonePaymentComponent
     this.statusMessage = 'Releasing funds...';
 
     try {
-      // Call the job service to release the milestone funds
-      const response = await this.jobService
-        .releaseMilestone(this.jobId, this.milestoneId)
+      // Use the consolidated payment service instead of job service
+      const response = await this.paymentService
+        .releaseFunds(this.jobId, this.milestoneId)
         .toPromise();
 
       console.log('Funds released:', response);

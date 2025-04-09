@@ -15,7 +15,6 @@ import { ADMIN_ROUTES } from './features/admin/admin.routes';
 import { MilestonePaymentComponent } from './features/jobs/milestone-payment/milestone-payment.component';
 import { MilestoneDetailComponent } from './features/jobs/milestone-detail/milestone-detail.component';
 import { EscrowPaymentComponent } from './features/jobs/escrow-payment/escrow-payment.component';
-import { PaymentStatusComponent } from './features/jobs/payment-status/payment-status.component';
 import { OnboardingCompleteComponent } from './features/onboarding/onboarding-complete/onboarding-complete.component';
 import { OnboardingRefreshComponent } from './features/onboarding/onboarding-refresh/onboarding-refresh.component';
 
@@ -96,10 +95,6 @@ export const routes: Routes = [
       {
         path: 'escrow-payment',
         component: EscrowPaymentComponent,
-      },
-      {
-        path: 'payment-status',
-        component: PaymentStatusComponent,
       },
     ],
   },

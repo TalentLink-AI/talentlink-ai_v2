@@ -420,47 +420,6 @@ export class JobDetailComponent implements OnInit {
   /**
    * Admin-only function to release funds for a milestone
    */
-  releaseEscrowedFunds(jobId: string, milestoneId: string): void {
-    // First confirm the action
-    if (
-      !confirm('Are you sure you want to release these funds to the talent?')
-    ) {
-      return;
-    }
-
-    // Find the milestone
-    const milestone = this.job.milestones.find(
-      (m: any) => m._id === milestoneId
-    );
-    if (!milestone) return;
-
-    // Call the service to release funds
-    this.jobService.releaseMilestoneFunds(jobId, milestoneId).subscribe({
-      next: (response) => {
-        // Update the milestone status in the UI
-        const index = this.job.milestones.findIndex(
-          (m: any) => m._id === milestoneId
-        );
-        if (index !== -1) {
-          this.job.milestones[index].status = 'released';
-          this.job.milestones[index].releasedAt = new Date();
-        }
-
-        // Show success message
-        alert(
-          `Funds for milestone "${milestone.description}" have been successfully released to the talent.`
-        );
-      },
-      error: (err) => {
-        console.error('Error releasing funds:', err);
-        alert(
-          `Error releasing funds: ${
-            err.error?.message || 'An unknown error occurred'
-          }`
-        );
-      },
-    });
-  }
 
   /**
    * View detailed milestone information (admin function)

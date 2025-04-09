@@ -1,14 +1,7 @@
+// backend/payment-service/src/controllers/payment.controller.js
+const milestonePaymentService = require("../services/milestone-payment.service");
 const stripeService = require("../services/stripe.services");
-
-// Create a customer
-exports.createCustomer = async (req, res, next) => {
-  try {
-    const customer = await stripeService.createCustomer(req.body);
-    res.status(201).json({ success: true, data: customer });
-  } catch (error) {
-    next(error);
-  }
-};
+const logger = require("../utils/logger");
 
 /**
  * Create a milestone PaymentIntent (escrow-style)
@@ -17,36 +10,74 @@ exports.createMilestonePaymentIntent = async (req, res, next) => {
   try {
     const {
       amount,
-      currency,
+      currency = "usd",
       payerId, // Client who pays
       payeeId, // Freelancer who receives
-      projectId,
+      jobId,
       milestoneId,
       description,
+      paymentType = "full", // "deposit", "remaining", or "full"
     } = req.body;
 
     // Validate required fields
-    if (!amount || !payerId || !payeeId) {
+    if (!jobId || !milestoneId) {
       return res.status(400).json({
         success: false,
         error: "Missing required fields",
-        message: "Amount, payer ID and payee ID are required",
+        message: "Job ID and Milestone ID are required",
       });
     }
 
-    const paymentIntent = await stripeService.createMilestonePaymentIntent({
-      amount,
-      currency,
-      payerId,
-      payeeId,
-      projectId,
-      milestoneId,
-      description,
-      userId: req.auth?.payload?.sub || payerId, // Current user ID from auth
-    });
+    // Get user ID from auth token if available
+    const userId = req.auth?.payload?.sub || payerId;
+
+    let paymentIntent;
+
+    // Use the appropriate service method based on payment type
+    if (paymentType === "deposit") {
+      paymentIntent = await milestonePaymentService.createDepositPaymentIntent({
+        amount,
+        currency,
+        payerId: payerId || userId,
+        payeeId,
+        jobId,
+        milestoneId,
+        description: description || `Deposit for milestone: ${milestoneId}`,
+        userId,
+      });
+    } else if (paymentType === "remaining") {
+      paymentIntent =
+        await milestonePaymentService.createRemainingPaymentIntent({
+          amount,
+          currency,
+          payerId: payerId || userId,
+          payeeId,
+          jobId,
+          milestoneId,
+          description:
+            description || `Remaining payment for milestone: ${milestoneId}`,
+          userId,
+        });
+    } else {
+      // Default to full payment
+      paymentIntent = await milestonePaymentService.createFullPaymentIntent({
+        amount,
+        currency,
+        payerId: payerId || userId,
+        payeeId,
+        jobId,
+        milestoneId,
+        description:
+          description || `Full payment for milestone: ${milestoneId}`,
+        userId,
+      });
+    }
 
     res.status(201).json({ success: true, data: paymentIntent });
   } catch (error) {
+    logger.error(`Error creating milestone payment intent: ${error.message}`, {
+      stack: error.stack,
+    });
     next(error);
   }
 };
@@ -56,11 +87,104 @@ exports.createMilestonePaymentIntent = async (req, res, next) => {
  */
 exports.captureMilestonePaymentIntent = async (req, res, next) => {
   try {
-    const { paymentIntentId } = req.body;
-    const paymentIntent = await stripeService.captureMilestonePaymentIntent(
+    const { paymentIntentId, jobId, milestoneId, paymentType } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required field",
+        message: "Payment intent ID is required",
+      });
+    }
+
+    const capturedIntent = await milestonePaymentService.capturePaymentIntent(
       paymentIntentId
     );
-    res.status(200).json({ success: true, data: paymentIntent });
+
+    // Return more information when appropriate
+    if (jobId && milestoneId) {
+      // This is a payment for a specific milestone
+      return res.status(200).json({
+        success: true,
+        data: {
+          paymentIntent: capturedIntent,
+          jobId,
+          milestoneId,
+          paymentType,
+        },
+      });
+    }
+
+    res.status(200).json({ success: true, data: capturedIntent });
+  } catch (error) {
+    logger.error(`Error capturing milestone payment intent: ${error.message}`, {
+      stack: error.stack,
+    });
+    next(error);
+  }
+};
+
+/**
+ * Transfer funds to talent's connected account
+ */
+exports.transferFundsToTalent = async (req, res, next) => {
+  try {
+    const {
+      paymentIntentId,
+      connectedAccountId,
+      jobId,
+      milestoneId,
+      amount,
+      payeeId,
+      description,
+    } = req.body;
+
+    // Validate the minimum required fields
+    if (!jobId || !milestoneId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields",
+        message: "Job ID and Milestone ID are required",
+      });
+    }
+
+    // Get payment and talent information if not directly provided
+    let transferParams = { ...req.body };
+
+    // If we're missing key information, we need to fetch it
+    if (!paymentIntentId || !connectedAccountId || !amount || !payeeId) {
+      // In a real implementation, you would fetch this information
+      // from your database or another service
+      logger.warn(
+        "Missing transfer parameters - would fetch from DB in production"
+      );
+
+      // For now, return an error
+      return res.status(400).json({
+        success: false,
+        error: "Missing required transfer information",
+        message: "Unable to complete transfer with the provided information",
+      });
+    }
+
+    const transfer = await milestonePaymentService.transferFundsToTalent(
+      transferParams
+    );
+
+    res.status(201).json({ success: true, data: transfer });
+  } catch (error) {
+    logger.error(`Error transferring funds to talent: ${error.message}`, {
+      stack: error.stack,
+    });
+    next(error);
+  }
+};
+
+// Create a customer
+exports.createCustomer = async (req, res, next) => {
+  try {
+    const customer = await stripeService.createCustomer(req.body);
+    res.status(201).json({ success: true, data: customer });
   } catch (error) {
     next(error);
   }

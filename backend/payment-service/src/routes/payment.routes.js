@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/payment.controller");
 const { validateRequest } = require("../middlewares/validation.middleware");
-const stripeService = require("../services/stripe.services");
 const {
   cardPaymentSchema,
   customerSchema,
@@ -11,6 +10,7 @@ const {
   connectedAccountSchema,
   transferSchema,
   subscriptionSchema,
+  setupIntentSchema,
 } = require("../validators/payment.validator");
 
 // Customer endpoints
@@ -20,30 +20,16 @@ router.post(
   paymentController.createCustomer
 );
 
+// Milestone payment routes
 router.post(
   "/milestone/intent",
   paymentController.createMilestonePaymentIntent
 );
-router.post("/milestone/capture", async (req, res) => {
-  try {
-    const { paymentIntentId } = req.body;
-
-    // Optional: do some checks to ensure user is actually the project owner
-    // or has permission to release funds, etc.
-
-    const capturedIntent = await stripeService.captureMilestonePaymentIntent(
-      paymentIntentId
-    );
-
-    res.json({
-      success: true,
-      data: capturedIntent,
-    });
-  } catch (error) {
-    console.error("Error capturing milestone payment intent:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.post(
+  "/milestone/capture",
+  paymentController.captureMilestonePaymentIntent
+);
+router.post("/transfer-to-talent", paymentController.transferFundsToTalent);
 
 // Payment intent endpoints
 router.post(
@@ -109,15 +95,17 @@ router.delete(
 
 // Product and price endpoints
 router.post("/products", paymentController.createProduct);
-
 router.post("/prices", paymentController.createPrice);
 
 // Setup intent for saving payment details
-router.post("/setup-intent", paymentController.createSetupIntent);
+router.post(
+  "/setup-intent",
+  validateRequest(setupIntentSchema),
+  paymentController.createSetupIntent
+);
 
 // Balance endpoints
 router.get("/balance", paymentController.checkBalance);
-
 router.get("/balance/:accountId", paymentController.checkConnectedBalance);
 
 module.exports = router;
