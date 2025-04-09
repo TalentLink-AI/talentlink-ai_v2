@@ -8,6 +8,7 @@ const {
   isJobOwner,
   isClient,
   isTalent,
+  isAdmin,
   addClientIdToBody,
   addTalentIdToBody,
   setUserRole,
@@ -85,7 +86,7 @@ router.put(
 // Release milestone payment - require client role
 router.post(
   "/:id/milestones/:milestoneId/release",
-  isClient(),
+  isAdmin(),
   isJobOwner(Job),
   jobController.releaseMilestone
 );
@@ -146,7 +147,7 @@ router.post(
 
 router.post(
   "/:id/milestones/:milestoneId/release-funds",
-  isClient(),
+  isAdmin(),
   isJobOwner(Job),
   jobController.releaseMilestoneFunds
 );

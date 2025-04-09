@@ -82,7 +82,7 @@ export class AdminMilestonesComponent implements OnInit {
       return;
     }
 
-    this.jobService.releaseMilestoneFunds(jobId, milestoneId).subscribe({
+    this.adminService.releaseMilestoneFunds(jobId, milestoneId).subscribe({
       next: (response) => {
         // Update the milestone status in the UI
         const index = this.milestones.findIndex((m) => m._id === milestoneId);

@@ -36,6 +36,23 @@ exports.validateRequest = (schema) => {
 exports.isJobOwner = (jobModel) => {
   return async (req, res, next) => {
     try {
+      const roles = req.auth.payload["https://talentlink.com/roles"] || [];
+
+      // If user is admin, allow access without checking ownership
+      if (roles.includes("admin")) {
+        logger.info(
+          `Admin ${req.auth.payload.sub} accessing job ${req.params.id}`
+        );
+
+        // Still load the job for the controller to use
+        const job = await jobModel.findById(req.params.id);
+        if (!job) {
+          return res.status(404).json({ message: "Job not found" });
+        }
+
+        req.job = job;
+        return next();
+      }
       const jobId = req.params.id;
       const userId = req.auth.payload.sub;
 
@@ -105,6 +122,40 @@ exports.isClient = () => {
       next();
     } catch (error) {
       logger.error(`Error in isClient middleware: ${error.message}`, {
+        stack: error.stack,
+      });
+      next(error);
+    }
+  };
+};
+
+exports.isAdmin = () => {
+  return (req, res, next) => {
+    try {
+      // Get roles from the Auth0 token payload
+      const roles = req.auth?.payload?.["https://talentlink.com/roles"] || [];
+
+      // For debugging
+      logger.info(
+        `isAdmin check: User ${
+          req.auth?.payload?.sub
+        } has roles ${JSON.stringify(roles)}`
+      );
+
+      // Add admin status to the request for other middleware
+      req.isAdmin = roles.includes("admin");
+
+      if (!req.isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: "This action requires an admin account",
+        });
+      }
+
+      // If we reach here, user is admin, so proceed
+      next();
+    } catch (error) {
+      logger.error(`Error in isAdmin middleware: ${error.message}`, {
         stack: error.stack,
       });
       next(error);
