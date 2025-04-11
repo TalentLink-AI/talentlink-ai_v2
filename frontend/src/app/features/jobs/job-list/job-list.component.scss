@@ -1,228 +1,314 @@
-/* src/app/features/jobs/job-list/job-list.component.scss */
-@use '../../../../styles/variables' as vars;
-@use '../../../../styles/mixins' as mixins;
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as mixin;
 
-.page-title {
-  @include mixins.heading-1;
-  margin-bottom: vars.$spacing-8;
-  color: vars.$color-text;
-}
+.job-list-page {
+  background: linear-gradient(to bottom, $color-secondary 0%, $color-secondary-dark 100%);
+  padding: $spacing-8 $spacing-4;
 
-.alert {
-  padding: vars.$spacing-4;
-  border-radius: vars.$border-radius-md;
-  margin-bottom: vars.$spacing-6;
-  
-  &.alert-danger {
-    background-color: rgba(vars.$color-danger, 0.1);
-    color: vars.$color-danger;
-    border: 1px solid rgba(vars.$color-danger, 0.3);
+  @include mixin.respond-to(md) {
+    padding: $spacing-10 $spacing-6;
   }
-}
 
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: vars.$spacing-12;
-  
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid vars.$color-gray-200;
-    border-top-color: vars.$color-primary;
-    border-radius: 50%;
-    animation: spinner 1s linear infinite;
-    margin-bottom: vars.$spacing-4;
+  .section-container {
+    max-width: $container-xl;
+    margin: 0 auto;
   }
+
+  .page-header {
+    flex-direction: column;
+    gap: $spacing-4;
+    text-align: center;
+    margin-bottom: $spacing-8;
+    @include mixin.flex-between;
+
+    @include mixin.respond-to(md) {
+      flex-direction: row;
+      text-align: left;
+    }
+
+    .page-title {
+      font-size: $font-size-2xl;
+      font-weight: $font-weight-bold;
+      color: $color-black;
+
+      @include mixin.respond-to(md) {
+        font-size: $font-size-3xl;
+      }
+
+      @include mixin.respond-to(xl) {
+        font-size: 2.75rem;
+      }
+    }
+
+    .post-btn {
+      align-self: center;
+
+      @include mixin.respond-to(md) {
+        align-self: flex-end;
+      }
+    }
+  }
+
+  .filter-section {
+    margin-bottom: $spacing-8;
+
+    .filter-container {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-4;
+
+      @include mixin.respond-to(md) {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+
+      .filter-item {
+        label {
+          font-size: $font-size-sm;
+          font-weight: $font-weight-medium;
+          color: $color-white;
+          margin-bottom: $spacing-1;
+        }
+
+        select {
+          @include mixin.form-control;
+          background-color: $color-secondary-light;
+          color: $color-white;
+        }
+      }
+    }
+  }
+
+  .job-card {
+    background-color: $color-white;
+    border-radius: $border-radius-lg;
+    padding: $spacing-6;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    transition: all 0.2s ease;
+    margin-bottom: .25rem;
   
-  @keyframes spinner {
-    to {
-      transform: rotate(360deg);
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-lg;
+    }
+  
+    .job-card-header {
+      margin-bottom: $spacing-3;
+      @include mixin.flex-between;
+
+  
+      .job-title {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-bold;
+        color: $color-text;
+        flex: 1;
+        margin-right: $spacing-2;
+      }
+  
+      .job-status {
+        padding: 2px 10px;
+        font-size: $font-size-sm;
+        border-radius: $border-radius-full;
+        background-color: $color-gray-200;
+        white-space: nowrap;
+  
+        &.status-draft {
+          background-color: rgba($color-warning, 0.15);
+          color: $color-warning;
+        }
+        &.status-published {
+          background-color: rgba($color-success, 0.15);
+          color: $color-success;
+        }
+        &.status-assigned {
+          background-color: rgba($color-primary, 0.1);
+          color: $color-primary-dark;
+        }
+      }
+    }
+  
+    .job-description {
+      font-size: $font-size-base;
+      color: $color-gray-700;
+      line-height: $line-height-base;
+      margin-bottom: $spacing-3;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  
+    .job-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-3;
+      font-size: $font-size-sm;
+      color: $color-gray-600;
+  
+      .meta-item {
+        .meta-label {
+          font-weight: $font-weight-medium;
+          margin-right: 2px;
+        }
+      }
+    }
+  
+    .skills-list {
+      margin-top: $spacing-3;
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-2;
+  
+      .skill-tag {
+        background-color: $color-gray-100;
+        padding: 4px 10px;
+        font-size: $font-size-sm;
+        border-radius: $border-radius-full;
+      }
+    }
+  
+    .job-stats {
+      margin-top: $spacing-2;
+      font-size: $font-size-sm;
+      color: $color-gray-600;
+    }
+  
+    .job-card-footer {
+      margin-top: $spacing-4;
+      display: flex;
+      flex-wrap: wrap;
+      gap: $spacing-3;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: $spacing-16 $spacing-4;
+
+    h3 {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-bold;
+      color: $color-white;
+    }
+
+    p {
+      color: $color-text-muted;
+      margin: $spacing-2 0 $spacing-4;
+    }
+
+    app-button {
+      margin-top: $spacing-2;
+    }
+  }
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: $spacing-4;
+    margin-top: $spacing-10;
+
+    .pagination-btn {
+      padding: $spacing-2 $spacing-4;
+      border: none;
+      background-color: $color-primary;
+      color: $color-white;
+      border-radius: $border-radius-md;
+      font-size: $font-size-base;
+      cursor: pointer;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     }
   }
 }
 
-.empty-state {
-  @include mixins.card;
-  padding: vars.$spacing-8;
-  text-align: center;
-  margin-bottom: vars.$spacing-8;
-  
-  h3 {
-    @include mixins.heading-3;
-    margin-bottom: vars.$spacing-4;
-    color: vars.$color-text;
-  }
-  
-  p {
-    color: vars.$color-text-muted;
-    margin-bottom: vars.$spacing-6;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
-.job-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: vars.$spacing-6;
-  margin-bottom: vars.$spacing-8;
-  
-  @include mixins.respond-to(md) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  @include mixins.respond-to(lg) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.job-card {
-  @include mixins.card;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: vars.$shadow-lg;
-  }
-  
-  &-header {
+  // Pop-up job detail modal
+  .job-detail-drawer {
+    position: fixed;
+    color: $color-black;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: vars.$spacing-4;
-    padding-bottom: vars.$spacing-4;
-    border-bottom: 1px solid vars.$color-gray-200;
+    z-index: 9999;
+    pointer-events: auto;
+  
+    .drawer-overlay {
+      flex: 1;
+      background-color: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(2px);
+    }
+  
+    .drawer-panel {
+      width: 100%;
+      max-width: 50vw;
+      background-color: $color-white;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+      padding: $spacing-6;
+      animation: slideInDrawer $transition-base ease-out;
+  
+      display: flex;
+      flex-direction: column;
+  
+      .drawer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: $spacing-4;
+  
+        h2 {
+          font-size: $font-size-2xl;
+          font-weight: $font-weight-bold;
+        }
+  
+        .close-btn {
+          font-size: $font-size-xl;
+          background: none;
+          border: none;
+          cursor: pointer;
+        }
+      }
+  
+      .drawer-body {
+        p {
+          margin-bottom: $spacing-3;
+        }
+  
+        .skills-section {
+          margin-top: $spacing-6;
+  
+          .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: $spacing-2;
+  
+            .skill-tag {
+              background-color: $color-gray-100;
+              color: $color-text;
+              padding: 4px 12px;
+              border-radius: $border-radius-full;
+              font-size: $font-size-sm;
+            }
+          }
+        }
+      }
+    }
   }
   
-  &-body {
-    flex: 1;
-    margin-bottom: vars.$spacing-4;
+  @keyframes slideInDrawer {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
-  
-  &-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: auto;
-    padding-top: vars.$spacing-4;
-    border-top: 1px solid vars.$color-gray-200;
-  }
-}
-
-.job-title {
-  @include mixins.heading-3;
-  color: vars.$color-primary;
-  margin: 0;
-  padding: 0;
-  flex: 1;
-}
-
-.job-status {
-  font-size: vars.$font-size-sm;
-  padding: vars.$spacing-1 vars.$spacing-2;
-  border-radius: vars.$border-radius-sm;
-  margin-left: vars.$spacing-2;
-  font-weight: vars.$font-weight-medium;
-  
-  &.status-published {
-    background-color: rgba(vars.$color-success, 0.1);
-    color: vars.$color-success;
-  }
-  
-  &.status-draft {
-    background-color: rgba(vars.$color-gray-500, 0.1);
-    color: vars.$color-gray-500;
-  }
-  
-  &.status-assigned {
-    background-color: rgba(vars.$color-primary, 0.1);
-    color: vars.$color-primary;
-  }
-  
-  &.status-completed {
-    background-color: rgba(vars.$color-info, 0.1);
-    color: vars.$color-info;
-  }
-  
-  &.status-cancelled {
-    background-color: rgba(vars.$color-danger, 0.1);
-    color: vars.$color-danger;
-  }
-}
-
-.job-description {
-  color: vars.$color-text;
-  margin-bottom: vars.$spacing-4;
-  line-height: vars.$line-height-base;
-}
-
-.job-meta {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: vars.$spacing-2;
-  font-size: vars.$font-size-sm;
-  color: vars.$color-text-muted;
-  
-  .job-budget {
-    font-weight: vars.$font-weight-bold;
-    color: vars.$color-text;
-  }
-}
-
-.client-actions, .talent-actions {
-  display: flex;
-  align-items: center;
-  gap: vars.$spacing-2;
-}
-
-.status-badge {
-  font-size: vars.$font-size-sm;
-  padding: vars.$spacing-1 vars.$spacing-2;
-  border-radius: vars.$border-radius-full;
-  
-  &.badge-published {
-    background-color: vars.$color-success;
-    color: vars.$color-white;
-  }
-  
-  &.badge-draft {
-    background-color: vars.$color-gray-500;
-    color: vars.$color-white;
-  }
-  
-  &.badge-assigned {
-    background-color: vars.$color-primary;
-    color: vars.$color-white;
-  }
-  
-  &.badge-completed {
-    background-color: vars.$color-info;
-    color: vars.$color-white;
-  }
-  
-  &.badge-cancelled {
-    background-color: vars.$color-danger;
-    color: vars.$color-white;
-  }
-}
-
-.applications-badge {
-  font-size: vars.$font-size-sm;
-  background-color: vars.$color-gray-200;
-  color: vars.$color-text;
-  padding: vars.$spacing-1 vars.$spacing-2;
-  border-radius: vars.$border-radius-full;
-}
-
-.action-button-container {
-  display: flex;
-  justify-content: center;
-  margin: vars.$spacing-8 0;
-}

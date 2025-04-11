@@ -34,20 +34,26 @@
 
 // Flexbox mixins
 @mixin flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  & {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  } 
 }
 
 @mixin flex-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  & {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
 @mixin flex-column {
-  display: flex;
-  flex-direction: column;
+  & {
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 // Typography mixins

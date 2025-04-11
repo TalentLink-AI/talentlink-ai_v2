@@ -51,8 +51,9 @@
 }
 
 .form-actions {
-  @include mixins.flex-between;
   margin-top: vars.$spacing-8;
+  @include mixins.flex-between;
+
   
   .btn + .btn {
     margin-left: vars.$spacing-4;

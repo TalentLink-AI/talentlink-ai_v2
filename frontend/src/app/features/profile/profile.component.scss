@@ -13,9 +13,10 @@
 }
 
 .loading-container {
-  @include mixins.flex-center;
   flex-direction: column;
   min-height: 300px;
+  @include mixins.flex-center;
+
   
   .loading-spinner {
     margin-bottom: $spacing-4;

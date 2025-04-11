@@ -133,7 +133,7 @@
   }
   
   &-actions {
-    @include flex-between;
     margin-top: $spacing-8;
+    @include flex-between;
   }
 }

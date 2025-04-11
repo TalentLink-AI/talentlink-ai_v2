@@ -230,9 +230,10 @@
   }
   
   &-header {
-    @include flex-between;
     padding: $spacing-6;
     border-bottom: $border-width-default solid $color-gray-200;
+    @include flex-between;
+
   }
   
   &-title {
@@ -260,9 +261,10 @@
   }
   
   &-footer {
-    @include flex-between;
     padding: $spacing-6;
     border-top: $border-width-default solid $color-gray-200;
+    @include flex-between;
+
   }
 }
 

@@ -15,7 +15,7 @@ import { JobService } from '../../../services/job.service';
 @Component({
   selector: 'app-escrow-payment',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './escrow-payment.component.html',
   styleUrls: ['./escrow-payment.component.scss'],
 })

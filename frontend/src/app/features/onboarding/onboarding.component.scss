@@ -132,8 +132,9 @@
 }
 
 .form-actions {
-  @include mixins.flex-between;
   margin-top: $spacing-8;
+  @include mixins.flex-between;
+
   
   .btn {
     &-primary {

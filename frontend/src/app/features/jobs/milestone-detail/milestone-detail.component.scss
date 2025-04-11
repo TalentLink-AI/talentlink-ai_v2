@@ -45,10 +45,11 @@
 }
 
 .milestone-header {
-  @include mixins.flex-between;
   margin-bottom: vars.$spacing-6;
   padding-bottom: vars.$spacing-4;
   border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+  @include mixins.flex-between;
+
   
   .milestone-title-section {
     h2 {
@@ -210,8 +211,9 @@
   margin-bottom: vars.$spacing-6;
 
   label {
-    @include mixins.form-label;
     margin-bottom: vars.$spacing-2;
+    @include mixins.form-label;
+
   }
 
   .form-control {
@@ -237,8 +239,9 @@
 }
 
 .form-actions {
-  @include mixins.flex-between;
   margin-top: vars.$spacing-6;
+  @include mixins.flex-between;
+
   
   .btn + .btn {
     margin-left: vars.$spacing-4;

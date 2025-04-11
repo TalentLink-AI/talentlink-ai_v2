@@ -119,8 +119,9 @@
     box-shadow: $shadow-sm;
     
     .section-header {
-      @include mixins.flex-between;
       margin-bottom: $spacing-6;
+      @include mixins.flex-between;
+      
       
       h2 {
         font-size: $font-size-lg;

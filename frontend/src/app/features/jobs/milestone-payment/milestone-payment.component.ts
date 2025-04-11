@@ -10,7 +10,7 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { environment } from '../../../../environments/environment';
 import { JobService } from '../../../services/job.service';
@@ -18,7 +18,7 @@ import { JobService } from '../../../services/job.service';
 @Component({
   selector: 'app-milestone-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './milestone-payment.component.html',
   styleUrls: ['./milestone-payment.component.scss'],
 })

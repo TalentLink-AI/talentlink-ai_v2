@@ -37,10 +37,11 @@
 }
 
 .job-header {
-  @include mixins.flex-between;
   margin-bottom: vars.$spacing-6;
   padding-bottom: vars.$spacing-4;
   border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+  @include mixins.flex-between;
+
   
   .job-title-section {
     h1 {
@@ -184,8 +185,9 @@
 }
 
 .form-actions {
-  @include mixins.flex-between;
   margin-top: vars.$spacing-6;
+  @include mixins.flex-between;
+  
   
   .btn + .btn {
     margin-left: vars.$spacing-4;
@@ -226,8 +228,9 @@
   padding: vars.$spacing-6;
   
   .application-header {
-    @include mixins.flex-between;
     margin-bottom: vars.$spacing-4;
+    @include mixins.flex-between;
+    
     
     h4 {
       margin: 0;

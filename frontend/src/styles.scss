@@ -140,9 +140,9 @@ code {
 
 // App-specific layout elements
 .auth-container {
-  @include mixins.flex-center;
   min-height: 100vh;
   padding: vars.$spacing-6;
+  @include mixins.flex-center;
 
   .auth-form {
     @include mixins.card;
@@ -194,7 +194,7 @@ code {
     width: 100%;
     height: 100%;
     background-color: rgba(vars.$color-white, 0.7);
-    @include mixins.flex-center;
     z-index: vars.$z-index-modal - 10;
+    @include mixins.flex-center;
   }
 }

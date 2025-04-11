@@ -12,10 +12,11 @@
   @include mixins.card;
   
   &-header {
-    @include mixins.flex-between;
     padding-bottom: vars.$spacing-4;
     margin-bottom: vars.$spacing-6;
     border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+    @include mixins.flex-between;
+
     
     h2 {
       margin: 0;

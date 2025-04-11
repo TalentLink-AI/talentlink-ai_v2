@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, switchMap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthRoleService } from './auth-role.service';
 
 export interface Job {
   _id: string;
@@ -33,7 +34,7 @@ export interface JobApplication {
 export class JobService {
   private apiUrl = `${environment.apiUrlJob}/api`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthRoleService) {}
 
   // Get all jobs
   getJobs(): Observable<any> {
@@ -47,6 +48,9 @@ export class JobService {
 
   // Get jobs created by the current client
   getMyJobs(): Observable<any> {
+    if (!this.auth.hasRole('client')) {
+      return throwError(() => new Error('Unauthorized: Clients only.'));
+    }
     return this.http.get(`${this.apiUrl}/jobs/my-jobs`);
   }
 

@@ -1,121 +1,227 @@
-<!-- src/app/features/jobs/job-list/job-list.component.html -->
-<div class="section">
-  <div class="section-container">
-    <h1 class="page-title">
-      {{ isMyJobsView ? "My Posted Jobs" : "Available Jobs" }}
-    </h1>
+<app-banner>
+  <h1>Find AI Projects</h1>
+  <p>{{ userRole === "client" ? "My Posted Jobs" : "Explore AI Projects" }}</p>
+</app-banner>
 
-    <!-- Loading State -->
+<div class="section job-list-page" [ngClass]="userRole">
+  <div class="section-container">
+    <!-- Filters -->
+    <div class="filter-section">
+      <div class="filter-container">
+        <div class="filter-item">
+          <label for="status-filter">Status</label>
+          <select
+            id="status-filter"
+            class="form-control"
+            [value]="filterOptions.status"
+            (change)="updateFilter('status', $event)"
+          >
+            <option value="all">All</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+            <option *ngIf="userRole === 'client'" value="assigned">
+              Assigned
+            </option>
+            <option *ngIf="userRole === 'client'" value="completed">
+              Completed
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label for="sort-filter">Sort By</label>
+          <select
+            id="sort-filter"
+            class="form-control"
+            [value]="filterOptions.sortBy"
+            (change)="updateFilter('sortBy', $event)"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="budget_high">Budget: High to Low</option>
+            <option value="budget_low">Budget: Low to High</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading indicator -->
     <div *ngIf="isLoading" class="loading-container">
       <div class="loading-spinner"></div>
       <p>Loading jobs...</p>
     </div>
 
-    <!-- Empty State for Client -->
-    <div
-      *ngIf="
-        !isLoading &&
-        jobs.length === 0 &&
-        !errorMessage &&
-        userRole === 'client' &&
-        isMyJobsView
-      "
-    >
-      <div class="empty-state">
-        <h3>No jobs found</h3>
-        <p>
-          You haven't posted any jobs yet. Post your first job to find talent.
-        </p>
-        <button class="btn btn-primary" (click)="postJob()">
-          Post Your First Job
-        </button>
-      </div>
+    <!-- Error message -->
+    <div *ngIf="errorMessage && !isLoading" class="alert alert-danger">
+      {{ errorMessage }}
     </div>
 
-    <!-- Empty State for Talent -->
+    <!-- Empty state for clients -->
     <div
-      *ngIf="
-        !isLoading &&
-        jobs.length === 0 &&
-        !errorMessage &&
-        userRole === 'talent' &&
-        !isMyJobsView
-      "
+      *ngIf="!isLoading && jobs.length === 0 && userRole === 'client'"
+      class="empty-state"
     >
-      <div class="empty-state">
-        <h3>No jobs available</h3>
-        <p>
-          There are no jobs available at the moment. Check back later or update
-          your skills to match more opportunities.
-        </p>
-      </div>
+      <h3>You haven't posted any jobs yet</h3>
+      <p>
+        Create your first job listing to find talented professionals for your
+        project.
+      </p>
+      <app-button type="primary" [routerLink]="['/jobs/post']">
+        Post Your First Job
+      </app-button>
     </div>
 
-    <!-- Job Listing -->
+    <!-- Empty state for talents -->
+    <div
+      *ngIf="!isLoading && jobs.length === 0 && userRole === 'talent'"
+      class="empty-state"
+    >
+      <h3>No available jobs found</h3>
+      <p>
+        There are no jobs matching your criteria at the moment. Check back later
+        or update your search.
+      </p>
+    </div>
+
+    <!-- Job Grid -->
     <div *ngIf="!isLoading && jobs.length > 0" class="job-list">
-      <div *ngFor="let job of jobs" class="job-card">
-        <div class="job-card-header">
-          <h3 class="job-title">{{ job.title }}</h3>
-          <span class="job-status" [ngClass]="'status-' + job.status">{{
-            job.status
-          }}</span>
-        </div>
-        <div class="job-card-body">
-          <p class="job-description">
-            {{ job.description | slice : 0 : 150
-            }}{{ job.description.length > 150 ? "..." : "" }}
-          </p>
-          <div class="job-meta">
-            <span class="job-budget">${{ job.budget }}</span>
-            <span class="job-posted">Posted: {{ job.createdAt | date }}</span>
-          </div>
-        </div>
-        <div class="job-card-footer">
-          <a [routerLink]="['/jobs', job._id]" class="btn btn-secondary"
-            >View Details</a
-          >
-
-          <!-- Client-specific actions -->
-          <div
-            *ngIf="userRole === 'client' && isMyJobsView"
-            class="client-actions"
-          >
-            <button
-              class="btn btn-sm btn-outline"
-              [routerLink]="['/jobs', job._id, 'edit']"
-            >
-              Edit
-            </button>
-            <span class="status-badge" [ngClass]="'badge-' + job.status">{{
-              job.status
-            }}</span>
-            <span *ngIf="job.applications?.length" class="applications-badge">
-              {{ job.applications.length }} application(s)
+      <!-- Client View -->
+      <div *ngIf="userRole === 'client'" class="job-cards">
+        <div *ngFor="let job of jobs" class="job-card">
+          <div class="job-card-header">
+            <h3 class="job-title">{{ job.title }}</h3>
+            <span class="job-status" [ngClass]="'status-' + job.status">
+              {{ job.status | titlecase }}
             </span>
           </div>
 
-          <!-- Talent-specific actions -->
-          <div
-            *ngIf="userRole === 'talent' && !isMyJobsView"
-            class="talent-actions"
-          >
-            <button class="btn btn-primary" [routerLink]="['/jobs', job._id]">
+          <div class="job-card-body">
+            <p class="job-description">
+              {{ job.description | slice : 0 : 150
+              }}{{ job.description.length > 150 ? "..." : "" }}
+            </p>
+
+            <div class="job-meta">
+              <div class="meta-item">
+                <span class="meta-label">Budget:</span>
+                <span class="meta-value">${{ job.budget }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Posted:</span>
+                <span class="meta-value">{{ job.createdAt | date }}</span>
+              </div>
+            </div>
+
+            <div class="job-stats">
+              <span class="applications-badge" *ngIf="job.applications?.length">
+                {{ job.applications.length }} application(s)
+              </span>
+            </div>
+          </div>
+
+          <div class="job-card-footer">
+            <app-button type="success" (click)="openJobDetails(job)"
+              >Show More</app-button
+            >
+            <app-button type="secondary" [routerLink]="['/jobs', job._id]">
+              View Details
+            </app-button>
+            <app-button
+              *ngIf="job.status === 'draft'"
+              type="secondary"
+              [routerLink]="['/jobs', job._id, 'edit']"
+            >
+              Edit
+            </app-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Talent View -->
+      <div *ngIf="userRole === 'talent'" class="job-cards">
+        <div *ngFor="let job of jobs" class="job-card">
+          <div class="job-card-header">
+            <h3 class="job-title">{{ job.title }}</h3>
+          </div>
+
+          <div class="job-card-body">
+            <p class="job-description">
+              {{ job.description | slice : 0 : 150
+              }}{{ job.description.length > 150 ? "..." : "" }}
+            </p>
+
+            <div class="job-meta">
+              <div class="meta-item">
+                <span class="meta-label">Budget:</span>
+                <span class="meta-value">${{ job.budget }}</span>
+                <span
+                  ><app-button [routerLink]="['/jobs', job._id]">
+                    View Details
+                  </app-button></span
+                >
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Posted:</span>
+                <span class="meta-value">{{ job.createdAt | date }}</span>
+              </div>
+            </div>
+
+            <div class="skills-list" *ngIf="job.skills?.length">
+              <span class="skill-tag" *ngFor="let skill of job.skills">
+                {{ skill }}
+              </span>
+            </div>
+          </div>
+
+          <div class="job-card-footer">
+            <app-button (click)="openJobDetails(job)">View Details</app-button>
+            <app-button type="primary" [routerLink]="['/jobs', job._id]">
               Apply Now
-            </button>
+            </app-button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Post Job Button (for clients) -->
-    <div *ngIf="userRole === 'client'" class="action-button-container">
-      <button class="btn btn-primary" (click)="postJob()">
-        {{
-          isMyJobsView && jobs.length > 0
-            ? "Post New Job"
-            : "Post Your First Job"
-        }}
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="pagination">
+      <button
+        class="pagination-btn"
+        [disabled]="currentPage === 1"
+        (click)="changePage(currentPage - 1)"
+      >
+        Previous
       </button>
+
+      <div class="pagination-pages">
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      </div>
+
+      <button
+        class="pagination-btn"
+        [disabled]="currentPage === totalPages"
+        (click)="changePage(currentPage + 1)"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>
+<!-- Job Drawer (slide-in) -->
+<div class="job-detail-drawer" *ngIf="selectedJob">
+  <div class="drawer-overlay" (click)="closeJobDetails()"></div>
+
+  <div class="drawer-panel">
+    <div class="drawer-header">
+      <h2>{{ selectedJob.title }}</h2>
+      <button class="close-btn" (click)="closeJobDetails()">×</button>
+    </div>
+
+    <div class="drawer-body">
+      <p>{{ selectedJob.description }}</p>
+      <p><strong>Budget:</strong> ${{ selectedJob.budget }}</p>
+      <p><strong>Status:</strong> {{ selectedJob.status | titlecase }}</p>
+      <p><strong>Posted:</strong> {{ selectedJob.createdAt | date }}</p>
     </div>
   </div>
 </div>

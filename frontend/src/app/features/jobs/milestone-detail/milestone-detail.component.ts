@@ -1,6 +1,6 @@
 // src/app/features/jobs/milestone-detail/milestone-detail.component.ts
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -14,7 +14,7 @@ import { UserService } from '../../../services/user.service';
 @Component({
   selector: 'app-milestone-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './milestone-detail.component.html',
   styleUrls: ['./milestone-detail.component.scss'],
 })

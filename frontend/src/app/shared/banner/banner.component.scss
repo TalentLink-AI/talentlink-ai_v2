@@ -1,0 +1,78 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as mixins;
+
+
+.wrapper_innerBanner {
+  background: linear-gradient(to bottom, $color-secondary-dark 0%, $color-secondary 100%);
+  color: $color-white;
+  padding: 80px 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+
+  @include mixins.respond-to(md) {
+    padding: 60px 0;
+  }
+
+  @include mixins.respond-to(sm) {
+    padding: 40px 0;
+  }
+
+  .banner_txtwrapper {
+    z-index: 2;
+    position: relative;
+    gap: $spacing-4;
+    padding: 0 $spacing-4;
+    @include mixins.flex-column;
+
+
+    h1 {
+      color: $color-white;
+      font-weight: $font-weight-bold;
+      line-height: $line-height-tight;
+      text-align: center;
+      margin-bottom: $spacing-4;
+      word-break: break-word;
+    
+      font-size: $font-size-2xl; 
+    
+      @include mixins.respond-to(sm) {
+        font-size: $font-size-xl; 
+      }
+    
+      @include mixins.respond-to(md) {
+        font-size: $font-size-2xl; 
+      }
+    
+      @include mixins.respond-to(lg) {
+        font-size: $font-size-3xl;
+      }
+    
+      @include mixins.respond-to(xl) {
+        font-size: $font-size-4xl; 
+      }
+    
+      @include mixins.respond-to(2xl) {
+        font-size: $font-size-5xl; 
+      }
+    }
+
+    p {
+      color: $color-gray-100;
+      font-size: $font-size-lg;
+      max-width: 720px;
+      margin: 0 auto;
+      line-height: $line-height-base;
+
+      @include mixins.respond-to(md) {
+        font-size: $font-size-base;
+        padding: 0 $spacing-2;
+      }
+
+      @include mixins.respond-to(sm) {
+        font-size: $font-size-sm;
+      }
+    }
+  }
+}
