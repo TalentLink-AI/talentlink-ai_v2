@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { RoleManagementComponent } from '../../components/role-management/role-management.component';
 
 interface StatCard {
   title: string;
@@ -16,7 +17,7 @@ interface StatCard {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, RoleManagementComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.scss'],
 })
@@ -63,7 +64,6 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDashboardData();
-    this.loadRoles();
   }
 
   loadDashboardData(): void {
@@ -115,28 +115,9 @@ export class AdminDashboardComponent implements OnInit {
         this.stats[3].trend = this.getTrendDirection(data.ticketsTrend);
 
         // Update recent users and jobs
-        this.recentUsers = data.recentUsers || this.getFallbackUsers();
-        this.recentJobs = data.recentJobs || this.getFallbackJobs();
+        this.recentUsers = data.recentUsers || '';
+        this.recentJobs = data.recentJobs || '';
       });
-  }
-
-  loadRoles(): void {
-    this.adminService.getAllRoles().subscribe({
-      next: (data) => {
-        this.roles = data;
-      },
-      error: (err) => {
-        console.error('Failed to fetch roles', err);
-      },
-    });
-  }
-
-  onRoleChange(user: any, event: Event): void {
-    const roleId = (event.target as HTMLSelectElement).value;
-    this.adminService.assignRoleToUser(user.auth0Id, roleId).subscribe({
-      next: () => console.log(`Role assigned to ${user.email}`),
-      error: (err) => console.error('Role assignment failed:', err),
-    });
   }
 
   // Determines trend direction based on percentage change
@@ -144,86 +125,5 @@ export class AdminDashboardComponent implements OnInit {
     if (value > 0) return 'up';
     if (value < 0) return 'down';
     return 'neutral';
-  }
-
-  // Fallback data in case API fails
-  private getFallbackUsers(): any[] {
-    return [
-      {
-        id: 1,
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'Talent',
-        joined: '2025-03-28',
-      },
-      {
-        id: 2,
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        role: 'Client',
-        joined: '2025-03-27',
-      },
-      {
-        id: 3,
-        name: 'Sam Wilson',
-        email: 'sam@example.com',
-        role: 'Talent',
-        joined: '2025-03-26',
-      },
-      {
-        id: 4,
-        name: 'Ashley Jones',
-        email: 'ashley@example.com',
-        role: 'Client',
-        joined: '2025-03-25',
-      },
-      {
-        id: 5,
-        name: 'Michael Brown',
-        email: 'michael@example.com',
-        role: 'Talent',
-        joined: '2025-03-24',
-      },
-    ];
-  }
-
-  private getFallbackJobs(): any[] {
-    return [
-      {
-        id: 101,
-        title: 'Full Stack Developer',
-        company: 'Tech Solutions',
-        status: 'Active',
-        posted: '2025-03-28',
-      },
-      {
-        id: 102,
-        title: 'UX Designer',
-        company: 'Creative Design Co',
-        status: 'Active',
-        posted: '2025-03-27',
-      },
-      {
-        id: 103,
-        title: 'DevOps Engineer',
-        company: 'Cloud Systems',
-        status: 'Filled',
-        posted: '2025-03-26',
-      },
-      {
-        id: 104,
-        title: 'Marketing Specialist',
-        company: 'Growth Hacking',
-        status: 'Active',
-        posted: '2025-03-25',
-      },
-      {
-        id: 105,
-        title: 'Mobile App Developer',
-        company: 'App Innovations',
-        status: 'Paused',
-        posted: '2025-03-24',
-      },
-    ];
   }
 }

@@ -1,0 +1,497 @@
+/* src/app/features/admin/role-management/role-management.component.scss */
+@use '../../../../../styles/variables' as vars;
+@use '../../../../../styles/mixins' as mixins;
+@use '../../../../../styles/helpers' as helpers;
+
+.role-management-container {
+  padding: vars.$spacing-8 0;
+  background-color: vars.$color-gray-100;
+  min-height: calc(100vh - 70px); // Adjust based on your header height
+  
+  &.dark-theme {
+    background-color: vars.$color-secondary-dark;
+    color: vars.$color-white;
+  }
+  
+  .container {
+    @include mixins.container;
+  }
+  
+  .alert {
+    margin-bottom: vars.$spacing-6;
+    padding: vars.$spacing-4;
+    border-radius: vars.$border-radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    &-content {
+      display: flex;
+      align-items: center;
+    }
+    
+    &-icon {
+      margin-right: vars.$spacing-3;
+      font-size: 20px;
+    }
+    
+    &-danger {
+      background-color: rgba(vars.$color-danger, 0.1);
+      color: vars.$color-danger;
+      border-left: 4px solid vars.$color-danger;
+      
+      .dark-theme & {
+        background-color: rgba(vars.$color-danger, 0.2);
+      }
+    }
+    
+    &-success {
+      background-color: rgba(vars.$color-success, 0.1);
+      color: vars.$color-success;
+      border-left: 4px solid vars.$color-success;
+      
+      .dark-theme & {
+        background-color: rgba(vars.$color-success, 0.2);
+      }
+    }
+    
+    &-warning {
+      background-color: rgba(vars.$color-warning, 0.1);
+      color: helpers.darken(vars.$color-warning, 15%);
+      border-left: 4px solid vars.$color-warning;
+      
+      .dark-theme & {
+        background-color: rgba(vars.$color-warning, 0.2);
+        color: vars.$color-warning;
+      }
+    }
+    
+    &-close {
+      background: none;
+      border: none;
+      color: currentColor;
+      font-size: 20px;
+      cursor: pointer;
+      opacity: 0.7;
+      
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+  
+  // Update the info alert style in the role form
+  .role-form {
+    .alert-info {
+      margin-bottom: vars.$spacing-4;
+      
+      .alert-icon {
+        font-size: 18px;
+        margin-right: vars.$spacing-2;
+      }
+    }
+  }
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: vars.$spacing-12;
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(vars.$color-primary, 0.3);
+      border-radius: 50%;
+      border-top-color: vars.$color-primary;
+      animation: spinner 1s linear infinite;
+      margin-bottom: vars.$spacing-4;
+      
+      .dark-theme & {
+        border-color: rgba(vars.$color-primary-light, 0.3);
+        border-top-color: vars.$color-primary-light;
+      }
+    }
+    
+    @keyframes spinner {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    p {
+      color: vars.$color-text-muted;
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+  }
+  
+  .role-management-card {
+    @include mixins.card;
+    margin-bottom: vars.$spacing-6;
+    
+    .dark-theme & {
+      background-color: vars.$color-secondary;
+      border-color: helpers.lighten(vars.$color-secondary, 10%);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-header {
+      padding-bottom: vars.$spacing-4;
+      margin-bottom: vars.$spacing-6;
+      border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+      
+      .dark-theme & {
+        border-color: helpers.lighten(vars.$color-secondary, 10%);
+      }
+      
+      h2 {
+        margin: 0;
+        color: vars.$color-primary;
+        
+        .dark-theme & {
+          color: vars.$color-primary-light;
+        }
+      }
+    }
+  }
+  
+  h3 {
+    margin-bottom: vars.$spacing-4;
+    font-size: vars.$font-size-lg;
+    font-weight: vars.$font-weight-bold;
+    color: vars.$color-text;
+    
+    .dark-theme & {
+      color: vars.$color-white;
+    }
+  }
+  
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -#{vars.$spacing-3};
+    
+    .col-md-6 {
+      width: 100%;
+      padding: 0 vars.$spacing-3;
+      margin-bottom: vars.$spacing-6;
+      
+      @include mixins.respond-to(md) {
+        width: 50%;
+        margin-bottom: 0;
+      }
+    }
+  }
+  
+  // Search box
+  .search-box {
+    position: relative;
+    margin-bottom: vars.$spacing-4;
+    
+    .search-input {
+      @include mixins.form-control;
+      padding-left: 40px;
+      
+      .dark-theme & {
+        background-color: helpers.lighten(vars.$color-secondary, 5%);
+        border-color: helpers.lighten(vars.$color-secondary, 10%);
+        color: vars.$color-white;
+        
+        &::placeholder {
+          color: vars.$color-gray-500;
+        }
+      }
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: vars.$color-gray-500;
+      font-size: 20px;
+    }
+  }
+  
+  // User list
+  .user-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: vars.$border-width-default solid vars.$color-gray-200;
+    border-radius: vars.$border-radius-md;
+    
+    .dark-theme & {
+      border-color: helpers.lighten(vars.$color-secondary, 10%);
+    }
+    
+    .user-item {
+      display: flex;
+      align-items: center;
+      padding: vars.$spacing-3;
+      border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      
+      .dark-theme & {
+        border-color: helpers.lighten(vars.$color-secondary, 10%);
+      }
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
+      &:hover {
+        background-color: vars.$color-gray-100;
+        
+        .dark-theme & {
+          background-color: helpers.lighten(vars.$color-secondary, 5%);
+        }
+      }
+      
+      &.selected {
+        background-color: rgba(vars.$color-primary, 0.1);
+        
+        .dark-theme & {
+          background-color: rgba(vars.$color-primary-light, 0.15);
+        }
+      }
+      
+      &.inactive {
+        opacity: 0.6;
+        
+        .user-info .user-name::after {
+          content: " (Inactive)";
+          color: vars.$color-danger;
+          font-size: vars.$font-size-sm;
+          font-weight: vars.$font-weight-normal;
+        }
+      }
+      
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: vars.$color-primary;
+        color: vars.$color-white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: vars.$font-weight-bold;
+        margin-right: vars.$spacing-3;
+        flex-shrink: 0;
+        
+        .dark-theme & {
+          background-color: vars.$color-primary-dark;
+        }
+      }
+      
+      .user-info {
+        flex: 1;
+        min-width: 0; // For text truncation
+        display: flex;
+        flex-direction: column;
+        
+        .user-name {
+          font-weight: vars.$font-weight-medium;
+          @include mixins.truncate;
+          
+          .dark-theme & {
+            color: vars.$color-white;
+          }
+        }
+        
+        .user-email {
+          font-size: vars.$font-size-sm;
+          color: vars.$color-text-muted;
+          @include mixins.truncate;
+          
+          .dark-theme & {
+            color: vars.$color-gray-400;
+          }
+        }
+        
+        .user-role-badge {
+          display: inline-block;
+          font-size: vars.$font-size-xs;
+          background-color: vars.$color-gray-200;
+          color: vars.$color-gray-700;
+          padding: 2px 8px;
+          border-radius: vars.$border-radius-full;
+          margin-top: vars.$spacing-1;
+          align-self: flex-start;
+          
+          .dark-theme & {
+            background-color: helpers.lighten(vars.$color-secondary, 15%);
+            color: vars.$color-gray-300;
+          }
+        }
+      }
+    }
+  }
+  
+  .no-users {
+    padding: vars.$spacing-4;
+    text-align: center;
+    border: vars.$border-width-default solid vars.$color-gray-200;
+    border-radius: vars.$border-radius-md;
+    color: vars.$color-text-muted;
+    
+    .dark-theme & {
+      border-color: helpers.lighten(vars.$color-secondary, 10%);
+      color: vars.$color-gray-400;
+    }
+  }
+  
+  // Role assignment section
+  .no-selection {
+    padding: vars.$spacing-4;
+    text-align: center;
+    border: vars.$border-width-default solid vars.$color-gray-200;
+    border-radius: vars.$border-radius-md;
+    color: vars.$color-text-muted;
+    
+    .dark-theme & {
+      border-color: helpers.lighten(vars.$color-secondary, 10%);
+      color: vars.$color-gray-400;
+    }
+  }
+  
+  .role-form {
+    .selected-user-details {
+      background-color: vars.$color-gray-100;
+      padding: vars.$spacing-4;
+      border-radius: vars.$border-radius-md;
+      margin-bottom: vars.$spacing-4;
+      
+      .dark-theme & {
+        background-color: helpers.lighten(vars.$color-secondary, 5%);
+      }
+      
+      h4 {
+        margin-top: 0;
+        margin-bottom: vars.$spacing-2;
+        font-size: vars.$font-size-base;
+        font-weight: vars.$font-weight-bold;
+        
+        .dark-theme & {
+          color: vars.$color-white;
+        }
+      }
+      
+      .user-detail {
+        margin-bottom: vars.$spacing-1;
+        font-size: vars.$font-size-sm;
+        display: flex;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .detail-label {
+          font-weight: vars.$font-weight-medium;
+          width: 100px;
+          flex-shrink: 0;
+          color: vars.$color-text-muted;
+          
+          .dark-theme & {
+            color: vars.$color-gray-400;
+          }
+        }
+        
+        .detail-value {
+          flex: 1;
+          color: vars.$color-text;
+          
+          .dark-theme & {
+            color: vars.$color-white;
+          }
+          
+          &.current-role {
+            font-weight: vars.$font-weight-medium;
+            color: vars.$color-primary;
+            
+            .dark-theme & {
+              color: vars.$color-primary-light;
+            }
+          }
+        }
+      }
+    }
+    
+    .form-group {
+      margin-bottom: vars.$spacing-6;
+      
+      label {
+        @include mixins.form-label;
+        
+        .dark-theme & {
+          color: vars.$color-white;
+        }
+      }
+      
+      select.form-control {
+        @include mixins.form-control;
+        
+        .dark-theme & {
+          background-color: helpers.lighten(vars.$color-secondary, 5%);
+          border-color: helpers.lighten(vars.$color-secondary, 10%);
+          color: vars.$color-white;
+          
+          option {
+            background-color: vars.$color-secondary;
+          }
+        }
+        
+        &.is-invalid {
+          border-color: vars.$color-danger;
+        }
+      }
+      
+      .invalid-feedback {
+        @include mixins.form-error;
+        display: block;
+      }
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: vars.$spacing-3;
+      
+      .btn {
+        flex: 1;
+        
+        &-primary {
+          @include mixins.button-primary;
+        }
+        
+        &-secondary {
+          @include mixins.button-secondary;
+          
+          .dark-theme & {
+            color: vars.$color-white;
+            border-color: vars.$color-gray-500;
+            
+            &:hover {
+              background-color: helpers.lighten(vars.$color-secondary, 10%);
+            }
+          }
+        }
+      }
+      
+      .spinner-border {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 0.2em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner 1s linear infinite;
+        margin-right: vars.$spacing-2;
+      }
+    }
+  }
+}

@@ -354,6 +354,33 @@ async function getManagementToken() {
   }
 }
 
+// Helper function to get role name from ID
+async function getRoleName(token, roleId) {
+  try {
+    const response = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/roles/${roleId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return response.data.name;
+  } catch (err) {
+    logger.error(`Failed to get role name for ${roleId}`, err);
+    return null;
+  }
+}
+
+// Helper to map Auth0 role names to application roles
+function mapAuth0RoleToAppRole(roleName) {
+  const roleMap = {
+    Admin: "admin",
+    Client: "client",
+    Talent: "talent",
+  };
+
+  return roleMap[roleName] || null;
+}
+
 router.get("/roles", async (req, res) => {
   try {
     const token = await getManagementToken();
@@ -387,6 +414,52 @@ router.post("/roles/assign", async (req, res) => {
 
   try {
     const token = await getManagementToken();
+
+    // First, get the role details to know which application role to set
+    const roleResponse = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/roles/${roleId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const roleName = roleResponse.data.name.toLowerCase();
+
+    // Map Auth0 role name to application role
+    // Make sure this matches your application's expected role values
+    const validRoles = ["admin", "client", "talent"];
+    const appRole = validRoles.includes(roleName) ? roleName : "talent"; // Default to talent if not found
+
+    logger.info(
+      `Mapping Auth0 role ${roleName} to application role ${appRole}`
+    );
+
+    // Get user's current roles from Auth0
+    const userRolesResponse = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${userId}/roles`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const currentRoles = userRolesResponse.data;
+
+    // Remove all existing roles
+    if (currentRoles && currentRoles.length > 0) {
+      const currentRoleIds = currentRoles.map((role) => role.id);
+
+      await axios.delete(
+        `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${userId}/roles`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { roles: currentRoleIds },
+        }
+      );
+
+      logger.info(`Removed previous roles from user ${userId}`);
+    }
+
+    // Assign the new role in Auth0
     await axios.post(
       `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${userId}/roles`,
       { roles: [roleId] },
@@ -394,11 +467,181 @@ router.post("/roles/assign", async (req, res) => {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
-    res.json({ success: true });
+
+    logger.info(`Assigned role ${roleId} to user ${userId} in Auth0`);
+
+    // Update the user's role in MongoDB
+    const user = await User.findOne({ auth0Id: userId });
+
+    if (user) {
+      // Update the role in MongoDB
+      user.role = appRole;
+      await user.save();
+      logger.info(
+        `Updated user ${userId} MongoDB record with role: ${appRole}`
+      );
+    } else {
+      logger.warn(`User ${userId} not found in MongoDB when updating role`);
+    }
+
+    res.json({
+      success: true,
+      message: "Role assigned successfully and synced with database",
+      user: user
+        ? {
+            id: user._id,
+            auth0Id: user.auth0Id,
+            role: user.role,
+          }
+        : null,
+    });
   } catch (err) {
-    console.error("Failed to assign role", err.response?.data || err.message);
-    res.status(500).json({ error: "Failed to assign role" });
+    logger.error("Failed to assign role", {
+      error: err.message,
+      stack: err.stack,
+      response: err.response?.data,
+    });
+    res.status(500).json({ error: "Failed to assign role: " + err.message });
   }
 });
+
+router.post("/sync-roles", async (req, res) => {
+  try {
+    // Verify admin
+    const roles = req.auth.payload["https://talentlink.com/roles"] || [];
+    if (!roles.includes("admin")) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const token = await getManagementToken();
+
+    // Get all users from Auth0
+    const auth0Users = await getAllAuth0Users(token);
+    logger.info(`Retrieved ${auth0Users.length} users from Auth0`);
+
+    // Process each user
+    const results = {
+      total: auth0Users.length,
+      updated: 0,
+      failed: 0,
+      details: [],
+    };
+
+    for (const auth0User of auth0Users) {
+      try {
+        // Get user's roles from Auth0
+        const userRolesResponse = await axios.get(
+          `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${auth0User.user_id}/roles`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const userRoles = userRolesResponse.data;
+
+        // Extract role name - take the first role or default to 'talent'
+        let appRole = "talent"; // Default role
+        if (userRoles && userRoles.length > 0) {
+          const roleName = userRoles[0].name.toLowerCase();
+          if (["admin", "client", "talent"].includes(roleName)) {
+            appRole = roleName;
+          }
+        }
+
+        // Update user in MongoDB
+        const user = await User.findOne({ auth0Id: auth0User.user_id });
+
+        if (user) {
+          // Only update if the role is different
+          if (user.role !== appRole) {
+            const oldRole = user.role;
+            user.role = appRole;
+            await user.save();
+
+            results.updated++;
+            results.details.push({
+              userId: auth0User.user_id,
+              email: auth0User.email,
+              oldRole,
+              newRole: appRole,
+              status: "updated",
+            });
+
+            logger.info(
+              `Updated user ${auth0User.user_id} role from ${oldRole} to ${appRole}`
+            );
+          }
+        } else {
+          results.failed++;
+          results.details.push({
+            userId: auth0User.user_id,
+            email: auth0User.email,
+            status: "failed",
+            reason: "User not found in MongoDB",
+          });
+
+          logger.warn(`User ${auth0User.user_id} not found in MongoDB`);
+        }
+      } catch (userError) {
+        results.failed++;
+        results.details.push({
+          userId: auth0User.user_id,
+          email: auth0User.email,
+          status: "failed",
+          reason: userError.message,
+        });
+
+        logger.error(`Error processing user ${auth0User.user_id}`, {
+          error: userError.message,
+          stack: userError.stack,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Synced roles for ${results.updated} users. ${results.failed} failed.`,
+      results,
+    });
+  } catch (err) {
+    logger.error("Role sync failed", {
+      error: err.message,
+      stack: err.stack,
+    });
+    res.status(500).json({ error: "Failed to sync roles: " + err.message });
+  }
+});
+
+// Helper function to get all users from Auth0 (with pagination)
+async function getAllAuth0Users(token) {
+  const pageSize = 100; // Max page size for Auth0 Management API
+  let page = 0;
+  let allUsers = [];
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/users`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          per_page: pageSize,
+          page,
+          include_totals: true,
+        },
+      }
+    );
+
+    const users = response.data.users;
+    allUsers = [...allUsers, ...users];
+
+    // Check if there are more pages
+    const total = response.data.total;
+    hasMore = allUsers.length < total;
+    page++;
+  }
+
+  return allUsers;
+}
 
 module.exports = router;

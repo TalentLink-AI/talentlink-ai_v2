@@ -1,0 +1,248 @@
+<!-- src/app/features/admin/role-management/role-management.component.html -->
+
+<div class="role-management-container" [ngClass]="{ 'dark-theme': isDarkMode }">
+  <div class="container">
+    <!-- Status messages -->
+    <div *ngIf="errorMessage" class="alert alert-danger">
+      <div class="alert-content">
+        <i class="material-icons alert-icon">error</i>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+
+    <div *ngIf="successMessage" class="alert alert-success">
+      <div class="alert-content">
+        <i class="material-icons alert-icon">check_circle</i>
+        <span>{{ successMessage }}</span>
+      </div>
+      <button class="alert-close" (click)="clearMessages()">×</button>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <div class="card role-management-card" *ngIf="!isLoading">
+      <div class="card-header">
+        <h2>Assign Roles to Users</h2>
+      </div>
+
+      <div class="card-body">
+        <!-- Admin Tools Section -->
+        <!-- <div class="admin-actions mb-4">
+          <div class="card admin-tools-card">
+            <div class="card-header">
+              <h3 class="mb-0">Admin Tools</h3>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-warning">
+                <div class="alert-content">
+                  <i class="material-icons alert-icon">warning</i>
+                  <span>These are advanced operations. Use with caution.</span>
+                </div>
+              </div>
+
+              <div class="tool-description">
+                <h4>Sync Auth0 Roles with Database</h4>
+                <p>
+                  This will query all users from Auth0 and update their roles in
+                  the MongoDB database to match their Auth0 roles.
+                </p>
+                <button
+                  class="btn btn-primary mt-2"
+                  (click)="syncRolesWithDatabase()"
+                  [disabled]="isSyncing"
+                >
+                  <span
+                    *ngIf="isSyncing"
+                    class="spinner-border spinner-border-sm me-2"
+                  ></span>
+                  {{ isSyncing ? "Syncing Roles..." : "Sync All User Roles" }}
+                </button>
+              </div>
+
+              <div *ngIf="syncResults" class="sync-results mt-3">
+                <h4>Sync Results</h4>
+                <p>Total Users: {{ syncResults.total }}</p>
+                <p>Updated: {{ syncResults.updated }}</p>
+                <p>Failed: {{ syncResults.failed }}</p>
+
+                <div
+                  *ngIf="syncResults.details && syncResults.details.length > 0"
+                  class="details-toggle"
+                >
+                  <button
+                    class="btn btn-link"
+                    (click)="showSyncDetails = !showSyncDetails"
+                  >
+                    {{ showSyncDetails ? "Hide" : "Show" }} Details
+                  </button>
+
+                  <div *ngIf="showSyncDetails" class="details-list">
+                    <div class="details-header">
+                      <div class="details-column">Email</div>
+                      <div class="details-column">Old Role</div>
+                      <div class="details-column">New Role</div>
+                      <div class="details-column">Status</div>
+                    </div>
+                    <div
+                      class="details-row"
+                      *ngFor="let detail of syncResults.details"
+                      [class.error]="detail.status === 'failed'"
+                    >
+                      <div class="details-column">{{ detail.email }}</div>
+                      <div class="details-column">
+                        {{ detail.oldRole || "N/A" }}
+                      </div>
+                      <div class="details-column">
+                        {{ detail.newRole || "N/A" }}
+                      </div>
+                      <div class="details-column">{{ detail.status }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> -->
+
+        <div class="row">
+          <!-- User selection section -->
+          <div class="col-md-6 user-selection-section">
+            <h3>Select User</h3>
+
+            <div class="search-box">
+              <input
+                type="text"
+                placeholder="Search users..."
+                [(ngModel)]="searchQuery"
+                (input)="filterUsers()"
+                class="form-control search-input"
+              />
+              <i class="material-icons search-icon">search</i>
+            </div>
+
+            <div class="user-list" *ngIf="filteredUsers.length > 0">
+              <div
+                *ngFor="let user of filteredUsers"
+                class="user-item"
+                [class.selected]="selectedUser?._id === user._id"
+                [class.inactive]="!user.isActive"
+                (click)="selectUser(user)"
+              >
+                <div class="user-avatar">
+                  {{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}
+                </div>
+                <div class="user-info">
+                  <span class="user-name"
+                    >{{ user.firstName }} {{ user.lastName }}</span
+                  >
+                  <span class="user-email">{{ user.email }}</span>
+                  <span class="user-role-badge">{{ user.role }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="no-users" *ngIf="filteredUsers.length === 0">
+              <p>No users found matching your search.</p>
+            </div>
+          </div>
+
+          <!-- Role assignment section -->
+          <div class="col-md-6 role-assignment-section">
+            <h3>Assign Role</h3>
+
+            <div *ngIf="!selectedUser" class="no-selection">
+              <p>Please select a user from the list to assign a role.</p>
+            </div>
+
+            <div *ngIf="selectedUser" class="role-form">
+              <form [formGroup]="assignRoleForm" (ngSubmit)="assignRole()">
+                <div class="selected-user-details">
+                  <h4>Selected User</h4>
+                  <p class="user-detail">
+                    <span class="detail-label">Name:</span>
+                    <span class="detail-value"
+                      >{{ selectedUser.firstName }}
+                      {{ selectedUser.lastName }}</span
+                    >
+                  </p>
+                  <p class="user-detail">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">{{ selectedUser.email }}</span>
+                  </p>
+                  <p class="user-detail">
+                    <span class="detail-label">Current Role:</span>
+                    <span class="detail-value current-role">{{
+                      selectedUser.role
+                    }}</span>
+                  </p>
+                </div>
+
+                <div class="alert alert-info">
+                  <i class="material-icons alert-icon">info</i>
+                  <span
+                    >Users can only have one role at a time. Assigning a new
+                    role will replace the current role.</span
+                  >
+                </div>
+
+                <div class="form-group">
+                  <label for="roleId">Select New Role</label>
+                  <select
+                    id="roleId"
+                    formControlName="roleId"
+                    class="form-control"
+                    [ngClass]="{
+                      'is-invalid':
+                        assignRoleForm.get('roleId')?.invalid &&
+                        assignRoleForm.get('roleId')?.touched
+                    }"
+                  >
+                    <option value="">-- Select a role --</option>
+                    <option *ngFor="let role of roles" [value]="role.id">
+                      {{ getRoleDisplayName(role) }}
+                    </option>
+                  </select>
+                  <div
+                    class="invalid-feedback"
+                    *ngIf="
+                      assignRoleForm.get('roleId')?.invalid &&
+                      assignRoleForm.get('roleId')?.touched
+                    "
+                  >
+                    Please select a role to assign
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="assignRoleForm.invalid || isLoading"
+                  >
+                    <span
+                      *ngIf="isLoading"
+                      class="spinner-border spinner-border-sm"
+                    ></span>
+                    {{ isLoading ? "Assigning..." : "Assign Role" }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    (click)="selectedUser = null; assignRoleForm.reset()"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

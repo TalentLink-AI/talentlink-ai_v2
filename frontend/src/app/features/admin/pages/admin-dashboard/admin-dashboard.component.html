@@ -73,17 +73,19 @@
                     <span class="icon icon-edit"></span>
                   </button>
                 </div>
-                <select (change)="onRoleChange(user, $event)">
+                <!-- <select (change)="onRoleChange(user, $event)">
                   <option *ngFor="let role of roles" [value]="role.id">
                     {{ role.name }}
                   </option>
-                </select>
+                </select> -->
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <app-role-management></app-role-management>
 
     <div class="dashboard-section">
       <div class="section-header">

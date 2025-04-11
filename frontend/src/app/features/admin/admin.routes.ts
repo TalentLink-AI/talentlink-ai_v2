@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { AdminLayoutComponent } from './layout/admin-layout.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { AdminMilestonesComponent } from './pages/admin-milestones/admin-milestones.component';
+import { RoleManagementComponent } from './components/role-management/role-management.component';
 import { adminGuard } from '../../core/guards/admin.guard';
 
 export const ADMIN_ROUTES: Routes = [
@@ -24,10 +25,10 @@ export const ADMIN_ROUTES: Routes = [
         path: 'milestones',
         component: AdminMilestonesComponent,
       },
-      // Additional routes would be added here:
-      // { path: 'users', component: AdminUsersComponent },
-      // { path: 'jobs', component: AdminJobsComponent },
-      // etc.
+      {
+        path: 'roles',
+        component: RoleManagementComponent,
+      },
     ],
   },
 ];

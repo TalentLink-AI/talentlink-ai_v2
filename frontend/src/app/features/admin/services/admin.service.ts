@@ -32,27 +32,54 @@ export class AdminService {
     );
   }
 
-  // User management
+  // Get all users with pagination
   getUsers(page = 1, limit = 10, search = ''): Observable<any> {
-    return this.http.get<any>(
-      `${this.apiUrl}/users?page=${page}&limit=${limit}${
-        search ? `&search=${search}` : ''
-      }`
-    );
+    let url = `${this.apiUrl}/users?page=${page}&limit=${limit}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return this.http.get(url);
   }
 
+  // Get user by ID
   getUserById(userId: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/users/${userId}`);
+    return this.http.get(`${this.apiUrl}/users/${userId}`);
   }
 
+  // Update user
   updateUser(userId: string, userData: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/users/${userId}`, userData);
+    return this.http.put(`${this.apiUrl}/users/${userId}`, userData);
   }
 
+  // Update user role
+  updateUserRole(userId: string, role: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/users/${userId}/role`, { role });
+  }
+
+  // Toggle user status (activate/deactivate)
   toggleUserStatus(userId: string, isActive: boolean): Observable<any> {
-    return this.http.patch<any>(`${this.apiUrl}/users/${userId}/status`, {
+    return this.http.patch(`${this.apiUrl}/users/${userId}/status`, {
       isActive,
     });
+  }
+
+  // Get all roles
+  getRoles(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/roles`);
+  }
+
+  // Assign role to user
+  assignRole(userId: string, roleId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/roles/assign`, {
+      userId,
+      roleId,
+      replaceExisting: true,
+    });
+  }
+
+  // Sync all users' roles from Auth0 to MongoDB
+  syncAllRoles(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/sync-roles`, {});
   }
 
   // Job management
@@ -209,16 +236,5 @@ export class AdminService {
       `${this.apiUrl}/milestone-release-requests/${requestId}/deny`,
       { reason }
     );
-  }
-
-  getAllRoles(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/roles`);
-  }
-
-  assignRoleToUser(userId: string, roleId: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/roles/assign`, {
-      userId,
-      roleId,
-    });
   }
 }
