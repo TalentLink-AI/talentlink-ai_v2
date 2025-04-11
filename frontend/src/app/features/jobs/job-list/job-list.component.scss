@@ -1,61 +1,39 @@
 @use '../../../../styles/variables' as *;
 @use '../../../../styles/mixins' as mixin;
+@use '../../../../styles/helpers' as h;
 
 .job-list-page {
-  background: linear-gradient(to bottom, $color-secondary 0%, $color-secondary-dark 100%);
+  background: $color-gray-300;
   padding: $spacing-8 $spacing-4;
+  position: relative;
+  width: 100%;
+  overflow-x: hidden;
 
   @include mixin.respond-to(md) {
     padding: $spacing-10 $spacing-6;
   }
 
+  &.dark-theme {
+    background: $color-background-dark;
+  }
+
   .section-container {
     max-width: $container-xl;
     margin: 0 auto;
-  }
-
-  .page-header {
-    flex-direction: column;
-    gap: $spacing-4;
-    text-align: center;
-    margin-bottom: $spacing-8;
-    @include mixin.flex-between;
-
-    @include mixin.respond-to(md) {
-      flex-direction: row;
-      text-align: left;
-    }
-
-    .page-title {
-      font-size: $font-size-2xl;
-      font-weight: $font-weight-bold;
-      color: $color-black;
-
-      @include mixin.respond-to(md) {
-        font-size: $font-size-3xl;
-      }
-
-      @include mixin.respond-to(xl) {
-        font-size: 2.75rem;
-      }
-    }
-
-    .post-btn {
-      align-self: center;
-
-      @include mixin.respond-to(md) {
-        align-self: flex-end;
-      }
-    }
+    width: 100%;
+    padding: 0 $spacing-4;
+    box-sizing: border-box;
   }
 
   .filter-section {
     margin-bottom: $spacing-8;
+    width: 100%;
 
     .filter-container {
       display: flex;
       flex-direction: column;
       gap: $spacing-4;
+      width: 100%;
 
       @include mixin.respond-to(md) {
         flex-direction: row;
@@ -63,18 +41,58 @@
       }
 
       .filter-item {
+        width: 100%;
+        
+        @include mixin.respond-to(md) {
+          width: calc(50% - #{$spacing-2}); 
+          max-width: 300px; 
+        }
+        
         label {
           font-size: $font-size-sm;
           font-weight: $font-weight-medium;
           color: $color-white;
           margin-bottom: $spacing-1;
+          display: block;
         }
 
         select {
           @include mixin.form-control;
           background-color: $color-secondary-light;
           color: $color-white;
+          border-color: h.lighten($color-secondary-light, 10%);
+          width: 100%;
+          
+          option {
+            background-color: $color-secondary;
+            color: $color-white;
+          }
+          
+          &:focus {
+            border-color: $color-primary;
+            box-shadow: 0 0 0 2px rgba($color-primary, 0.3);
+          }
         }
+      }
+    }
+  }
+
+  .job-list {
+    width: 100%;
+    margin-bottom: $spacing-8;
+    
+    .job-cards {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: $spacing-6;
+      width: 100%;
+      
+      @include mixin.respond-to(md) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      
+      @include mixin.respond-to(lg) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
   }
@@ -89,24 +107,39 @@
     justify-content: space-between;
     height: 100%;
     transition: all 0.2s ease;
-    margin-bottom: .25rem;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    
+    .dark-theme & {
+      background-color: h.lighten($color-secondary, 5%);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
   
     &:hover {
       transform: translateY(-2px);
       box-shadow: $shadow-lg;
+      
+      .dark-theme & {
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+      }
     }
   
     .job-card-header {
       margin-bottom: $spacing-3;
       @include mixin.flex-between;
-
+      flex-wrap: wrap; /* Allow wrapping for long titles */
   
       .job-title {
         font-size: $font-size-lg;
         font-weight: $font-weight-bold;
         color: $color-text;
-        flex: 1;
-        margin-right: $spacing-2;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        
+        .dark-theme & {
+          color: $color-white;
+        }
       }
   
       .job-status {
@@ -127,6 +160,10 @@
         &.status-assigned {
           background-color: rgba($color-primary, 0.1);
           color: $color-primary-dark;
+          
+          .dark-theme & {
+            color: $color-primary-light;
+          }
         }
       }
     }
@@ -141,6 +178,11 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
+      word-wrap: break-word;
+      
+      .dark-theme & {
+        color: $color-gray-300;
+      }
     }
   
     .job-meta {
@@ -149,33 +191,26 @@
       gap: $spacing-3;
       font-size: $font-size-sm;
       color: $color-gray-600;
+      margin-bottom: $spacing-3;
+      
+      .dark-theme & {
+        color: $color-gray-400;
+      }
   
       .meta-item {
         .meta-label {
           font-weight: $font-weight-medium;
           margin-right: 2px;
         }
+        
+        .meta-value {
+          font-weight: $font-weight-bold;
+          
+          .dark-theme & {
+            color: $color-gray-300;
+          }
+        }
       }
-    }
-  
-    .skills-list {
-      margin-top: $spacing-3;
-      display: flex;
-      flex-wrap: wrap;
-      gap: $spacing-2;
-  
-      .skill-tag {
-        background-color: $color-gray-100;
-        padding: 4px 10px;
-        font-size: $font-size-sm;
-        border-radius: $border-radius-full;
-      }
-    }
-  
-    .job-stats {
-      margin-top: $spacing-2;
-      font-size: $font-size-sm;
-      color: $color-gray-600;
     }
   
     .job-card-footer {
@@ -183,34 +218,26 @@
       display: flex;
       flex-wrap: wrap;
       gap: $spacing-3;
+      width: 100%;
+      
+      app-button {
+        flex-grow: 1;
+        max-width: calc(50% - #{$spacing-2});
+        
+        @media (max-width: 400px) {
+          max-width: 100%; 
+        }
+      }
     }
   }
 
-  .empty-state {
-    text-align: center;
-    padding: $spacing-16 $spacing-4;
-
-    h3 {
-      font-size: $font-size-lg;
-      font-weight: $font-weight-bold;
-      color: $color-white;
-    }
-
-    p {
-      color: $color-text-muted;
-      margin: $spacing-2 0 $spacing-4;
-    }
-
-    app-button {
-      margin-top: $spacing-2;
-    }
-  }
   .pagination {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: $spacing-4;
     margin-top: $spacing-10;
+    color: $color-white;
 
     .pagination-btn {
       padding: $spacing-2 $spacing-4;
@@ -220,10 +247,23 @@
       border-radius: $border-radius-md;
       font-size: $font-size-base;
       cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background-color: $color-primary-dark;
+      }
 
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+      
+      .dark-theme & {
+        background-color: $color-primary-dark;
+        
+        &:hover:not(:disabled) {
+          background-color: h.lighten($color-primary-dark, 5%);
+        }
       }
     }
   }
@@ -232,7 +272,7 @@
   // Pop-up job detail modal
   .job-detail-drawer {
     position: fixed;
-    color: $color-black;
+    color: $color-text;
     top: 0;
     right: 0;
     bottom: 0;
@@ -249,25 +289,44 @@
   
     .drawer-panel {
       width: 100%;
-      max-width: 50vw;
+      max-width: 500px;
+      
+      @include mixin.respond-to(md) {
+        max-width: 50vw;
+      }
+      
       background-color: $color-white;
       box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
       overflow-y: auto;
       padding: $spacing-6;
       animation: slideInDrawer $transition-base ease-out;
-  
-      display: flex;
-      flex-direction: column;
+      
+      :host-context(.dark-mode) & {
+        background-color: $color-secondary;
+        color: $color-white;
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.3);
+      }
   
       .drawer-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: $spacing-4;
+        border-bottom: 1px solid $color-gray-200;
+        padding-bottom: $spacing-4;
+        
+        :host-context(.dark-mode) &, .dark-theme & {
+          border-color: h.lighten($color-secondary, 10%);
+        }
   
         h2 {
           font-size: $font-size-2xl;
           font-weight: $font-weight-bold;
+          margin: 0;
+          
+          :host-context(.dark-mode) &, .dark-theme & {
+            color: $color-white;
+          }
         }
   
         .close-btn {
@@ -275,16 +334,59 @@
           background: none;
           border: none;
           cursor: pointer;
+          color: $color-gray-700;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: $border-radius-full;
+          
+          &:hover {
+            background-color: $color-gray-100;
+          }
+          
+          :host-context(.dark-mode) &, .dark-theme & {
+            color: $color-gray-300;
+            
+            &:hover {
+              background-color: h.lighten($color-secondary, 10%);
+            }
+          }
         }
       }
   
       .drawer-body {
         p {
           margin-bottom: $spacing-3;
+          line-height: $line-height-base;
+          
+          :host-context(.dark-mode) &, .dark-theme & {
+            color: $color-gray-300;
+          }
+          
+          strong {
+            font-weight: $font-weight-bold;
+            color: $color-gray-900;
+            
+            :host-context(.dark-mode) &, .dark-theme & {
+              color: $color-white;
+            }
+          }
         }
   
         .skills-section {
           margin-top: $spacing-6;
+          
+          h3 {
+            font-size: $font-size-lg;
+            font-weight: $font-weight-bold;
+            margin-bottom: $spacing-3;
+            
+            :host-context(.dark-mode) &, .dark-theme & {
+              color: $color-white;
+            }
+          }
   
           .skill-tags {
             display: flex;
@@ -293,10 +395,15 @@
   
             .skill-tag {
               background-color: $color-gray-100;
-              color: $color-text;
+              color: $color-gray-800;
               padding: 4px 12px;
               border-radius: $border-radius-full;
               font-size: $font-size-sm;
+              
+              :host-context(.dark-mode) &, .dark-theme & {
+                background-color: h.lighten($color-secondary, 10%);
+                color: $color-gray-200;
+              }
             }
           }
         }

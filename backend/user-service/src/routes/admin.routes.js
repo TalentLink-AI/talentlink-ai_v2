@@ -4,7 +4,8 @@ const TalentProfile = require("../models/talent-profile.model");
 const ClientProfile = require("../models/client-profile.model");
 const router = express.Router();
 const Joi = require("joi");
-const logger = require("../../logger"); // adjust the path as needed
+const logger = require("../../logger");
+const axios = require("axios");
 
 // Middleware to check if user is admin
 const isAdmin = async (req, res, next) => {
@@ -325,6 +326,78 @@ router.patch("/users/:userId/status", async (req, res) => {
       stack: error.stack,
     });
     res.status(500).json({ message: "Error toggling user status" });
+  }
+});
+
+async function getManagementToken() {
+  try {
+    const { data } = await axios.post(
+      `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
+      {
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
+        audience: `https://${process.env.AUTH0_DOMAIN}/api/v2/`,
+        grant_type: "client_credentials",
+      }
+    );
+    console.log(
+      "Management token received:",
+      data.access_token.slice(0, 20) + "..."
+    );
+    return data.access_token;
+  } catch (err) {
+    console.error(
+      "❌ Failed to get Auth0 token:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
+}
+
+router.get("/roles", async (req, res) => {
+  try {
+    const token = await getManagementToken();
+    console.log("Fetching roles with token:", token.slice(0, 20) + "...");
+
+    const { data } = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    res.json(data);
+  } catch (err) {
+    console.error(
+      "❌ Failed to fetch roles",
+      err.response?.data || err.message
+    );
+    res.status(500).json({ error: "Failed to fetch roles" });
+  }
+});
+
+// Assign Auth0 Role to a user
+router.post("/roles/assign", async (req, res) => {
+  const { userId, roleId } = req.body;
+  if (!userId || !roleId) {
+    return res.status(400).json({ error: "userId and roleId required" });
+  }
+
+  try {
+    const token = await getManagementToken();
+    await axios.post(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${userId}/roles`,
+      { roles: [roleId] },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to assign role", err.response?.data || err.message);
+    res.status(500).json({ error: "Failed to assign role" });
   }
 });
 

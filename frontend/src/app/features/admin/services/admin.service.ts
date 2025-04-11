@@ -1,20 +1,35 @@
 // frontend/src/app/features/admin/services/admin.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
+import { tap, map, switchMap } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
+import { UserData } from '../../../services/user.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AdminService {
-  private apiUrl = `${environment.apiUrlJob}/api/admin`;
+  private apiUrl = `${environment.apiUrl}/api/admin`;
+
+  private userDataSubject = new BehaviorSubject<UserData | null>(null);
+  // Observable that components can subscribe to
+  public userData$ = this.userDataSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
   // Dashboard statistics
   getDashboardStats(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/dashboard/stats`);
+  }
+
+  getCurrentUser(): Observable<UserData> {
+    return this.http.get<UserData>(`${this.apiUrl}/me`).pipe(
+      tap((userData) => {
+        this.userDataSubject.next(userData);
+        console.log('userData', userData);
+      })
+    );
   }
 
   // User management
@@ -194,5 +209,16 @@ export class AdminService {
       `${this.apiUrl}/milestone-release-requests/${requestId}/deny`,
       { reason }
     );
+  }
+
+  getAllRoles(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/roles`);
+  }
+
+  assignRoleToUser(userId: string, roleId: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/roles/assign`, {
+      userId,
+      roleId,
+    });
   }
 }

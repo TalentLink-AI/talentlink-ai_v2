@@ -73,6 +73,11 @@
                     <span class="icon icon-edit"></span>
                   </button>
                 </div>
+                <select (change)="onRoleChange(user, $event)">
+                  <option *ngFor="let role of roles" [value]="role.id">
+                    {{ role.name }}
+                  </option>
+                </select>
               </td>
             </tr>
           </tbody>

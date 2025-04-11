@@ -1,9 +1,17 @@
+<!-- src/app/features/jobs/job-list/job-list.component.html -->
 <app-banner>
   <h1>Find AI Projects</h1>
   <p>{{ userRole === "client" ? "My Posted Jobs" : "Explore AI Projects" }}</p>
 </app-banner>
 
-<div class="section job-list-page" [ngClass]="userRole">
+<div
+  class="section job-list-page"
+  [ngClass]="{
+    'dark-theme': isDarkMode,
+    client: userRole === 'client',
+    talent: userRole === 'talent'
+  }"
+>
   <div class="section-container">
     <!-- Filters -->
     <div class="filter-section">
@@ -18,11 +26,11 @@
           >
             <option value="all">All</option>
             <option value="published">Published</option>
-            <option value="draft">Draft</option>
-            <option *ngIf="userRole === 'client'" value="assigned">
+            <option value="draft" *ngIf="userRole === 'client'">Draft</option>
+            <option value="assigned" *ngIf="userRole === 'client'">
               Assigned
             </option>
-            <option *ngIf="userRole === 'client'" value="completed">
+            <option value="completed" *ngIf="userRole === 'client'">
               Completed
             </option>
           </select>
@@ -112,17 +120,17 @@
               </div>
             </div>
 
-            <div class="job-stats">
-              <span class="applications-badge" *ngIf="job.applications?.length">
+            <div class="job-stats" *ngIf="job.applications?.length">
+              <span class="applications-badge">
                 {{ job.applications.length }} application(s)
               </span>
             </div>
           </div>
 
           <div class="job-card-footer">
-            <app-button type="success" (click)="openJobDetails(job)"
-              >Show More</app-button
-            >
+            <app-button type="success" (click)="openJobDetails(job)">
+              Show More
+            </app-button>
             <app-button type="secondary" [routerLink]="['/jobs', job._id]">
               View Details
             </app-button>
@@ -142,6 +150,13 @@
         <div *ngFor="let job of jobs" class="job-card">
           <div class="job-card-header">
             <h3 class="job-title">{{ job.title }}</h3>
+            <span
+              *ngIf="job.status"
+              class="job-status"
+              [ngClass]="'status-' + job.status"
+            >
+              {{ job.status | titlecase }}
+            </span>
           </div>
 
           <div class="job-card-body">
@@ -154,11 +169,6 @@
               <div class="meta-item">
                 <span class="meta-label">Budget:</span>
                 <span class="meta-value">${{ job.budget }}</span>
-                <span
-                  ><app-button [routerLink]="['/jobs', job._id]">
-                    View Details
-                  </app-button></span
-                >
               </div>
               <div class="meta-item">
                 <span class="meta-label">Posted:</span>
@@ -207,6 +217,7 @@
     </div>
   </div>
 </div>
+
 <!-- Job Drawer (slide-in) -->
 <div class="job-detail-drawer" *ngIf="selectedJob">
   <div class="drawer-overlay" (click)="closeJobDetails()"></div>

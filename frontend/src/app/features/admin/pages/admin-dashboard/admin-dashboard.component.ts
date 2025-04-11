@@ -53,6 +53,7 @@ export class AdminDashboardComponent implements OnInit {
   ];
 
   recentUsers: any[] = [];
+  roles: any[] = [];
   recentJobs: any[] = [];
   loading = true;
   error: string | null = null;
@@ -62,6 +63,7 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDashboardData();
+    this.loadRoles();
   }
 
   loadDashboardData(): void {
@@ -116,6 +118,25 @@ export class AdminDashboardComponent implements OnInit {
         this.recentUsers = data.recentUsers || this.getFallbackUsers();
         this.recentJobs = data.recentJobs || this.getFallbackJobs();
       });
+  }
+
+  loadRoles(): void {
+    this.adminService.getAllRoles().subscribe({
+      next: (data) => {
+        this.roles = data;
+      },
+      error: (err) => {
+        console.error('Failed to fetch roles', err);
+      },
+    });
+  }
+
+  onRoleChange(user: any, event: Event): void {
+    const roleId = (event.target as HTMLSelectElement).value;
+    this.adminService.assignRoleToUser(user.auth0Id, roleId).subscribe({
+      next: () => console.log(`Role assigned to ${user.email}`),
+      error: (err) => console.error('Role assignment failed:', err),
+    });
   }
 
   // Determines trend direction based on percentage change
