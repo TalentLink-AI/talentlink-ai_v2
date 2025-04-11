@@ -155,40 +155,6 @@ export class JobService {
     );
   }
 
-  // Release milestone payment
-  releaseMilestone(jobId: string, milestoneId: string): Observable<any> {
-    // First, get the milestone details to include in the request
-    return this.getJobById(jobId).pipe(
-      switchMap((jobResponse) => {
-        if (!jobResponse || !jobResponse.data) {
-          return throwError(() => new Error('Job not found'));
-        }
-
-        const job = jobResponse.data;
-
-        // Find the milestone
-        const milestone = job.milestones?.find(
-          (m: any) => m._id === milestoneId
-        );
-
-        if (!milestone) {
-          return throwError(() => new Error('Milestone not found'));
-        }
-
-        // Send all possible required fields with the release request
-        return this.http.post(
-          `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/release`,
-          {
-            description: milestone.description || 'Milestone payment',
-            paymentIntentId: milestone.paymentIntentId,
-            amount: milestone.amount,
-            status: milestone.status,
-          }
-        );
-      })
-    );
-  }
-
   // Create milestone payment intent
   createMilestonePayment(jobId: string, milestoneId: string): Observable<any> {
     // First get the job to retrieve the milestone amount
@@ -332,81 +298,5 @@ export class JobService {
       `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/pay-remaining`,
       paymentDetails
     );
-  }
-
-  // Release escrowed funds
-  releaseMilestoneFunds(jobId: string, milestoneId: string): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/release-funds`,
-      {}
-    );
-  }
-
-  /**
-   * Create milestone payment intent for remaining amount
-   * This is used after the client reviews and approves the work
-   */
-  createRemainingMilestonePayment(
-    jobId: string,
-    milestoneId: string,
-    paymentIntentId: string
-  ): Observable<any> {
-    // Get the job first to retrieve milestone data
-    return this.getJobById(jobId).pipe(
-      switchMap((jobResponse) => {
-        if (!jobResponse || !jobResponse.data) {
-          return throwError(() => new Error('Job not found'));
-        }
-
-        const job = jobResponse.data;
-        const milestone = job.milestones?.find(
-          (m: any) => m._id === milestoneId
-        );
-
-        if (!milestone) {
-          return throwError(() => new Error('Milestone not found'));
-        }
-
-        // Calculate remaining amount
-        const totalAmount = milestone.amount;
-        const depositAmount = milestone.depositAmount || totalAmount * 0.1;
-        const remainingAmount = Math.round((totalAmount - depositAmount) * 100);
-
-        // Now make the payment intent request for the remaining amount
-        return this.http.post(
-          `${environment.apiUrlpayment}/api/payment/milestone/intent`,
-          {
-            amount: remainingAmount,
-            currency: 'usd',
-            customerId: 'cus_123456', // TODO: Get from user profile
-            payerId: job.clientId,
-            payeeId: job.assignedTo,
-            projectId: job._id,
-            milestoneId: milestoneId,
-            description: `Remaining payment for milestone: ${milestone.description}`,
-          }
-        );
-      })
-    );
-  }
-
-  /**
-   * Process milestone payment by milestone status
-   */
-  processMilestonePayment(
-    jobId: string,
-    milestoneId: string,
-    status: string
-  ): Observable<any> {
-    if (status === 'pending') {
-      return this.payMilestoneDeposit(jobId, milestoneId);
-    } else if (status === 'completed') {
-      return this.reviewAndPayRemainingMilestone(jobId, milestoneId, true);
-    } else {
-      return throwError(
-        () =>
-          new Error(`Cannot process payment for milestone in ${status} status`)
-      );
-    }
   }
 }

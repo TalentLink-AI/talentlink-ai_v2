@@ -395,45 +395,6 @@ export class MilestonePaymentComponent
     }
   }
 
-  async releaseFunds() {
-    if (!this.jobId || !this.milestoneId) {
-      this.statusMessage = 'Missing job or milestone information';
-      return;
-    }
-
-    this.isProcessing = true;
-    this.statusMessage = 'Releasing funds...';
-
-    try {
-      // Call the job service to release the milestone funds
-      const response = await this.jobService
-        .releaseMilestone(this.jobId, this.milestoneId)
-        .toPromise();
-
-      console.log('Funds released:', response);
-      this.statusMessage = 'Funds released successfully to the talent!';
-      this.paymentStep = 'done';
-
-      // Navigate back to the job detail page after a delay
-      setTimeout(() => {
-        this.router.navigate(['/jobs', this.jobId]);
-      }, 2000);
-    } catch (err: any) {
-      console.error('Error releasing funds:', err);
-      // Show a more user-friendly error message
-      if (err.error?.message) {
-        this.statusMessage = `Error: ${err.error.message}`;
-      } else if (err.status === 400) {
-        this.statusMessage =
-          'Error: The server rejected the request. Please ensure the milestone is in the correct state.';
-      } else {
-        this.statusMessage = `Error: Failed to release funds. Please try again later.`;
-      }
-    } finally {
-      this.isProcessing = false;
-    }
-  }
-
   getPaymentTypeLabel(): string {
     if (this.paymentType === 'deposit') {
       return 'Initial Deposit';

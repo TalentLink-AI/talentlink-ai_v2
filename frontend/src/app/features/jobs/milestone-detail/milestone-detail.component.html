@@ -206,25 +206,6 @@
           </div>
         </form>
       </div>
-
-      <!-- Release payment button (for final payment) -->
-      <div class="action-section" *ngIf="milestone.status === 'completed'">
-        <h3>Release Payment</h3>
-        <p class="action-description">
-          Release the payment to the talent once you're satisfied with the work.
-        </p>
-        <button
-          class="btn btn-success"
-          (click)="releaseFunds()"
-          [disabled]="isProcessingAction"
-        >
-          <span
-            *ngIf="isProcessingAction"
-            class="spinner-border spinner-border-sm"
-          ></span>
-          {{ isProcessingAction ? "Processing..." : "Release Payment" }}
-        </button>
-      </div>
     </div>
 
     <!-- Talent Actions -->

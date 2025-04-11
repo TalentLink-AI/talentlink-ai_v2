@@ -195,25 +195,6 @@ export class MilestoneDetailComponent implements OnInit {
       });
   }
 
-  releaseFunds(): void {
-    if (!this.jobId || !this.milestoneId) return;
-
-    this.isProcessingAction = true;
-
-    this.jobService.releaseMilestone(this.jobId, this.milestoneId).subscribe({
-      next: (response) => {
-        console.log('Funds released:', response);
-        this.isProcessingAction = false;
-        this.loadMilestoneDetails();
-      },
-      error: (err) => {
-        console.error('Error releasing funds:', err);
-        this.error = err.error?.message || 'Failed to release funds';
-        this.isProcessingAction = false;
-      },
-    });
-  }
-
   // Talent actions
 
   startWork(): void {

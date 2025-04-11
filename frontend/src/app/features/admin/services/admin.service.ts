@@ -11,6 +11,7 @@ import { UserData } from '../../../services/user.service';
 })
 export class AdminService {
   private apiUrl = `${environment.apiUrl}/api/admin`;
+  private apiUrlJob = `${environment.apiUrlJob}/api/admin`;
 
   private userDataSubject = new BehaviorSubject<UserData | null>(null);
   // Observable that components can subscribe to
@@ -147,6 +148,7 @@ export class AdminService {
   updateSystemSettings(settings: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/settings`, settings);
   }
+
   /**
    * Get all jobs with pending milestone payments
    */
@@ -160,7 +162,9 @@ export class AdminService {
       queryParams.append(key, value as string);
     });
 
-    return this.http.get<any>(`${this.apiUrl}/jobs?${queryParams.toString()}`);
+    return this.http.get<any>(
+      `${this.apiUrlJob}/jobs?${queryParams.toString()}`
+    );
   }
 
   /**
@@ -176,7 +180,7 @@ export class AdminService {
     });
 
     return this.http.get<any>(
-      `${this.apiUrl}/milestones?${queryParams.toString()}`
+      `${this.apiUrlJob}/milestones?${queryParams.toString()}`
     );
   }
 
@@ -185,7 +189,7 @@ export class AdminService {
    */
   releaseMilestoneFunds(jobId: string, milestoneId: string): Observable<any> {
     return this.http.post<any>(
-      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}/release-funds`,
+      `${this.apiUrlJob}/jobs/${jobId}/milestones/${milestoneId}/release-funds`,
       {}
     );
   }
@@ -195,7 +199,7 @@ export class AdminService {
    */
   getMilestoneById(jobId: string, milestoneId: string): Observable<any> {
     return this.http.get<any>(
-      `${this.apiUrl}/jobs/${jobId}/milestones/${milestoneId}`
+      `${this.apiUrlJob}/jobs/${jobId}/milestones/${milestoneId}`
     );
   }
 
@@ -214,7 +218,7 @@ export class AdminService {
     queryParams.append('status', status);
 
     return this.http.get<any>(
-      `${this.apiUrl}/milestone-release-requests?${queryParams.toString()}`
+      `${this.apiUrlJob}/milestone-release-requests?${queryParams.toString()}`
     );
   }
 
@@ -223,7 +227,7 @@ export class AdminService {
    */
   approveReleaseRequest(requestId: string): Observable<any> {
     return this.http.post<any>(
-      `${this.apiUrl}/milestone-release-requests/${requestId}/approve`,
+      `${this.apiUrlJob}/milestone-release-requests/${requestId}/approve`,
       {}
     );
   }
@@ -233,7 +237,7 @@ export class AdminService {
    */
   denyReleaseRequest(requestId: string, reason: string): Observable<any> {
     return this.http.post<any>(
-      `${this.apiUrl}/milestone-release-requests/${requestId}/deny`,
+      `${this.apiUrlJob}/milestone-release-requests/${requestId}/deny`,
       { reason }
     );
   }

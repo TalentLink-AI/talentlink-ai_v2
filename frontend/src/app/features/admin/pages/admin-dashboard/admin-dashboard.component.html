@@ -73,11 +73,6 @@
                     <span class="icon icon-edit"></span>
                   </button>
                 </div>
-                <!-- <select (change)="onRoleChange(user, $event)">
-                  <option *ngFor="let role of roles" [value]="role.id">
-                    {{ role.name }}
-                  </option>
-                </select> -->
               </td>
             </tr>
           </tbody>
@@ -86,53 +81,5 @@
     </div>
 
     <app-role-management></app-role-management>
-
-    <div class="dashboard-section">
-      <div class="section-header">
-        <h2>Recent Jobs</h2>
-        <a routerLink="/admin/jobs" class="btn-link">View All</a>
-      </div>
-
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Job Title</th>
-              <th>Company</th>
-              <th>Status</th>
-              <th>Posted Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let job of recentJobs">
-              <td>{{ job.title }}</td>
-              <td>{{ job.company }}</td>
-              <td>
-                <span
-                  class="badge"
-                  [class.badge-success]="job.status === 'Active'"
-                  [class.badge-info]="job.status === 'Filled'"
-                  [class.badge-warning]="job.status === 'Paused'"
-                >
-                  {{ job.status }}
-                </span>
-              </td>
-              <td>{{ job.posted | date }}</td>
-              <td>
-                <div class="action-buttons">
-                  <button class="btn-icon" title="View Job">
-                    <span class="icon icon-eye"></span>
-                  </button>
-                  <button class="btn-icon" title="Edit Job">
-                    <span class="icon icon-edit"></span>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </div>

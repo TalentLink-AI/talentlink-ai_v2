@@ -243,21 +243,6 @@
                 <!-- For client actions -->
                 <ng-container *ngIf="isClient && isOwner">
                   <!-- For milestones that are completed by talent but not yet approved -->
-                  <button
-                    *ngIf="
-                      milestone.talentStatus === 'completed' &&
-                      milestone.status === 'in_progress'
-                    "
-                    class="btn btn-primary"
-                    [routerLink]="['/escrow-payment']"
-                    [queryParams]="{
-                      jobId: job._id,
-                      milestoneId: milestone._id,
-                      step: 'review'
-                    }"
-                  >
-                    Review & Fund
-                  </button>
 
                   <!-- For approved milestones pending payment -->
                   <button
@@ -286,25 +271,6 @@
                 </ng-container>
 
                 <!-- Admin-only section for releasing funds -->
-                <ng-container *ngIf="isAdmin">
-                  <!-- For escrowed milestones ready for admin release -->
-                  <button
-                    *ngIf="milestone.status === 'escrowed'"
-                    class="btn btn-success"
-                    (click)="releaseEscrowedFunds(job._id, milestone._id)"
-                  >
-                    Release Funds (Admin)
-                  </button>
-
-                  <!-- Additional admin actions can go here -->
-                  <button
-                    *ngIf="milestone.status !== 'released'"
-                    class="btn btn-outline-secondary ms-2"
-                    (click)="viewMilestoneDetails(milestone._id)"
-                  >
-                    View Details
-                  </button>
-                </ng-container>
 
                 <!-- Talent actions -->
                 <ng-container *ngIf="isTalent && isAssignedToTalent">
