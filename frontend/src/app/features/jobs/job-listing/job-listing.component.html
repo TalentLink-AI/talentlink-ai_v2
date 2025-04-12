@@ -130,13 +130,14 @@
             <div class="category-icon">
               <img src="assets/images/jobs_heart.svg" alt="Job" />
             </div>
-            <span class="category-tag">{{
-              job?.category || "AI Development"
-            }}</span>
+            <span class="category-tag">{{ job?.category }}</span>
           </div>
 
           <div class="job-content" [routerLink]="['/jobs', job?._id || '']">
             <h3 class="job-title">{{ job?.title || "Untitled Project" }}</h3>
+            <span class="job-status" [ngClass]="'status-' + job.status">
+              {{ job.status | titlecase }}
+            </span>
 
             <div class="job-price">
               <span class="price-value">${{ job?.budget || 0 }}</span>
@@ -202,11 +203,6 @@
         *ngIf="!isLoading && !errorMessage && everyJobDetails?.length == 0"
       >
         <div class="empty-state">
-          <img
-            src="assets/images/empty-state.svg"
-            alt="No jobs found"
-            onerror="this.src='assets/images/heartIcon.svg'"
-          />
           <p>No projects match your search criteria</p>
           <button
             class="btn btn-primary"

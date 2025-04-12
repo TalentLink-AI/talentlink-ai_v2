@@ -23,6 +23,7 @@ import { JobListingComponent } from './features/jobs/job-listing/job-listing.com
 import { JobPostComponent } from './features/jobs/job-post/job-post.component';
 import { JobDetailComponent } from './features/jobs/job-detail/job-detail.component';
 import { ComprehensiveJobPostComponent } from './features/jobs/comprehensive-job-post/comprehensive-job-post.component';
+import { UserDashboardComponent } from './features/user/dashboard/dashboard.component';
 
 export const routes: Routes = [
   {
@@ -37,6 +38,10 @@ export const routes: Routes = [
       {
         path: 'home',
         component: HomeComponent,
+      },
+      {
+        path: 'dashboard',
+        component: UserDashboardComponent,
       },
       {
         path: 'profile',

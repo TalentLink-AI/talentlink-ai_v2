@@ -1,0 +1,42 @@
+<div class="dashboard-wrapper">
+  <div class="sidebar">
+    <ul class="nav">
+      <li [class.active]="activeTab === 'jobs'" (click)="setTab('jobs')">
+        My Jobs
+      </li>
+      <li
+        [class.active]="activeTab === 'messages'"
+        (click)="setTab('messages')"
+      >
+        Messages
+      </li>
+      <li [class.active]="activeTab === 'profile'" (click)="setTab('profile')">
+        Profile
+      </li>
+      <li
+        [class.active]="activeTab === 'settings'"
+        (click)="setTab('settings')"
+      >
+        Settings
+      </li>
+    </ul>
+  </div>
+
+  <div class="content-area">
+    <ng-container [ngSwitch]="activeTab">
+      <div *ngSwitchCase="'jobs'">
+        <h2>Your Jobs</h2>
+      </div>
+      <div *ngSwitchCase="'messages'">
+        <h2>Messages</h2>
+      </div>
+      <div *ngSwitchCase="'profile'">
+        <h2>Profile Info</h2>
+        <app-profile *ngIf="activeTab === 'profile'"></app-profile>
+      </div>
+      <div *ngSwitchCase="'settings'">
+        <h2>Settings</h2>
+      </div>
+    </ng-container>
+  </div>
+</div>
