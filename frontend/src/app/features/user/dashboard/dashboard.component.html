@@ -14,6 +14,20 @@
         Profile
       </li>
       <li
+        *ngIf="userRole === 'client'"
+        [class.active]="activeTab === 'job'"
+        (click)="setTab('job-listing')"
+      >
+        Show only client
+      </li>
+      <li
+        *ngIf="userRole === 'talent'"
+        [class.active]="activeTab === 'job'"
+        (click)="setTab('job-listing')"
+      >
+        Show only talent
+      </li>
+      <li
         [class.active]="activeTab === 'settings'"
         (click)="setTab('settings')"
       >
@@ -31,8 +45,10 @@
         <h2>Messages</h2>
       </div>
       <div *ngSwitchCase="'profile'">
-        <h2>Profile Info</h2>
         <app-profile *ngIf="activeTab === 'profile'"></app-profile>
+      </div>
+      <div *ngSwitchCase="'job-listing'">
+        <app-job-listing *ngIf="activeTab === 'job-listing'"></app-job-listing>
       </div>
       <div *ngSwitchCase="'settings'">
         <h2>Settings</h2>
