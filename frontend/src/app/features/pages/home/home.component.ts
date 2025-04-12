@@ -2,7 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { AuthService } from '@auth0/auth0-angular';
 import { CommonModule } from '@angular/common';
-import { ParticlesBackgroundComponent } from '../../shared/particles/particles-background.component';
+import { ParticlesBackgroundComponent } from '../../../shared/particles/particles-background.component';
 
 @Component({
   selector: 'app-home',
