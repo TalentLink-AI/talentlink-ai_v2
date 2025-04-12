@@ -13,9 +13,10 @@ import { NgxPaginationModule } from 'ngx-pagination';
 import { JobService, Job } from '../../../services/job.service';
 import { UserService } from '../../../services/user.service';
 import { ThemeService } from '../../../services/theme.service';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { BannerComponent } from '../../../shared';
+import { catchError, map } from 'rxjs/operators';
 
 // Define an interface for our enhanced job object
 interface EnhancedJob extends Job {
@@ -31,6 +32,7 @@ interface EnhancedJob extends Job {
     rating: number;
     count: number;
   };
+  hasApplied?: boolean; // Flag to show if talent has applied
 }
 
 @Component({
@@ -52,6 +54,7 @@ export class JobListingComponent implements OnInit, OnDestroy {
   // Jobs data
   everyJobDetails: EnhancedJob[] = [];
   allJobs: EnhancedJob[] = []; // Stores all jobs from API
+  myApplications: any[] = []; // Stores applications for talent
   visibleJobs: number = 9; // Number of jobs to show initially
   jobIncrement: number = 9; // Number of jobs to add when loading more
   allJobsLoaded: boolean = false;
@@ -60,9 +63,22 @@ export class JobListingComponent implements OnInit, OnDestroy {
   isLoading: boolean = false;
   errorMessage: string = '';
 
+  // Filter options
+  statusFilter: string = 'all';
+  appliedFilter: boolean = false;
+
   // User state
   userRole: string = '';
   isDarkMode: boolean = false;
+  isAdmin: boolean = false;
+
+  // Page title based on role
+  pageTitle: string = '';
+
+  // Stats for client
+  statsPublished: number = 0;
+  statsAssigned: number = 0;
+  statsCompleted: number = 0;
 
   // Environment variables
   baseUrl: string = '/'; // Replace with your API base URL
@@ -72,6 +88,7 @@ export class JobListingComponent implements OnInit, OnDestroy {
 
   // Subscriptions for cleanup
   private themeSubscription: Subscription = new Subscription();
+  private adminSubscription: Subscription = new Subscription();
 
   constructor(
     private jobService: JobService,
@@ -84,6 +101,15 @@ export class JobListingComponent implements OnInit, OnDestroy {
     // Get user role
     this.userRole = this.userService.getUserRole() || 'talent';
 
+    // Set page title based on role
+    this.pageTitle =
+      this.userRole === 'client' ? 'My Posted Jobs' : 'Available AI Projects';
+
+    // Check if user is admin
+    this.adminSubscription = this.userService.isAdmin().subscribe((isAdmin) => {
+      this.isAdmin = isAdmin;
+    });
+
     // Subscribe to theme changes
     this.themeSubscription = this.themeService.isDarkMode$.subscribe(
       (isDark) => {
@@ -91,8 +117,8 @@ export class JobListingComponent implements OnInit, OnDestroy {
       }
     );
 
-    // Load jobs
-    this.getEveryJobsList();
+    // Load appropriate jobs based on role
+    this.loadJobsBasedOnRole();
   }
 
   ngOnDestroy(): void {
@@ -100,89 +126,181 @@ export class JobListingComponent implements OnInit, OnDestroy {
     if (this.themeSubscription) {
       this.themeSubscription.unsubscribe();
     }
+    if (this.adminSubscription) {
+      this.adminSubscription.unsubscribe();
+    }
+  }
+
+  // Load appropriate jobs based on user role
+  loadJobsBasedOnRole(): void {
+    if (this.userRole === 'client') {
+      this.getClientJobs();
+    } else {
+      // For talents, get both available jobs and their applications
+      this.getTalentJobsAndApplications();
+    }
+  }
+
+  // Get jobs for client view
+  getClientJobs(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.jobService.getMyJobs().subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        if (response && response.data) {
+          // Extract jobs from response
+          let jobs = Array.isArray(response.data) ? response.data : [];
+
+          // Calculate stats
+          this.statsPublished = jobs.filter(
+            (job: any) => job.status === 'published'
+          ).length;
+          this.statsAssigned = jobs.filter(
+            (job: any) => job.status === 'assigned'
+          ).length;
+          this.statsCompleted = jobs.filter(
+            (job: any) => job.status === 'completed'
+          ).length;
+
+          // Apply status filter if set
+          if (this.statusFilter !== 'all') {
+            jobs = jobs.filter((job: any) => job.status === this.statusFilter);
+          }
+
+          // Process and enhance the jobs
+          this.allJobs = this.enhanceJobs(jobs);
+
+          // Apply search filter if needed
+          this.applySearchFilter();
+
+          // Set visible jobs
+          this.updateVisibleJobs();
+        }
+      },
+      error: (err) => {
+        this.handleError(err);
+      },
+    });
+  }
+
+  // Get jobs and applications for talent view
+  getTalentJobsAndApplications(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    // Use forkJoin to make parallel requests
+    forkJoin({
+      availableJobs: this.jobService.getAvailableJobs().pipe(
+        catchError((err) => {
+          console.error('Error fetching available jobs:', err);
+          return of({ data: { jobs: [] } });
+        })
+      ),
+      myApplications: this.jobService.getMyApplications().pipe(
+        catchError((err) => {
+          console.error('Error fetching applications:', err);
+          return of({ data: [] });
+        })
+      ),
+    }).subscribe({
+      next: (results) => {
+        this.isLoading = false;
+
+        // Process applications
+        this.myApplications = Array.isArray(results.myApplications.data)
+          ? results.myApplications.data
+          : [];
+
+        // Extract job IDs that the talent has applied to
+        const appliedJobIds = this.myApplications.map((app) => app.jobId);
+
+        // Extract jobs
+        let jobs = [];
+        if (results.availableJobs && results.availableJobs.data) {
+          jobs = Array.isArray(results.availableJobs.data)
+            ? results.availableJobs.data
+            : results.availableJobs.data.jobs || [];
+        }
+
+        // Enhance jobs with application status
+        this.allJobs = this.enhanceJobs(jobs).map((job) => {
+          job.hasApplied = appliedJobIds.includes(job._id);
+          return job;
+        });
+
+        // Apply filters
+        if (this.appliedFilter) {
+          this.allJobs = this.allJobs.filter((job) => job.hasApplied);
+        }
+
+        // Apply search filter
+        this.applySearchFilter();
+
+        // Update visible jobs
+        this.updateVisibleJobs();
+      },
+      error: (err) => {
+        this.handleError(err);
+      },
+    });
+  }
+
+  // Apply search filter to all jobs
+  applySearchFilter(): void {
+    if (this.searchText && this.searchText.trim() !== '') {
+      this.allJobs = this.allJobs.filter(
+        (job) =>
+          (job.title &&
+            job.title.toLowerCase().includes(this.searchText.toLowerCase())) ||
+          (job.description &&
+            job.description
+              .toLowerCase()
+              .includes(this.searchText.toLowerCase()))
+      );
+    }
+  }
+
+  // Update visible jobs
+  updateVisibleJobs(): void {
+    // Reset pagination
+    this.visibleJobs = Math.min(this.jobIncrement, this.allJobs.length);
+    this.allJobsLoaded = this.allJobs.length <= this.visibleJobs;
+
+    // Set visible jobs
+    this.everyJobDetails = this.allJobs.slice(0, this.visibleJobs);
+
+    // Set total items for pagination
+    this.totalItems = this.allJobs.length;
+  }
+
+  // Handle API errors
+  handleError(err: any): void {
+    this.isLoading = false;
+    console.error('Error loading jobs:', err);
+    this.errorMessage =
+      err.error?.message || 'Failed to load jobs. Please try again.';
+    this.everyJobDetails = []; // Reset array in case of error
+    this.totalItems = 0;
   }
 
   // Retry fetching jobs
   retryFetchJobs(): void {
     this.errorMessage = '';
-    this.getEveryJobsList();
+    this.loadJobsBasedOnRole();
   }
 
-  // Fetch all available jobs
-  getEveryJobsList(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
-    console.log('Fetching jobs with role:', this.userRole);
-    this.jobService.getAvailableJobs().subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        console.log('Job API response:', response);
-        // Initialize with empty array as a safety measure
-        this.everyJobDetails = [];
+  // Filter jobs by status
+  filterByStatus(status: string): void {
+    this.statusFilter = status;
+    this.loadJobsBasedOnRole();
+  }
 
-        if (response && response.data) {
-          // Extract jobs from response - handle different response formats
-          const jobs = Array.isArray(response.data)
-            ? response.data
-            : response.data.jobs || [];
-
-          console.log('Extracted jobs:', jobs.length);
-
-          // If there are no jobs yet, try another way to extract them
-          if (jobs.length === 0 && typeof response.data === 'object') {
-            // Try to extract jobs directly from response (some APIs return them differently)
-            if (response.data.jobs) {
-              // If jobs are in a 'jobs' property
-              this.allJobs = this.enhanceJobs(response.data.jobs);
-            } else if (response.jobs) {
-              // If jobs are in the response directly
-              this.allJobs = this.enhanceJobs(response.jobs);
-            } else {
-              // As a last resort, treat the entire data object as the jobs array
-              this.allJobs = this.enhanceJobs([response.data]);
-            }
-          } else {
-            // Process the jobs normally
-            this.allJobs = this.enhanceJobs(jobs);
-          }
-
-          // Apply search filter if needed
-          if (this.searchText && this.searchText.trim() !== '') {
-            this.allJobs = this.allJobs.filter(
-              (job) =>
-                (job.title &&
-                  job.title
-                    .toLowerCase()
-                    .includes(this.searchText.toLowerCase())) ||
-                (job.description &&
-                  job.description
-                    .toLowerCase()
-                    .includes(this.searchText.toLowerCase()))
-            );
-          }
-
-          // Reset pagination
-          this.visibleJobs = Math.min(this.jobIncrement, this.allJobs.length);
-          this.allJobsLoaded = this.allJobs.length <= this.visibleJobs;
-
-          // Set visible jobs
-          this.everyJobDetails = this.allJobs.slice(0, this.visibleJobs);
-        }
-
-        // Set total items for pagination
-        this.totalItems = this.everyJobDetails.length;
-        console.log('Total jobs found:', this.totalItems);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        console.error('Error loading jobs:', err);
-        this.errorMessage =
-          err.error?.message ||
-          'Failed to load available projects. Please try again.';
-        this.everyJobDetails = []; // Reset array in case of error
-        this.totalItems = 0;
-      },
-    });
+  // Filter for applied jobs (talent only)
+  toggleAppliedFilter(value: boolean): void {
+    this.appliedFilter = value;
+    this.loadJobsBasedOnRole();
   }
 
   // Helper method to enhance job objects with additional properties
@@ -203,25 +321,12 @@ export class JobListingComponent implements OnInit, OnDestroy {
           rating: 4.5, // Default rating
           count: Math.floor(Math.random() * 50), // Random review count for demonstration
         },
+        hasApplied: false, // Default to not applied
       };
 
       return enhancedJob;
     });
   }
-
-  // Handle page change for pagination
-  // pageChanged(event: number): void {
-  //   this.p = event;
-  //   // Scroll to top of job listings when page changes
-  //   if (this.scrollTarget) {
-  //     setTimeout(() => {
-  //       this.scrollTarget.nativeElement.scrollIntoView({
-  //         behavior: 'smooth',
-  //         block: 'start',
-  //       });
-  //     }, 100);
-  //   }
-  // }
 
   loadMoreJobs(): void {
     this.visibleJobs += this.jobIncrement;
@@ -254,28 +359,6 @@ export class JobListingComponent implements OnInit, OnDestroy {
     console.log(
       `Job ${job._id} favorite status toggled to: ${job.is_job_Favourite}`
     );
-
-    /* Example of what a real implementation might look like:
-    if (job._id) {
-      this.jobService.toggleFavoriteJob(job._id).subscribe({
-        next: (response) => {
-          if (response && response.success) {
-            // Update was successful
-            console.log(`Job ${job._id} favorite status saved`);
-          } else {
-            // If update failed, revert the local change
-            job.is_job_Favourite = !job.is_job_Favourite;
-            console.error('Failed to update favorite status');
-          }
-        },
-        error: (err) => {
-          // If error, revert the local change
-          job.is_job_Favourite = !job.is_job_Favourite;
-          console.error('Error toggling favorite status:', err);
-        }
-      });
-    }
-    */
   }
 
   // Navigate to job posting page
@@ -294,6 +377,22 @@ export class JobListingComponent implements OnInit, OnDestroy {
       ) {
         this.router.navigate(['/register']);
       }
+    }
+  }
+
+  // Get status class for CSS styling
+  getStatusClass(status: string | undefined): string {
+    switch (status) {
+      case 'published':
+        return 'status-published';
+      case 'assigned':
+        return 'status-assigned';
+      case 'completed':
+        return 'status-completed';
+      case 'cancelled':
+        return 'status-cancelled';
+      default:
+        return 'status-unknown'; // You can style this or leave it blank
     }
   }
 }

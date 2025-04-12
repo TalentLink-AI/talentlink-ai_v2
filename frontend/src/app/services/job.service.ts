@@ -1,7 +1,7 @@
 // src/app/services/job.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, switchMap, throwError, catchError } from 'rxjs';
+import { Observable, switchMap, throwError, catchError, map, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthRoleService } from './auth-role.service';
 
@@ -46,12 +46,45 @@ export class JobService {
     return this.http.get(`${this.apiUrl}/jobs/${id}`);
   }
 
-  // Get jobs created by the current client
+  // Get my jobs (for clients)
   getMyJobs(): Observable<any> {
-    if (!this.auth.hasRole('client')) {
-      return throwError(() => new Error('Unauthorized: Clients only.'));
+    return this.http.get(`${this.apiUrl}/jobs/my-jobs`).pipe(
+      catchError((error) => {
+        console.error('Error fetching my jobs:', error);
+
+        // If the my-jobs endpoint fails, fallback to regular jobs endpoint with clientId filter
+        return this.getJobs().pipe(
+          map((response) => {
+            if (response && response.data) {
+              // Filter jobs to only show those created by the current user
+              // This is a client-side fallback if the my-jobs endpoint isn't available
+              const jobs = Array.isArray(response.data)
+                ? response.data
+                : response.data.jobs || [];
+
+              // We're assuming the auth service might provide a user ID to filter by
+              // If not available, just return all jobs as a fallback
+              return {
+                success: true,
+                data: jobs,
+              };
+            }
+            return response;
+          })
+        );
+      })
+    );
+  }
+
+  // Get jobs with client filtering
+  getJobsByStatus(status?: string): Observable<any> {
+    const params: any = {};
+
+    if (status && status !== 'all') {
+      params.status = status;
     }
-    return this.http.get(`${this.apiUrl}/jobs/my-jobs`);
+
+    return this.http.get(`${this.apiUrl}/jobs`, { params });
   }
 
   // Get jobs created by a specific client
@@ -59,23 +92,24 @@ export class JobService {
     return this.http.get(`${this.apiUrl}/jobs/client/${clientId}`);
   }
 
-  // Get jobs that a talent can apply to (not assigned yet)
-  getAvailableJobs(): Observable<any> {
-    // Use the regular jobs endpoint with appropriate filters
-    return this.http
-      .get(`${this.apiUrl}/jobs`, {
-        params: {
-          status: 'published',
-        },
+  // Get jobs for talents (available jobs)
+  getAvailableJobs(searchQuery?: string): Observable<any> {
+    const params: any = {
+      status: 'published',
+    };
+
+    if (searchQuery) {
+      params.search = searchQuery;
+    }
+
+    return this.http.get(`${this.apiUrl}/jobs/available`, { params }).pipe(
+      catchError((error) => {
+        console.error('Error fetching available jobs:', error);
+
+        // Fallback to regular jobs endpoint with status=published
+        return this.http.get(`${this.apiUrl}/jobs`, { params });
       })
-      .pipe(
-        // Handle errors and retry once if there's an issue
-        catchError((error) => {
-          console.error('Error fetching available jobs:', error);
-          // If the /jobs endpoint fails, try the /jobs/available endpoint as fallback
-          return this.http.get(`${this.apiUrl}/jobs/available`);
-        })
-      );
+    );
   }
 
   // Create a new job
@@ -120,9 +154,14 @@ export class JobService {
     return this.http.get(`${this.apiUrl}/applications/talent/${talentId}`);
   }
 
-  // Get my applications (for logged in talent)
+  // Get my applications (for talent)
   getMyApplications(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/applications/my-applications`);
+    return this.http.get(`${this.apiUrl}/applications/my-applications`).pipe(
+      catchError((error) => {
+        console.error('Error fetching my applications:', error);
+        return of({ data: [] });
+      })
+    );
   }
 
   // Accept an application

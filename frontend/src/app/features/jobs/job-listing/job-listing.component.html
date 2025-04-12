@@ -1,11 +1,16 @@
 <!-- src/app/features/jobs/job-listing/job-listing.component.html -->
 <app-banner>
-  <h1>Find AI Projects</h1>
-  <p>{{ userRole === "client" ? "My Posted Jobs" : "Explore AI Projects" }}</p>
+  <h1>{{ pageTitle }}</h1>
+  <p>
+    {{
+      userRole === "client"
+        ? "Manage your posted jobs"
+        : "Find the perfect AI project to work on"
+    }}
+  </p>
 </app-banner>
-<div class="job-listing-page" [ngClass]="{ 'dark-theme': isDarkMode }">
-  <!-- Banner component could be inserted here -->
 
+<div class="job-listing-page" [ngClass]="{ 'dark-theme': isDarkMode }">
   <!-- Background decorative elements -->
   <div class="decoration-circle left"></div>
   <div class="decoration-circle right"></div>
@@ -21,10 +26,10 @@
             name="searchText"
             [(ngModel)]="searchText"
             class="form-control"
-            (keyup.enter)="getEveryJobsList()"
+            (keyup.enter)="loadJobsBasedOnRole()"
           />
           <button
-            (click)="getEveryJobsList()"
+            (click)="loadJobsBasedOnRole()"
             class="btn btn-primary search-button"
           >
             <svg
@@ -47,6 +52,61 @@
       </div>
     </div>
 
+    <!-- Status filter tabs for clients -->
+    <div class="status-filter-tabs" *ngIf="userRole === 'client'">
+      <div class="tabs-container">
+        <div
+          class="tab"
+          [class.active]="statusFilter === 'all'"
+          (click)="filterByStatus('all')"
+        >
+          <span class="tab-label">All</span>
+          <span class="tab-count">{{
+            statsPublished + statsAssigned + statsCompleted
+          }}</span>
+        </div>
+        <div
+          class="tab"
+          [class.active]="statusFilter === 'published'"
+          (click)="filterByStatus('published')"
+        >
+          <span class="tab-label">Published</span>
+          <span class="tab-count">{{ statsPublished }}</span>
+        </div>
+        <div
+          class="tab"
+          [class.active]="statusFilter === 'assigned'"
+          (click)="filterByStatus('assigned')"
+        >
+          <span class="tab-label">Assigned</span>
+          <span class="tab-count">{{ statsAssigned }}</span>
+        </div>
+        <div
+          class="tab"
+          [class.active]="statusFilter === 'completed'"
+          (click)="filterByStatus('completed')"
+        >
+          <span class="tab-label">Completed</span>
+          <span class="tab-count">{{ statsCompleted }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Applied filter for talents -->
+    <div class="application-filter" *ngIf="userRole === 'talent'">
+      <div class="filter-toggle">
+        <label class="toggle-switch">
+          <input
+            type="checkbox"
+            [checked]="appliedFilter"
+            (change)="toggleAppliedFilter(!appliedFilter)"
+          />
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Show only jobs I've applied to</span>
+      </div>
+    </div>
+
     <!-- Filter section -->
     <div class="filter-section" #scrollTarget>
       <div class="section-header">
@@ -58,7 +118,9 @@
             height="22"
           />
         </div>
-        <h2 class="section-title">Available Projects</h2>
+        <h2 class="section-title">
+          {{ userRole === "client" ? "My Projects" : "Available Projects" }}
+        </h2>
         <p class="section-description">Total {{ totalItems }} projects found</p>
       </div>
     </div>
@@ -68,7 +130,7 @@
       <!-- Loading indicator -->
       <div class="loading-container" *ngIf="isLoading">
         <div class="loading-spinner"></div>
-        <p>Loading available projects...</p>
+        <p>Loading projects...</p>
       </div>
 
       <!-- Error message -->
@@ -126,6 +188,28 @@
             </svg>
           </div>
 
+          <!-- Applied indicator for talents -->
+          <div
+            class="applied-badge"
+            *ngIf="userRole === 'talent' && job?.hasApplied"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Applied</span>
+          </div>
+
           <div class="job-category">
             <div class="category-icon">
               <img src="assets/images/jobs_heart.svg" alt="Job" />
@@ -135,9 +219,22 @@
 
           <div class="job-content" [routerLink]="['/jobs', job?._id || '']">
             <h3 class="job-title">{{ job?.title || "Untitled Project" }}</h3>
-            <span class="job-status" [ngClass]="'status-' + job.status">
-              {{ job.status | titlecase }}
-            </span>
+
+            <!-- Job status badge -->
+            <div class="job-status-badge">
+              <span [ngClass]="getStatusClass(job?.status)">
+                {{ job?.status ? (job.status | titlecase) : "Unknown" }}
+              </span>
+            </div>
+
+            <!-- Brief description preview -->
+            <div class="job-description-preview" *ngIf="job?.description">
+              {{
+                job.description.length > 100
+                  ? (job.description | slice : 0 : 100) + "..."
+                  : job.description
+              }}
+            </div>
 
             <div class="job-price">
               <span class="price-value">${{ job?.budget || 0 }}</span>
@@ -203,12 +300,26 @@
         *ngIf="!isLoading && !errorMessage && everyJobDetails?.length == 0"
       >
         <div class="empty-state">
-          <p>No projects match your search criteria</p>
+          <p>
+            {{
+              userRole === "client"
+                ? "You have not posted any projects yet"
+                : "No projects match your search criteria"
+            }}
+          </p>
           <button
+            *ngIf="searchText"
             class="btn btn-primary"
-            (click)="searchText = ''; getEveryJobsList()"
+            (click)="searchText = ''; loadJobsBasedOnRole()"
           >
             Clear search
+          </button>
+          <button
+            *ngIf="userRole === 'client' && !searchText"
+            class="btn btn-primary"
+            (click)="postJob()"
+          >
+            Post your first project
           </button>
         </div>
       </div>
@@ -229,13 +340,13 @@
         </button>
       </div>
 
-      <!-- Post job CTA section -->
-      <div class="post-job-cta">
+      <!-- Post job CTA -->
+      <div class="post-job-cta" *ngIf="userRole === 'client'">
         <div class="cta-content">
-          <h2>Looking to hire AI talent?</h2>
-          <p>Post your project and connect with qualified professionals</p>
+          <h2>Need more AI talent for your projects?</h2>
+          <p>Post a new project and connect with qualified AI professionals</p>
           <button (click)="postJob()" class="btn btn-primary post-job-button">
-            Post a Project
+            Post a New Project
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
