@@ -360,28 +360,7 @@ export class JobDetailComponent implements OnInit {
       },
     });
   }
-  testCreateMilestone(): void {
-    console.log('Test creating milestone');
-    if (!this.job) {
-      console.error('No job object!');
-      return;
-    }
 
-    console.log('Creating test milestone for job:', this.job._id);
-
-    this.jobService
-      .createMilestone(this.job._id, 'Test Milestone', this.job.budget || 10)
-      .subscribe({
-        next: (response) => {
-          console.log('Test milestone created:', response);
-          // Reload job details
-          this.loadJobDetails(this.job._id);
-        },
-        error: (err) => {
-          console.error('Failed to create test milestone:', err);
-        },
-      });
-  }
   /**
    * Client requests fund release for a milestone
    * In a real app, this would create a notification or support ticket

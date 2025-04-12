@@ -33,12 +33,26 @@
         <span class="meta-label">Budget:</span>
         <span class="meta-value">${{ job.budget.toFixed(2) }}</span>
       </div>
-
       <div class="meta-item">
         <span class="meta-label">Posted:</span>
         <span class="meta-value">{{ formatDate(job.createdAt) }}</span>
       </div>
-
+      <div class="meta-item">
+        <span class="meta-label">Category:</span>
+        <span class="meta-value">{{ job.category }}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Timeline:</span>
+        <span class="meta-value">{{ job.timeline }}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Location:</span>
+        <span class="meta-value">{{ job.location }}</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Visibility:</span>
+        <span class="meta-value">{{ job.visibility }}</span>
+      </div>
       <div class="meta-item" *ngIf="job.assignedTo">
         <span class="meta-label">Assigned To:</span>
         <span class="meta-value">Talent ID: {{ job.assignedTo }}</span>

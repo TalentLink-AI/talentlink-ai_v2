@@ -1,0 +1,233 @@
+<!-- src/app/features/jobs/job-listing/job-listing.component.html -->
+<div class="job-listing-page" [ngClass]="{ 'dark-theme': isDarkMode }">
+  <!-- Banner component could be inserted here -->
+
+  <!-- Background decorative elements -->
+  <div class="decoration-circle left"></div>
+  <div class="decoration-circle right"></div>
+
+  <div class="container">
+    <!-- Search section -->
+    <div class="search-section">
+      <div class="search-container">
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Search for projects..."
+            name="searchText"
+            [(ngModel)]="searchText"
+            class="form-control"
+            (keyup.enter)="getEveryJobsList()"
+          />
+          <button
+            (click)="getEveryJobsList()"
+            class="btn btn-primary search-button"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter section -->
+    <div class="filter-section" #scrollTarget>
+      <div class="section-header">
+        <div class="section-icon">
+          <img
+            src="assets/images/cmn-Heading_icon.svg"
+            alt=""
+            width="22"
+            height="22"
+          />
+        </div>
+        <h2 class="section-title">Available Projects</h2>
+        <p class="section-description">Total {{ totalItems }} projects found</p>
+      </div>
+    </div>
+
+    <!-- Job Grid Section -->
+    <div class="job-grid-section">
+      <div class="job-grid" *ngIf="(everyJobDetails?.length || 0) > 0">
+        <div
+          class="job-card"
+          *ngFor="
+            let job of everyJobDetails
+              | paginate
+                : { itemsPerPage: 9, currentPage: p, totalItems: totalItems }
+          "
+        >
+          <div
+            class="favorite-button"
+            (click)="toggleFavourite(job); $event.stopPropagation()"
+          >
+            <svg
+              *ngIf="!job?.is_job_Favourite"
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              ></path>
+            </svg>
+            <svg
+              *ngIf="job?.is_job_Favourite"
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              ></path>
+            </svg>
+          </div>
+
+          <div class="job-category">
+            <div class="category-icon">
+              <img src="assets/images/jobs_heart.svg" alt="Job" />
+            </div>
+            <span class="category-tag">{{
+              job?.category || "AI Development"
+            }}</span>
+          </div>
+
+          <div class="job-content" [routerLink]="['/jobs', job?._id || '']">
+            <h3 class="job-title">{{ job?.title || "Untitled Project" }}</h3>
+
+            <div class="job-price">
+              <span class="price-value">${{ job?.budget || 0 }}</span>
+            </div>
+          </div>
+
+          <div class="client-info">
+            <div
+              class="client-avatar"
+              [routerLink]="['/client-details', job?.clientId || '']"
+            >
+              <div class="avatar-placeholder">
+                {{ job?.user_info?.firstName?.charAt(0)?.toUpperCase() || "C" }}
+              </div>
+            </div>
+
+            <div class="client-details">
+              <h4
+                class="client-name"
+                [routerLink]="['/client-details', job?.clientId || '']"
+              >
+                {{ job?.user_info?.firstName || "Client" }}
+                {{ job?.user_info?.lastName || "" }}
+              </h4>
+
+              <div class="client-rating">
+                <span class="rating-value">{{
+                  Math.ceil((job?.reviews?.rating || 4.5) * 10) / 10
+                }}</span>
+                <span class="rating-stars">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    ></polygon>
+                  </svg>
+                </span>
+                <span class="rating-count"
+                  >({{
+                    (job?.reviews?.count || 0) > 1000
+                      ? (job?.reviews?.count || 0) + "k"
+                      : job?.reviews?.count || 0
+                  }})</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- No jobs found message -->
+      <div class="no-jobs-found" *ngIf="everyJobDetails?.length == 0">
+        <div class="empty-state">
+          <img
+            src="assets/images/empty-state.svg"
+            alt="No jobs found"
+            onerror="this.src='assets/images/heartIcon.svg'"
+          />
+          <p>No projects match your search criteria</p>
+          <button
+            class="btn btn-primary"
+            (click)="searchText = ''; getEveryJobsList()"
+          >
+            Clear search
+          </button>
+        </div>
+      </div>
+
+      <!-- Pagination controls -->
+      <div class="job-grid" *ngIf="(everyJobDetails?.length || 0) > 0">
+        <pagination-controls
+          [directionLinks]="false"
+          (pageChange)="pageChanged($event)"
+        ></pagination-controls>
+      </div>
+
+      <!-- Post job CTA section -->
+      <div class="post-job-cta">
+        <div class="cta-content">
+          <h2>Looking to hire AI talent?</h2>
+          <p>Post your project and connect with qualified professionals</p>
+          <button (click)="postJob()" class="btn btn-primary post-job-button">
+            Post a Project
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
