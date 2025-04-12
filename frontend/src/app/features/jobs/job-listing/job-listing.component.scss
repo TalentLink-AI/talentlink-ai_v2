@@ -185,6 +185,81 @@
   .job-grid-section {
     margin-bottom: vars.$spacing-16;
     
+    // Loading container
+    .loading-container {
+      padding: vars.$spacing-10 0;
+      text-align: center;
+      
+      .loading-spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(vars.$color-primary, 0.3);
+        border-radius: 50%;
+        border-top-color: vars.$color-primary;
+        animation: spinner 1s linear infinite;
+        margin-bottom: vars.$spacing-4;
+        
+        .dark-theme & {
+          border-color: rgba(vars.$color-primary-light, 0.3);
+          border-top-color: vars.$color-primary-light;
+        }
+        
+        @keyframes spinner {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      }
+      
+      p {
+        font-size: vars.$font-size-lg;
+        color: vars.$color-text-muted;
+        
+        .dark-theme & {
+          color: vars.$color-gray-400;
+        }
+      }
+    }
+    
+    // Error container
+    .error-container {
+      padding: vars.$spacing-6 0;
+      
+      .alert-danger {
+        background-color: rgba(vars.$color-danger, 0.1);
+        border-left: 4px solid vars.$color-danger;
+        color: vars.$color-danger;
+        padding: vars.$spacing-4 vars.$spacing-6;
+        border-radius: vars.$border-radius-md;
+        
+        .dark-theme & {
+          background-color: rgba(vars.$color-danger, 0.2);
+        }
+        
+        p {
+          margin-bottom: vars.$spacing-3;
+          font-weight: vars.$font-weight-medium;
+        }
+        
+        .btn {
+          @include mixins.button-primary;
+          
+          .dark-theme & {
+            background-color: vars.$color-primary-dark;
+            
+            &:hover {
+              background-color: helpers.lighten(vars.$color-primary-dark, 5%);
+            }
+          }
+        }
+        
+        .mt-3 {
+          margin-top: vars.$spacing-3;
+        }
+      }
+    }
+    
     .job-grid {
       display: grid;
       grid-template-columns: repeat(1, 1fr);
@@ -249,6 +324,36 @@
             
             &[fill="currentColor"] {
               color: vars.$color-danger;
+            }
+          }
+        }
+
+        .pagination-simple {
+          margin: vars.$spacing-8 0;
+          display: flex;
+          justify-content: center;
+          
+          .btn-outline-primary {
+            background-color: transparent;
+            border: vars.$border-width-default solid vars.$color-primary;
+            color: vars.$color-primary;
+            padding: vars.$spacing-3 vars.$spacing-6;
+            border-radius: vars.$border-radius-md;
+            font-weight: vars.$font-weight-medium;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            
+            .dark-theme & {
+              color: vars.$color-primary-light;
+              border-color: vars.$color-primary-light;
+            }
+            
+            &:hover {
+              background-color: rgba(vars.$color-primary, 0.1);
+              
+              .dark-theme & {
+                background-color: rgba(vars.$color-primary-light, 0.1);
+              }
             }
           }
         }

@@ -1,4 +1,8 @@
 <!-- src/app/features/jobs/job-listing/job-listing.component.html -->
+<app-banner>
+  <h1>Find AI Projects</h1>
+  <p>{{ userRole === "client" ? "My Posted Jobs" : "Explore AI Projects" }}</p>
+</app-banner>
 <div class="job-listing-page" [ngClass]="{ 'dark-theme': isDarkMode }">
   <!-- Banner component could be inserted here -->
 
@@ -61,15 +65,29 @@
 
     <!-- Job Grid Section -->
     <div class="job-grid-section">
-      <div class="job-grid" *ngIf="(everyJobDetails?.length || 0) > 0">
-        <div
-          class="job-card"
-          *ngFor="
-            let job of everyJobDetails
-              | paginate
-                : { itemsPerPage: 9, currentPage: p, totalItems: totalItems }
-          "
-        >
+      <!-- Loading indicator -->
+      <div class="loading-container" *ngIf="isLoading">
+        <div class="loading-spinner"></div>
+        <p>Loading available projects...</p>
+      </div>
+
+      <!-- Error message -->
+      <div class="error-container" *ngIf="errorMessage">
+        <div class="alert alert-danger">
+          <p>{{ errorMessage }}</p>
+          <button class="btn btn-primary mt-3" (click)="retryFetchJobs()">
+            Try Again
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="job-grid"
+        *ngIf="
+          !isLoading && !errorMessage && (everyJobDetails?.length || 0) > 0
+        "
+      >
+        <div class="job-card" *ngFor="let job of everyJobDetails">
           <div
             class="favorite-button"
             (click)="toggleFavourite(job); $event.stopPropagation()"
@@ -179,7 +197,10 @@
       </div>
 
       <!-- No jobs found message -->
-      <div class="no-jobs-found" *ngIf="everyJobDetails?.length == 0">
+      <div
+        class="no-jobs-found"
+        *ngIf="!isLoading && !errorMessage && everyJobDetails?.length == 0"
+      >
         <div class="empty-state">
           <img
             src="assets/images/empty-state.svg"
@@ -196,12 +217,20 @@
         </div>
       </div>
 
-      <!-- Pagination controls -->
-      <div class="job-grid" *ngIf="(everyJobDetails?.length || 0) > 0">
-        <pagination-controls
-          [directionLinks]="false"
-          (pageChange)="pageChanged($event)"
-        ></pagination-controls>
+      <!-- Simple pagination -->
+      <div
+        class="pagination-simple"
+        *ngIf="
+          !isLoading && !errorMessage && (everyJobDetails?.length || 0) > 9
+        "
+      >
+        <button
+          class="btn btn-outline-primary"
+          (click)="loadMoreJobs()"
+          *ngIf="!allJobsLoaded"
+        >
+          Load More
+        </button>
       </div>
 
       <!-- Post job CTA section -->

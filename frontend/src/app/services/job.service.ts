@@ -1,7 +1,7 @@
 // src/app/services/job.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, switchMap, throwError } from 'rxjs';
+import { Observable, switchMap, throwError, catchError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthRoleService } from './auth-role.service';
 
@@ -61,7 +61,21 @@ export class JobService {
 
   // Get jobs that a talent can apply to (not assigned yet)
   getAvailableJobs(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/jobs/available`);
+    // Use the regular jobs endpoint with appropriate filters
+    return this.http
+      .get(`${this.apiUrl}/jobs`, {
+        params: {
+          status: 'published',
+        },
+      })
+      .pipe(
+        // Handle errors and retry once if there's an issue
+        catchError((error) => {
+          console.error('Error fetching available jobs:', error);
+          // If the /jobs endpoint fails, try the /jobs/available endpoint as fallback
+          return this.http.get(`${this.apiUrl}/jobs/available`);
+        })
+      );
   }
 
   // Create a new job
