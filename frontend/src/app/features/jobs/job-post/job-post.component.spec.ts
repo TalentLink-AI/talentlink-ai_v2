@@ -1,18 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { JobPostComponent } from './job-post.component';
+import { ComprehensiveJobPostComponent } from './job-post.component';
 
-describe('JobPostComponent', () => {
-  let component: JobPostComponent;
-  let fixture: ComponentFixture<JobPostComponent>;
+describe('ComprehensiveJobPostComponent', () => {
+  let component: ComprehensiveJobPostComponent;
+  let fixture: ComponentFixture<ComprehensiveJobPostComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [JobPostComponent]
-    })
-    .compileComponents();
+      imports: [ComprehensiveJobPostComponent],
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(JobPostComponent);
+    fixture = TestBed.createComponent(ComprehensiveJobPostComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

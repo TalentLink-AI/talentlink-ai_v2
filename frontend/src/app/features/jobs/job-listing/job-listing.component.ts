@@ -282,7 +282,7 @@ export class JobListingComponent implements OnInit, OnDestroy {
   postJob(): void {
     // Check if user is authenticated and can post jobs
     if (this.userRole === 'client') {
-      this.router.navigate(['/jobs/post']);
+      this.router.navigate(['/jobs/comprehensive-post']);
     } else {
       // If not a client, might want to redirect to a different page or show a dialog
       console.log('Only clients can post jobs');

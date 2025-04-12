@@ -1,121 +1,325 @@
-<!-- src/app/features/jobs/job-post/job-post.component.html -->
-<div class="container">
-  <div class="card">
-    <div class="card-header">
-      <h2>Post a New Job</h2>
-    </div>
-    <div class="card-body">
-      <form [formGroup]="jobForm" (ngSubmit)="onSubmit()">
-        <div class="form-group">
-          <label for="title">Job Title</label>
-          <input
-            type="text"
-            id="title"
-            formControlName="title"
-            class="form-control"
-            [ngClass]="{
-              'is-invalid':
-                jobForm.get('title')?.invalid && jobForm.get('title')?.touched
-            }"
-          />
-          <div
-            class="invalid-feedback"
-            *ngIf="
-              jobForm.get('title')?.invalid && jobForm.get('title')?.touched
-            "
-          >
-            <span *ngIf="jobForm.get('title')?.errors?.['required']"
-              >Job title is required</span
+<!-- src/app/features/jobs/comprehensive-job-post/comprehensive-job-post.component.html -->
+<div class="job-post-page" [ngClass]="{ 'dark-theme': isDarkMode }">
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2>Post a New Project</h2>
+        <div class="step-indicator">
+          <div class="steps">
+            <div
+              class="step"
+              [ngClass]="{
+                active: currentStep >= 1,
+                completed: currentStep > 1
+              }"
             >
-            <span *ngIf="jobForm.get('title')?.errors?.['minlength']"
-              >Job title must be at least 5 characters</span
+              <div class="step-circle">1</div>
+              <div class="step-label">Basic Info</div>
+            </div>
+            <div
+              class="step-line"
+              [ngClass]="{ active: currentStep > 1 }"
+            ></div>
+            <div
+              class="step"
+              [ngClass]="{
+                active: currentStep >= 2,
+                completed: currentStep > 2
+              }"
             >
+              <div class="step-circle">2</div>
+              <div class="step-label">Project Details</div>
+            </div>
+            <div
+              class="step-line"
+              [ngClass]="{ active: currentStep > 2 }"
+            ></div>
+            <div class="step" [ngClass]="{ active: currentStep >= 3 }">
+              <div class="step-circle">3</div>
+              <div class="step-label">Milestones</div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label for="description">Job Description</label>
-          <textarea
-            id="description"
-            formControlName="description"
-            class="form-control"
-            rows="5"
-            [ngClass]="{
-              'is-invalid':
-                jobForm.get('description')?.invalid &&
-                jobForm.get('description')?.touched
-            }"
-          ></textarea>
-          <div
-            class="invalid-feedback"
-            *ngIf="
-              jobForm.get('description')?.invalid &&
-              jobForm.get('description')?.touched
-            "
-          >
-            <span *ngIf="jobForm.get('description')?.errors?.['required']"
-              >Job description is required</span
-            >
-            <span *ngIf="jobForm.get('description')?.errors?.['minlength']"
-              >Job description must be at least 20 characters</span
-            >
+      <div class="card-body">
+        <form [formGroup]="jobForm" (ngSubmit)="onSubmit()">
+          <!-- Step 1: Basic Project Information -->
+          <div class="form-step" *ngIf="currentStep === 1">
+            <h3>Basic Project Information</h3>
+
+            <div class="form-group">
+              <label for="title">Project Title*</label>
+              <input
+                type="text"
+                id="title"
+                formControlName="title"
+                class="form-control"
+                [ngClass]="{
+                  'is-invalid': job['title'].invalid && job['title'].touched
+                }"
+                placeholder="e.g., AI-Powered Content Generator"
+              />
+              <div
+                class="invalid-feedback"
+                *ngIf="job['title'].invalid && job['title'].touched"
+              >
+                <span *ngIf="job['title'].errors?.['required']"
+                  >Title is required</span
+                >
+                <span *ngIf="job['title'].errors?.['minlength']"
+                  >Title must be at least 5 characters</span
+                >
+                <span *ngIf="job['title'].errors?.['maxlength']"
+                  >Title cannot exceed 100 characters</span
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="description">Project Description*</label>
+              <textarea
+                id="description"
+                formControlName="description"
+                class="form-control"
+                rows="6"
+                [ngClass]="{
+                  'is-invalid':
+                    job['description'].invalid && job['description'].touched
+                }"
+                placeholder="Describe your project requirements, expectations, and goals in detail..."
+              ></textarea>
+              <div
+                class="invalid-feedback"
+                *ngIf="job['description'].invalid && job['description'].touched"
+              >
+                <span *ngIf="job['description'].errors?.['required']"
+                  >Description is required</span
+                >
+                <span *ngIf="job['description'].errors?.['minlength']"
+                  >Description must be at least 20 characters</span
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="budget">Budget ($)*</label>
+              <input
+                type="number"
+                id="budget"
+                formControlName="budget"
+                class="form-control"
+                [ngClass]="{
+                  'is-invalid': job['budget'].invalid && job['budget'].touched
+                }"
+                placeholder="Enter project budget in USD"
+                min="1"
+                step="0.01"
+              />
+              <div
+                class="invalid-feedback"
+                *ngIf="job['budget'].invalid && job['budget'].touched"
+              >
+                <span *ngIf="job['budget'].errors?.['required']"
+                  >Budget is required</span
+                >
+                <span *ngIf="job['budget'].errors?.['min']"
+                  >Budget must be greater than 0</span
+                >
+              </div>
+            </div>
+
+            <div class="alert alert-danger" *ngIf="error">
+              {{ error }}
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="nextStep()"
+              >
+                Next: Project Details
+                <i class="material-icons">arrow_forward</i>
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="cancel()"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label for="budget">Budget ($)</label>
-          <input
-            type="number"
-            id="budget"
-            formControlName="budget"
-            class="form-control"
-            [ngClass]="{
-              'is-invalid':
-                jobForm.get('budget')?.invalid && jobForm.get('budget')?.touched
-            }"
-          />
-          <div
-            class="invalid-feedback"
-            *ngIf="
-              jobForm.get('budget')?.invalid && jobForm.get('budget')?.touched
-            "
-          >
-            <span *ngIf="jobForm.get('budget')?.errors?.['required']"
-              >Budget is required</span
-            >
-            <span *ngIf="jobForm.get('budget')?.errors?.['min']"
-              >Budget must be greater than 0</span
-            >
+          <!-- Step 2: Project Details -->
+          <div class="form-step" *ngIf="currentStep === 2">
+            <h3>Project Details</h3>
+
+            <div class="form-group">
+              <label for="category">Category</label>
+              <select
+                id="category"
+                formControlName="category"
+                class="form-control"
+              >
+                <option
+                  *ngFor="let category of categoryOptions"
+                  [value]="category"
+                >
+                  {{ category }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Required Skills</label>
+              <div class="skills-grid">
+                <div class="skill-checkbox" *ngFor="let skill of skillsOptions">
+                  <label>
+                    <input
+                      type="checkbox"
+                      [checked]="job['skills'].value?.includes(skill)"
+                      (change)="updateSelectedSkills(skill, $event)"
+                    />
+                    {{ skill }}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="timeline">Expected Timeline</label>
+              <select
+                id="timeline"
+                formControlName="timeline"
+                class="form-control"
+              >
+                <option
+                  *ngFor="let option of timelineOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="visibility">Job Visibility</label>
+              <select
+                id="visibility"
+                formControlName="visibility"
+                class="form-control"
+              >
+                <option
+                  *ngFor="let option of visibilityOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Attachments</label>
+              <ng-container formArrayName="attachments">
+                <div
+                  class="attachment-container"
+                  *ngFor="let attachment of attachments.controls; let i = index"
+                >
+                  <div [formGroupName]="i" class="attachment-item">
+                    <div class="row">
+                      <div class="col-5">
+                        <input
+                          type="text"
+                          formControlName="name"
+                          class="form-control"
+                          placeholder="File name"
+                        />
+                      </div>
+                      <div class="col-5">
+                        <input
+                          type="text"
+                          formControlName="url"
+                          class="form-control"
+                          placeholder="File URL"
+                        />
+                      </div>
+                      <div class="col-2">
+                        <button
+                          type="button"
+                          class="btn btn-danger btn-sm"
+                          (click)="removeAttachment(i)"
+                        >
+                          <i class="material-icons">delete</i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  (click)="addAttachment()"
+                >
+                  <label class="btn btn-outline-primary">
+                    Upload Image
+                    <input
+                      type="file"
+                      hidden
+                      (change)="uploadAttachment($event, 'image')"
+                      accept="image/*"
+                    />
+                  </label>
+
+                  <label class="btn btn-outline-primary">
+                    Upload Video
+                    <input
+                      type="file"
+                      hidden
+                      (change)="uploadAttachment($event, 'video')"
+                      accept="video/*"
+                    />
+                  </label>
+                  <i class="material-icons">add</i> Add Attachment
+                </button>
+              </ng-container>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="prevStep()"
+              >
+                <i class="material-icons">arrow_back</i> Previous
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="nextStep()"
+              >
+                Next: Review <i class="material-icons">arrow_forward</i>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="alert alert-danger" *ngIf="error">
-          {{ error }}
-        </div>
+          <!-- Step 3: review -->
+          <div class="form-step" *ngIf="currentStep === 3">
+            <h3>Review</h3>
 
-        <div class="form-actions">
-          <button
-            type="submit"
-            class="btn btn-primary"
-            [disabled]="isSubmitting"
-          >
-            <span
-              *ngIf="isSubmitting"
-              class="spinner-border spinner-border-sm"
-              role="status"
-              aria-hidden="true"
-            ></span>
-            {{ isSubmitting ? "Posting..." : "Post Job" }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary"
-            [routerLink]="['/jobs']"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="prevStep()"
+              >
+                <i class="material-icons">arrow_back</i> Previous
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

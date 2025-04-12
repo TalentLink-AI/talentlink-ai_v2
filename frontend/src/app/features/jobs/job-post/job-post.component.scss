@@ -1,73 +1,517 @@
-/* src/app/features/jobs/job-post/job-post.component.scss */
+/* src/app/features/jobs/comprehensive-job-post/comprehensive-job-post.component.scss */
 @use '../../../../styles/variables' as vars;
 @use '../../../../styles/mixins' as mixins;
+@use '../../../../styles/helpers' as helpers;
 
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: vars.$spacing-6;
-}
-
-.card {
-  @include mixins.card;
-  margin-bottom: vars.$spacing-8;
+.job-post-page {
+  padding: vars.$spacing-8 0;
+  min-height: 100vh;
+  background-color: vars.$color-background;
+  color: vars.$color-text;
   
-  &-header {
-    border-bottom: vars.$border-width-default solid vars.$color-gray-200;
-    padding-bottom: vars.$spacing-4;
+  &.dark-theme {
+    background-color: vars.$color-background-dark;
+    color: vars.$color-text-light;
+  }
+  
+  .container {
+    max-width: 900px;
+    @include mixins.container;
+  }
+  
+  .card {
+    @include mixins.card;
+    margin-bottom: vars.$spacing-8;
+    
+    .dark-theme & {
+      background-color: vars.$color-secondary;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    &-header {
+      padding-bottom: vars.$spacing-4;
+      margin-bottom: vars.$spacing-6;
+      border-bottom: vars.$border-width-default solid vars.$color-gray-200;
+      
+      .dark-theme & {
+        border-color: helpers.lighten(vars.$color-secondary, 10%);
+      }
+      
+      h2 {
+        font-size: vars.$font-size-2xl;
+        font-weight: vars.$font-weight-bold;
+        margin-bottom: vars.$spacing-6;
+        color: vars.$color-text;
+        
+        .dark-theme & {
+          color: vars.$color-text-light;
+        }
+      }
+    }
+    
+    &-body {
+      padding: 0;
+    }
+  }
+  
+  // Step indicator styling
+  .step-indicator {
     margin-bottom: vars.$spacing-6;
     
-    h2 {
-      margin: 0;
-      color: vars.$color-primary;
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+        
+        &-circle {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background-color: vars.$color-gray-300;
+          color: vars.$color-gray-700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: vars.$font-weight-bold;
+          margin-bottom: vars.$spacing-2;
+          transition: all 0.3s ease;
+          
+          .dark-theme & {
+            background-color: helpers.lighten(vars.$color-secondary, 15%);
+            color: vars.$color-gray-300;
+          }
+        }
+        
+        &-label {
+          font-size: vars.$font-size-sm;
+          color: vars.$color-text-muted;
+          
+          .dark-theme & {
+            color: vars.$color-gray-400;
+          }
+        }
+        
+        &-line {
+          flex: 1;
+          height: 2px;
+          background-color: vars.$color-gray-300;
+          z-index: 1;
+          
+          .dark-theme & {
+            background-color: helpers.lighten(vars.$color-secondary, 15%);
+          }
+          
+          &.active {
+            background-color: vars.$color-primary;
+            
+            .dark-theme & {
+              background-color: vars.$color-primary-dark;
+            }
+          }
+        }
+        
+        &.active {
+          .step-circle {
+            background-color: vars.$color-primary;
+            color: vars.$color-white;
+            
+            .dark-theme & {
+              background-color: vars.$color-primary-dark;
+            }
+          }
+          
+          .step-label {
+            color: vars.$color-text;
+            font-weight: vars.$font-weight-medium;
+            
+            .dark-theme & {
+              color: vars.$color-text-light;
+            }
+          }
+        }
+        
+        &.completed {
+          .step-circle {
+            background-color: vars.$color-success;
+            
+            .dark-theme & {
+              background-color: helpers.darken(vars.$color-success, 10%);
+            }
+          }
+        }
+      }
     }
   }
   
-  &-body {
-    padding: vars.$spacing-4 0;
-  }
-}
-
-.form-group {
-  margin-bottom: vars.$spacing-6;
-
-  label {
-    @include mixins.form-label;
-    margin-bottom: vars.$spacing-2;
-  }
-
-  .form-control {
-    @include mixins.form-control;
+  // Form step styling
+  .form-step {
+    padding: vars.$spacing-6;
     
-    &.is-invalid {
-      border-color: vars.$color-danger;
+    h3 {
+      font-size: vars.$font-size-xl;
+      font-weight: vars.$font-weight-bold;
+      margin-bottom: vars.$spacing-6;
+      color: vars.$color-text;
+      
+      .dark-theme & {
+        color: vars.$color-text-light;
+      }
     }
   }
-
-  .invalid-feedback {
-    @include mixins.form-error;
-    display: block;
-  }
-}
-
-.form-actions {
-  margin-top: vars.$spacing-8;
-  @include mixins.flex-between;
-
   
-  .btn + .btn {
-    margin-left: vars.$spacing-4;
+  // Form group styling
+  .form-group {
+    margin-bottom: vars.$spacing-6;
+    
+    label {
+      @include mixins.form-label;
+      display: block;
+      margin-bottom: vars.$spacing-2;
+      
+      .dark-theme & {
+        color: vars.$color-text-light;
+      }
+    }
+    
+    .form-control {
+      @include mixins.form-control;
+      
+      .dark-theme & {
+        background-color: helpers.lighten(vars.$color-secondary, 5%);
+        border-color: helpers.lighten(vars.$color-secondary, 10%);
+        color: vars.$color-white;
+        
+        &::placeholder {
+          color: vars.$color-gray-500;
+        }
+        
+        &:focus {
+          border-color: vars.$color-primary;
+        }
+      }
+      
+      &.is-invalid {
+        border-color: vars.$color-danger;
+      }
+    }
+    
+    .invalid-feedback {
+      @include mixins.form-error;
+      display: block;
+    }
+    
+    .helper-text {
+      font-size: vars.$font-size-sm;
+      color: vars.$color-text-muted;
+      margin-top: vars.$spacing-1;
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+    
+    // Checkbox styling
+    input[type="checkbox"] {
+      margin-right: vars.$spacing-2;
+    }
   }
-}
-
-.alert-danger {
-  background-color: rgba(vars.$color-danger, 0.1);
-  color: vars.$color-danger;
-  padding: vars.$spacing-4;
-  border-radius: vars.$border-radius-md;
-  margin-bottom: vars.$spacing-6;
-}
-
-textarea.form-control {
-  min-height: 150px;
+  
+  // Skills grid styling
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: vars.$spacing-3;
+    
+    @include mixins.respond-to(md) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .skill-checkbox {
+      label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        
+        input {
+          margin-right: vars.$spacing-2;
+        }
+      }
+    }
+  }
+  
+  // Attachment styling
+  .attachment-container {
+    margin-bottom: vars.$spacing-3;
+    
+    .attachment-item {
+      background-color: vars.$color-gray-100;
+      border-radius: vars.$border-radius-md;
+      padding: vars.$spacing-3;
+      
+      .dark-theme & {
+        background-color: helpers.lighten(vars.$color-secondary, 10%);
+      }
+      
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 vars.$spacing-2;
+        
+        .col-5, .col-2 {
+          padding: 0 vars.$spacing-2;
+        }
+        
+        .col-5 {
+          flex: 0 0 calc(50% - #{vars.$spacing-4});
+          
+          @include mixins.respond-to(md) {
+            flex: 0 0 calc(45% - #{vars.$spacing-4});
+          }
+        }
+        
+        .col-2 {
+          flex: 0 0 calc(20% - #{vars.$spacing-4});
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          
+          @include mixins.respond-to(md) {
+            flex: 0 0 calc(10% - #{vars.$spacing-4});
+          }
+        }
+      }
+    }
+  }
+  
+  // Milestone styling
+  .milestone-container {
+    .info-text {
+      margin-bottom: vars.$spacing-6;
+      color: vars.$color-text-muted;
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+    
+    .milestone-item {
+      margin-bottom: vars.$spacing-6;
+      
+      .milestone-form {
+        background-color: vars.$color-gray-100;
+        border-radius: vars.$border-radius-lg;
+        padding: vars.$spacing-6;
+        
+        .dark-theme & {
+          background-color: helpers.lighten(vars.$color-secondary, 5%);
+        }
+        
+        .milestone-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: vars.$spacing-4;
+          
+          h4 {
+            font-size: vars.$font-size-lg;
+            font-weight: vars.$font-weight-bold;
+            margin: 0;
+            color: vars.$color-text;
+            
+            .dark-theme & {
+              color: vars.$color-text-light;
+            }
+          }
+        }
+        
+        .row {
+          display: flex;
+          flex-wrap: wrap;
+          margin: 0 vars.$spacing-2;
+          
+          .col-md-6 {
+            flex: 0 0 100%;
+            padding: 0 vars.$spacing-2;
+            margin-bottom: vars.$spacing-4;
+            
+            @include mixins.respond-to(md) {
+              flex: 0 0 50%;
+              margin-bottom: 0;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // No milestones section styling
+  .no-milestones {
+    background-color: vars.$color-gray-100;
+    border-radius: vars.$border-radius-lg;
+    padding: vars.$spacing-6;
+    margin-bottom: vars.$spacing-6;
+    
+    .dark-theme & {
+      background-color: helpers.lighten(vars.$color-secondary, 5%);
+    }
+    
+    p {
+      margin: 0 0 vars.$spacing-3;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+  
+  // Form actions styling
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: vars.$spacing-8;
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: vars.$spacing-2;
+      
+      i {
+        font-size: 18px;
+      }
+    }
+    
+    .btn-primary {
+      @include mixins.button-primary;
+      
+      .dark-theme & {
+        background-color: vars.$color-primary-dark;
+        
+        &:hover {
+          background-color: helpers.lighten(vars.$color-primary-dark, 5%);
+        }
+        
+        &:disabled {
+          background-color: helpers.lighten(vars.$color-secondary, 15%);
+          color: vars.$color-gray-500;
+        }
+      }
+    }
+    
+    .btn-secondary {
+      @include mixins.button-secondary;
+      
+      .dark-theme & {
+        color: vars.$color-gray-300;
+        border-color: vars.$color-gray-500;
+        
+        &:hover {
+          background-color: helpers.lighten(vars.$color-secondary, 10%);
+        }
+      }
+    }
+    
+    .btn-outline-secondary {
+      @include mixins.button-base;
+      background-color: transparent;
+      border: vars.$border-width-default solid vars.$color-gray-400;
+      color: vars.$color-text;
+      
+      .dark-theme & {
+        color: vars.$color-gray-300;
+        border-color: vars.$color-gray-500;
+        
+        &:hover {
+          background-color: helpers.lighten(vars.$color-secondary, 10%);
+        }
+      }
+      
+      &:hover {
+        background-color: vars.$color-gray-100;
+      }
+    }
+    
+    .btn-outline-primary {
+      @include mixins.button-base;
+      background-color: transparent;
+      border: vars.$border-width-default solid vars.$color-primary;
+      color: vars.$color-primary;
+      
+      .dark-theme & {
+        color: vars.$color-primary-light;
+        border-color: vars.$color-primary-light;
+        
+        &:hover {
+          background-color: rgba(vars.$color-primary-light, 0.1);
+        }
+      }
+      
+      &:hover {
+        background-color: rgba(vars.$color-primary, 0.1);
+      }
+    }
+    
+    .btn-success {
+      @include mixins.button-success;
+      
+      .dark-theme & {
+        background-color: helpers.darken(vars.$color-success, 10%);
+        
+        &:hover {
+          background-color: helpers.darken(vars.$color-success, 15%);
+        }
+        
+        &:disabled {
+          background-color: helpers.lighten(vars.$color-secondary, 15%);
+          color: vars.$color-gray-500;
+        }
+      }
+    }
+    
+    .btn-danger {
+      @include mixins.button-danger;
+      
+      .dark-theme & {
+        background-color: helpers.darken(vars.$color-danger, 10%);
+        
+        &:hover {
+          background-color: helpers.darken(vars.$color-danger, 15%);
+        }
+      }
+    }
+  }
+  
+  // Alert styling
+  .alert {
+    padding: vars.$spacing-4;
+    border-radius: vars.$border-radius-md;
+    margin-bottom: vars.$spacing-6;
+    
+    &-danger {
+      background-color: rgba(vars.$color-danger, 0.1);
+      color: vars.$color-danger;
+      border-left: 4px solid vars.$color-danger;
+      
+      .dark-theme & {
+        background-color: rgba(vars.$color-danger, 0.2);
+      }
+    }
+    
+    &.mt-3 {
+      margin-top: vars.$spacing-3;
+    }
+  }
+  
+  // Material icons support
+  i.material-icons {
+    font-size: 20px;
+    line-height: 1;
+    vertical-align: middle;
+  }
 }

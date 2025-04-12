@@ -18,11 +18,9 @@ import { OnboardingCompleteComponent } from './features/onboarding/onboarding-co
 import { OnboardingRefreshComponent } from './features/onboarding/onboarding-refresh/onboarding-refresh.component';
 
 // Job Feature Components
-import { JobListComponent } from './features/jobs/job-list/job-list.component';
 import { JobListingComponent } from './features/jobs/job-listing/job-listing.component';
-import { JobPostComponent } from './features/jobs/job-post/job-post.component';
 import { JobDetailComponent } from './features/jobs/job-detail/job-detail.component';
-import { ComprehensiveJobPostComponent } from './features/jobs/comprehensive-job-post/comprehensive-job-post.component';
+import { ComprehensiveJobPostComponent } from './features/jobs/job-post/job-post.component';
 import { UserDashboardComponent } from './features/user/dashboard/dashboard.component';
 
 export const routes: Routes = [
@@ -68,23 +66,8 @@ export const routes: Routes = [
       },
       // Job routes
       {
-        path: 'jobs',
-        component: JobListComponent,
-        canActivate: [authGuard, onboardingGuard],
-      },
-      {
         path: 'job-listing',
         component: JobListingComponent,
-        canActivate: [authGuard, onboardingGuard],
-      },
-      {
-        path: 'jobs/manage',
-        component: JobListComponent,
-        canActivate: [authGuard, onboardingGuard],
-      },
-      {
-        path: 'jobs/post',
-        component: JobPostComponent,
         canActivate: [authGuard, onboardingGuard],
       },
       {
