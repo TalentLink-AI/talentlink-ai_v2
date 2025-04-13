@@ -1,0 +1,92 @@
+@use '../../../../styles/variables' as vars;
+@use '../../../../styles/mixins' as mixins;
+@use '../../../../styles/helpers' as helpers;
+
+.chat-page {
+  background-color: vars.$color-background;
+  min-height: 100vh;
+  padding: vars.$spacing-6;
+
+  .chat-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: vars.$color-white;
+    border-radius: vars.$border-radius-lg;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    padding: vars.$spacing-6;
+
+    h2 {
+      font-size: vars.$font-size-xl;
+      font-weight: vars.$font-weight-bold;
+      margin-bottom: vars.$spacing-5;
+    }
+
+    .room-controls {
+      display: flex;
+      gap: vars.$spacing-3;
+      margin-bottom: vars.$spacing-4;
+
+      input {
+        flex: 1;
+        @include mixins.form-control;
+      }
+
+      button {
+        @include mixins.button-primary;
+        white-space: nowrap;
+      }
+    }
+
+    .message-list {
+      border: 1px solid vars.$color-gray-300;
+      border-radius: vars.$border-radius-sm;
+      padding: vars.$spacing-4;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: vars.$spacing-4;
+
+      .message {
+        margin-bottom: vars.$spacing-2;
+
+        strong {
+          color: vars.$color-primary;
+        }
+      }
+    }
+
+    .message-input {
+      display: flex;
+      gap: vars.$spacing-2;
+
+      input {
+        flex: 1;
+        @include mixins.form-control;
+      }
+
+      .btn-send {
+        @include mixins.button-primary;
+      }
+
+      .btn-emoji {
+        background: vars.$color-primary;
+        color: vars.$color-white;
+        border: none;
+        border-radius: vars.$border-radius-sm;
+        padding: 0 vars.$spacing-3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+    }
+
+    .emoji-picker {
+      margin-top: vars.$spacing-4;
+
+      ::ng-deep emoji-mart {
+        border-radius: vars.$border-radius-md;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+}

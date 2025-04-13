@@ -34,10 +34,7 @@ app.use("/api/", limiter);
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGODB_URI || "mongodb://mongodb:27017/talentlink", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGODB_URI || "mongodb://mongodb:27017/talentlink", {})
   .then(() => {
     logger.info("Connected to MongoDB");
     console.log("Connected to MongoDB");

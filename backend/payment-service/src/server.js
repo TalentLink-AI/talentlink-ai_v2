@@ -27,11 +27,8 @@ connectDB()
     logger.error(`Error connecting to MongoDB: ${err.message}`, {
       stack: err.stack,
     });
-    // Don't exit the process, allow it to continue even if DB connection fails initially
-    // process.exit(1);
   });
 
-// FIXED MIDDLEWARE CONFIGURATION
 // Setup a special route handler for webhooks first
 app.post(
   "/api/webhooks/stripe",

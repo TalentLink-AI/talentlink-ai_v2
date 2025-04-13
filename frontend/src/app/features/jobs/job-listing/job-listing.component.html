@@ -28,10 +28,7 @@
             class="form-control"
             (keyup.enter)="loadJobsBasedOnRole()"
           />
-          <button
-            (click)="loadJobsBasedOnRole()"
-            class="btn btn-primary search-button"
-          >
+          <button (click)="loadJobsBasedOnRole()" class="search-button">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -111,12 +108,21 @@
     <div class="filter-section" #scrollTarget>
       <div class="section-header">
         <div class="section-icon">
-          <img
-            src="assets/images/cmn-Heading_icon.svg"
-            alt=""
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
             width="22"
             height="22"
-          />
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="feather feather-briefcase"
+          >
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+          </svg>
         </div>
         <h2 class="section-title">
           {{ userRole === "client" ? "My Projects" : "Available Projects" }}
@@ -149,7 +155,9 @@
           !isLoading && !errorMessage && (everyJobDetails?.length || 0) > 0
         "
       >
+        <!-- Job card -->
         <div class="job-card" *ngFor="let job of everyJobDetails">
+          <!-- Favorite button -->
           <div
             class="favorite-button"
             (click)="toggleFavourite(job); $event.stopPropagation()"
@@ -210,13 +218,39 @@
             <span>Applied</span>
           </div>
 
+          <!-- Category tag -->
           <div class="job-category">
             <div class="category-icon">
-              <img src="assets/images/jobs_heart.svg" alt="Job" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="feather feather-cpu"
+              >
+                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+                <line x1="20" y1="9" x2="23" y2="9"></line>
+                <line x1="20" y1="14" x2="23" y2="14"></line>
+                <line x1="1" y1="9" x2="4" y2="9"></line>
+                <line x1="1" y1="14" x2="4" y2="14"></line>
+              </svg>
             </div>
-            <span class="category-tag">{{ job?.category }}</span>
+            <span class="category-tag">{{
+              job?.category || "AI Development"
+            }}</span>
           </div>
 
+          <!-- Job content -->
           <div class="job-content" [routerLink]="['/jobs', job?._id || '']">
             <h3 class="job-title">{{ job?.title || "Untitled Project" }}</h3>
 
@@ -241,6 +275,7 @@
             </div>
           </div>
 
+          <!-- Client info -->
           <div class="client-info">
             <div
               class="client-avatar"
@@ -300,6 +335,7 @@
         *ngIf="!isLoading && !errorMessage && everyJobDetails?.length == 0"
       >
         <div class="empty-state">
+          <img src="assets/images/empty-state.svg" alt="No jobs found" />
           <p>
             {{
               userRole === "client"
@@ -309,14 +345,14 @@
           </p>
           <button
             *ngIf="searchText"
-            class="btn btn-primary"
+            class="btn-primary"
             (click)="searchText = ''; loadJobsBasedOnRole()"
           >
             Clear search
           </button>
           <button
             *ngIf="userRole === 'client' && !searchText"
-            class="btn btn-primary"
+            class="btn-primary"
             (click)="postJob()"
           >
             Post your first project
@@ -332,7 +368,7 @@
         "
       >
         <button
-          class="btn btn-outline-primary"
+          class="btn-outline-primary"
           (click)="loadMoreJobs()"
           *ngIf="!allJobsLoaded"
         >
@@ -345,7 +381,7 @@
         <div class="cta-content">
           <h2>Need more AI talent for your projects?</h2>
           <p>Post a new project and connect with qualified AI professionals</p>
-          <button (click)="postJob()" class="btn btn-primary post-job-button">
+          <button (click)="postJob()" class="post-job-button">
             Post a New Project
             <svg
               xmlns="http://www.w3.org/2000/svg"

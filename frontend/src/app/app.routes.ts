@@ -16,6 +16,7 @@ import { MilestonePaymentComponent } from './features/jobs/milestone-payment/mil
 import { MilestoneDetailComponent } from './features/jobs/milestone-detail/milestone-detail.component';
 import { OnboardingCompleteComponent } from './features/onboarding/onboarding-complete/onboarding-complete.component';
 import { OnboardingRefreshComponent } from './features/onboarding/onboarding-refresh/onboarding-refresh.component';
+import { ChatComponent } from './features/pages/chat/chat.component';
 
 // Job Feature Components
 import { JobListingComponent } from './features/jobs/job-listing/job-listing.component';
@@ -40,6 +41,11 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         component: UserDashboardComponent,
+      },
+      {
+        path: 'chat',
+        component: ChatComponent,
+        canActivate: [authGuard, onboardingGuard],
       },
       {
         path: 'profile',

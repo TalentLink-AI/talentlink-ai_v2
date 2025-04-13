@@ -1,0 +1,41 @@
+<div class="chat-page">
+  <div class="chat-container">
+    <h2>Chat Test</h2>
+
+    <div class="room-controls">
+      <input [(ngModel)]="otherUserId" placeholder="Other user's Auth0 ID" />
+      <button (click)="joinRoom()">Join Room</button>
+    </div>
+
+    <div class="message-list">
+      <div class="message" *ngFor="let msg of messages">
+        <strong>{{ msg.from }}</strong
+        >: {{ msg.text }}
+      </div>
+    </div>
+
+    <div *ngIf="typingUser" class="typing-indicator">
+      {{ typingUser }} is typing...
+    </div>
+
+    <div class="message-input">
+      <input
+        [(ngModel)]="messageText"
+        (input)="onInputChange()"
+        placeholder="Type your message..."
+      />
+      <button (click)="sendMessage()">Send</button>
+      <button (click)="toggleEmojiPicker()">😊</button>
+    </div>
+
+    <div class="emoji-panel" *ngIf="showEmojiPicker">
+      <emoji-mart
+        set="apple"
+        (emojiSelect)="addEmoji($event)"
+        [perLine]="10"
+        [showPreview]="false"
+        [style]="{ width: '100%' }"
+      ></emoji-mart>
+    </div>
+  </div>
+</div>

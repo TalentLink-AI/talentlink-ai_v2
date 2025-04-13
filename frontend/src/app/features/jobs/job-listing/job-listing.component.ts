@@ -312,14 +312,14 @@ export class JobListingComponent implements OnInit, OnDestroy {
         is_job_Favourite: false, // Default to not favorited
         category: job.category || 'AI Development',
         user_info: {
-          firstName: 'Client', // Default name
-          lastName: '',
+          firstName: job.user_info?.firstName || 'Client', // Default name
+          lastName: job.user_info?.lastName || '',
           _id: job.clientId || '',
-          profile_image: '',
+          profile_image: job.user_info?.profile_image || '',
         },
         reviews: {
-          rating: 4.5, // Default rating
-          count: Math.floor(Math.random() * 50), // Random review count for demonstration
+          rating: job.reviews?.rating || 4.5, // Default rating
+          count: job.reviews?.count || Math.floor(Math.random() * 50), // Random review count for demonstration
         },
         hasApplied: false, // Default to not applied
       };
@@ -382,6 +382,8 @@ export class JobListingComponent implements OnInit, OnDestroy {
 
   // Get status class for CSS styling
   getStatusClass(status: string | undefined): string {
+    if (!status) return 'status-unknown';
+
     switch (status) {
       case 'published':
         return 'status-published';
@@ -392,7 +394,7 @@ export class JobListingComponent implements OnInit, OnDestroy {
       case 'cancelled':
         return 'status-cancelled';
       default:
-        return 'status-unknown'; // You can style this or leave it blank
+        return 'status-unknown';
     }
   }
 }

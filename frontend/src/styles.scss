@@ -10,6 +10,7 @@
 @use './styles/components';
 @use './styles/layouts';
 @use './styles/dark-mode'; 
+@use '@ctrl/ngx-emoji-mart/picker';
 
 // Base styles
 body {
