@@ -1,91 +1,753 @@
+// src/app/features/pages/chat/chat.component.scss
 @use '../../../../styles/variables' as vars;
 @use '../../../../styles/mixins' as mixins;
-@use '../../../../styles/helpers' as helpers;
 
 .chat-page {
-  background-color: vars.$color-background;
   min-height: 100vh;
   padding: vars.$spacing-6;
+  background-color: vars.$color-background;
+  color: vars.$color-text;
+  
+  &.dark-theme {
+    background-color: vars.$color-background-dark;
+    color: vars.$color-text-light;
+  }
+}
 
-  .chat-container {
-    max-width: 900px;
-    margin: 0 auto;
-    background-color: vars.$color-white;
-    border-radius: vars.$border-radius-lg;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-    padding: vars.$spacing-6;
+.chat-container {
+  display: flex;
+  max-width: 1200px;
+  height: 80vh;
+  margin: 0 auto;
+  border-radius: vars.$border-radius-lg;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  background-color: vars.$color-white;
+  
+  .dark-theme & {
+    background-color: vars.$color-secondary;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  }
+}
 
+// Sidebar styles
+.sidebar {
+  width: 320px;
+  border-right: 1px solid vars.$color-gray-200;
+  display: flex;
+  flex-direction: column;
+  
+  .dark-theme & {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .sidebar-header {
+    padding: vars.$spacing-5 vars.$spacing-4;
+    border-bottom: 1px solid vars.$color-gray-200;
+    
+    .dark-theme & {
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    
     h2 {
+      margin: 0;
       font-size: vars.$font-size-xl;
       font-weight: vars.$font-weight-bold;
-      margin-bottom: vars.$spacing-5;
-    }
-
-    .room-controls {
-      display: flex;
-      gap: vars.$spacing-3;
-      margin-bottom: vars.$spacing-4;
-
-      input {
-        flex: 1;
-        @include mixins.form-control;
-      }
-
-      button {
-        @include mixins.button-primary;
-        white-space: nowrap;
+      color: vars.$color-text;
+      
+      .dark-theme & {
+        color: vars.$color-text-light;
       }
     }
+  }
+}
 
-    .message-list {
+// Contacts search
+.contacts-search {
+  padding: vars.$spacing-3 vars.$spacing-4;
+  
+  .search-input {
+    position: relative;
+    
+    svg {
+      position: absolute;
+      left: vars.$spacing-3;
+      top: 50%;
+      transform: translateY(-50%);
+      color: vars.$color-gray-500;
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+    
+    input {
+      width: 100%;
+      padding: vars.$spacing-3 vars.$spacing-3 vars.$spacing-3 vars.$spacing-8;
+      border-radius: vars.$border-radius-full;
       border: 1px solid vars.$color-gray-300;
-      border-radius: vars.$border-radius-sm;
-      padding: vars.$spacing-4;
-      max-height: 300px;
-      overflow-y: auto;
-      margin-bottom: vars.$spacing-4;
-
-      .message {
-        margin-bottom: vars.$spacing-2;
-
-        strong {
-          color: vars.$color-primary;
+      background-color: vars.$color-white;
+      color: vars.$color-text;
+      
+      &::placeholder {
+        color: vars.$color-gray-500;
+      }
+      
+      &:focus {
+        outline: none;
+        border-color: vars.$color-primary;
+      }
+      
+      .dark-theme & {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: vars.$color-text-light;
+        
+        &::placeholder {
+          color: vars.$color-gray-400;
+        }
+        
+        &:focus {
+          border-color: vars.$color-primary-dark;
         }
       }
     }
+  }
+}
 
-    .message-input {
-      display: flex;
-      gap: vars.$spacing-2;
-
-      input {
-        flex: 1;
-        @include mixins.form-control;
+// Contacts list
+.contacts-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: vars.$spacing-2;
+  
+  .contact-item {
+    display: flex;
+    align-items: center;
+    padding: vars.$spacing-3 vars.$spacing-4;
+    border-radius: vars.$border-radius-md;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-bottom: vars.$spacing-1;
+    
+    &:hover {
+      background-color: vars.$color-gray-100;
+      
+      .dark-theme & {
+        background-color: rgba(255, 255, 255, 0.05);
       }
-
-      .btn-send {
-        @include mixins.button-primary;
+    }
+    
+    &.active {
+      background-color: rgba(vars.$color-primary, 0.1);
+      
+      .dark-theme & {
+        background-color: rgba(vars.$color-primary-dark, 0.2);
       }
-
-      .btn-emoji {
-        background: vars.$color-primary;
+      
+      .contact-name {
+        color: vars.$color-primary;
+        
+        .dark-theme & {
+          color: vars.$color-primary-light;
+        }
+      }
+    }
+    
+    .contact-avatar {
+      width: 48px;
+      height: 48px;
+      margin-right: vars.$spacing-3;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        background-color: vars.$color-primary;
         color: vars.$color-white;
-        border: none;
-        border-radius: vars.$border-radius-sm;
-        padding: 0 vars.$spacing-3;
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
+        font-size: vars.$font-size-lg;
+        font-weight: vars.$font-weight-bold;
+        
+        .dark-theme & {
+          background-color: vars.$color-primary-dark;
+        }
       }
     }
+    
+    .contact-info {
+      flex: 1;
+      overflow: hidden;
+      
+      .contact-name {
+        font-weight: vars.$font-weight-medium;
+        margin-bottom: vars.$spacing-1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      .contact-role {
+        font-size: vars.$font-size-sm;
+        color: vars.$color-text-muted;
+        text-transform: capitalize;
+        
+        .dark-theme & {
+          color: vars.$color-gray-400;
+        }
+      }
+    }
+    
+    .contact-status {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: vars.$color-gray-400;
+      
+      &.online {
+        background-color: vars.$color-success;
+      }
+    }
+  }
+  
+  .loading-spinner {
+    padding: vars.$spacing-6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid vars.$color-gray-300;
+      border-top-color: vars.$color-primary;
+      border-radius: 50%;
+      animation: spinner 1s linear infinite;
+      margin-bottom: vars.$spacing-3;
+      
+      .dark-theme & {
+        border-color: rgba(255, 255, 255, 0.1);
+        border-top-color: vars.$color-primary-light;
+      }
+    }
+    
+    span {
+      color: vars.$color-text-muted;
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+    
+    @keyframes spinner {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  }
+}
 
-    .emoji-picker {
-      margin-top: vars.$spacing-4;
+// Chat main area
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
-      ::ng-deep emoji-mart {
-        border-radius: vars.$border-radius-md;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+// Chat header
+.chat-header {
+  padding: vars.$spacing-4 vars.$spacing-6;
+  border-bottom: 1px solid vars.$color-gray-200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  .dark-theme & {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .contact-info {
+    display: flex;
+    align-items: center;
+    
+    .contact-avatar {
+      width: 42px;
+      height: 42px;
+      margin-right: vars.$spacing-3;
+      border-radius: 50%;
+      overflow: hidden;
+      
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        background-color: vars.$color-primary;
+        color: vars.$color-white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: vars.$font-size-lg;
+        font-weight: vars.$font-weight-bold;
+        
+        .dark-theme & {
+          background-color: vars.$color-primary-dark;
+        }
+      }
+    }
+    
+    .contact-details {
+      .contact-name {
+        font-weight: vars.$font-weight-bold;
+        margin-bottom: vars.$spacing-1;
+      }
+      
+      .contact-status-text {
+        font-size: vars.$font-size-sm;
+        color: vars.$color-text-muted;
+        display: flex;
+        align-items: center;
+        
+        .dark-theme & {
+          color: vars.$color-gray-400;
+        }
+        
+        .status-indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          margin-right: vars.$spacing-2;
+          background-color: vars.$color-gray-400;
+          
+          &.online {
+            background-color: vars.$color-success;
+          }
+        }
+      }
+    }
+  }
+  
+  .header-actions {
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: vars.$color-text-muted;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: vars.$color-gray-100;
+        color: vars.$color-text;
+        
+        .dark-theme & {
+          background-color: rgba(255, 255, 255, 0.05);
+          color: vars.$color-text-light;
+        }
+      }
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+  }
+}
+
+// Chat body
+.chat-body {
+  flex: 1;
+  overflow-y: hidden;
+  position: relative;
+  
+  .no-chat-selected {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    .empty-state {
+      text-align: center;
+      padding: vars.$spacing-8;
+      
+      svg {
+        color: vars.$color-gray-300;
+        margin-bottom: vars.$spacing-4;
+        
+        .dark-theme & {
+          color: vars.$color-gray-600;
+        }
+      }
+      
+      h3 {
+        color: vars.$color-text;
+        margin-bottom: vars.$spacing-2;
+        
+        .dark-theme & {
+          color: vars.$color-text-light;
+        }
+      }
+      
+      p {
+        color: vars.$color-text-muted;
+        
+        .dark-theme & {
+          color: vars.$color-gray-400;
+        }
+      }
+    }
+  }
+  
+  .message-container {
+    height: 100%;
+    padding: vars.$spacing-5 vars.$spacing-6;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    
+    .message-list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+  }
+  
+  .message-date-divider {
+    text-align: center;
+    margin: vars.$spacing-4 0;
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      background-color: vars.$color-gray-200;
+      z-index: 1;
+      
+      .dark-theme & {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+    
+    span {
+      position: relative;
+      background-color: vars.$color-white;
+      padding: 0 vars.$spacing-3;
+      font-size: vars.$font-size-sm;
+      color: vars.$color-text-muted;
+      z-index: 2;
+      
+      .dark-theme & {
+        background-color: vars.$color-secondary;
+        color: vars.$color-gray-400;
+      }
+    }
+  }
+  
+  .message-wrapper {
+    display: flex;
+    margin-bottom: vars.$spacing-3;
+    
+    &.outgoing {
+      justify-content: flex-end;
+      
+      .message {
+        background-color: vars.$color-primary;
+        color: vars.$color-white;
+        border-radius: 18px 4px 18px 18px;
+        
+        .dark-theme & {
+          background-color: vars.$color-primary-dark;
+        }
+        
+        .message-time {
+          color: rgba(255, 255, 255, 0.8);
+        }
+      }
+    }
+    
+    &.incoming {
+      justify-content: flex-start;
+      
+      .message {
+        background-color: vars.$color-gray-100;
+        color: vars.$color-text;
+        border-radius: 4px 18px 18px 18px;
+        
+        .dark-theme & {
+          background-color: rgba(255, 255, 255, 0.05);
+          color: vars.$color-text-light;
+        }
+      }
+    }
+    
+    .message {
+      max-width: 70%;
+      padding: vars.$spacing-3 vars.$spacing-4;
+      word-break: break-word;
+      position: relative;
+      
+      .message-content {
+        margin-bottom: vars.$spacing-1;
+      }
+      
+      .message-time {
+        font-size: vars.$font-size-xs;
+        color: vars.$color-text-muted;
+        text-align: right;
+        
+        .dark-theme & {
+          color: vars.$color-gray-400;
+        }
+      }
+    }
+  }
+  
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    margin: vars.$spacing-2 0;
+    
+    .typing-dots {
+      display: flex;
+      margin-right: vars.$spacing-2;
+      
+      span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: vars.$color-gray-400;
+        margin: 0 2px;
+        opacity: 0.6;
+        
+        &:nth-child(1) {
+          animation: typing 1s infinite 0s;
+        }
+        
+        &:nth-child(2) {
+          animation: typing 1s infinite 0.2s;
+        }
+        
+        &:nth-child(3) {
+          animation: typing 1s infinite 0.4s;
+        }
+        
+        .dark-theme & {
+          background-color: vars.$color-gray-300;
+        }
+      }
+    }
+    
+    .typing-text {
+      font-size: vars.$font-size-sm;
+      color: vars.$color-text-muted;
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+    
+    @keyframes typing {
+      0% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-5px);
+      }
+      100% {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+// Chat footer
+.chat-footer {
+  padding: vars.$spacing-4 vars.$spacing-6;
+  border-top: 1px solid vars.$color-gray-200;
+  
+  .dark-theme & {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .message-composer {
+    display: flex;
+    align-items: center;
+    
+    .composer-button {
+      background-color: transparent;
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: vars.$color-text-muted;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      
+      &:hover {
+        background-color: vars.$color-gray-100;
+        color: vars.$color-text;
+        
+        .dark-theme & {
+          background-color: rgba(255, 255, 255, 0.05);
+          color: vars.$color-text-light;
+        }
+      }
+      
+      &.send-button {
+        color: vars.$color-primary;
+        
+        .dark-theme & {
+          color: vars.$color-primary-light;
+        }
+        
+        &:disabled {
+          color: vars.$color-gray-400;
+          cursor: not-allowed;
+          
+          .dark-theme & {
+            color: vars.$color-gray-600;
+          }
+        }
+      }
+      
+      .dark-theme & {
+        color: vars.$color-gray-400;
+      }
+    }
+    
+    .composer-input {
+      flex: 1;
+      margin: 0 vars.$spacing-2;
+      
+      input {
+        width: 100%;
+        height: 44px;
+        border-radius: vars.$border-radius-full;
+        border: 1px solid vars.$color-gray-300;
+        padding: 0 vars.$spacing-4;
+        background-color: vars.$color-white;
+        color: vars.$color-text;
+        
+        &:focus {
+          outline: none;
+          border-color: vars.$color-primary;
+        }
+        
+        &::placeholder {
+          color: vars.$color-gray-500;
+        }
+        
+        .dark-theme & {
+          background-color: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: vars.$color-text-light;
+          
+          &::placeholder {
+            color: vars.$color-gray-400;
+          }
+          
+          &:focus {
+            border-color: vars.$color-primary-dark;
+          }
+        }
+      }
+    }
+  }
+}
+
+.emoji-picker-container {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  z-index: 10;
+  border-radius: vars.$border-radius-md;
+  overflow: hidden;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  
+  .dark-theme & {
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  // Optional: add a small pointer/arrow from the picker to the emoji button
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 30px;
+    width: 16px;
+    height: 16px;
+    background-color: vars.$color-white;
+    transform: rotate(45deg);
+    
+    .dark-theme & {
+      background-color: vars.$color-gray-800;
+    }
+  }
+}
+
+// Media queries for responsiveness
+@media (max-width: 992px) {
+  .chat-container {
+    height: 90vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-container {
+    flex-direction: column;
+    height: calc(100vh - 32px);
+    margin: 0;
+  }
+  
+  .sidebar {
+    width: 100%;
+    max-height: 40%;
+    border-right: none;
+    border-bottom: 1px solid vars.$color-gray-200;
+    
+    .dark-theme & {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+  
+  .chat-main {
+    height: 60%;
+  }
+  
+  .contacts-list {
+    .contact-item {
+      padding: vars.$spacing-2 vars.$spacing-3;
+      
+      .contact-avatar {
+        width: 40px;
+        height: 40px;
       }
     }
   }

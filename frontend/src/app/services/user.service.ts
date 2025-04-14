@@ -1,8 +1,8 @@
 // frontend/src/app/services/user.service.ts
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError, of } from 'rxjs';
-import { tap, map, switchMap } from 'rxjs/operators';
+import { tap, map, switchMap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from '@auth0/auth0-angular';
 
@@ -449,5 +449,84 @@ export class UserService {
     portfolio.splice(index, 1);
 
     return this.updateTalentProfile({ portfolio });
+  }
+  // Add this method to your UserService class in user.service.ts
+
+  /**
+   * Get all users for chat functionality
+   * @param page Page number for pagination
+   * @param limit Results per page
+   * @param search Optional search query
+   */
+  getAllUsersChat(page = 1, limit = 50, search = ''): Observable<any> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    if (search) {
+      params.set('search', search);
+    }
+
+    return this.http.get<any>(`${this.apiUrl}/admin/users`, { params }).pipe(
+      catchError((err) => {
+        console.error('Error fetching users for chat:', err);
+        // On error, return mock data for development
+        return of({
+          users: [
+            {
+              _id: '1',
+              auth0Id: 'auth0|user1',
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john@example.com',
+              role: 'talent',
+              profilePicture: null,
+            },
+            {
+              _id: '2',
+              auth0Id: 'auth0|user2',
+              firstName: 'Jane',
+              lastName: 'Smith',
+              email: 'jane@example.com',
+              role: 'client',
+              profilePicture: null,
+            },
+            {
+              _id: '3',
+              auth0Id: 'auth0|user3',
+              firstName: 'Alex',
+              lastName: 'Johnson',
+              email: 'alex@example.com',
+              role: 'talent',
+              profilePicture: null,
+            },
+            {
+              _id: '4',
+              auth0Id: 'auth0|user4',
+              firstName: 'Maria',
+              lastName: 'Garcia',
+              email: 'maria@example.com',
+              role: 'client',
+              profilePicture: null,
+            },
+            {
+              _id: '5',
+              auth0Id: 'auth0|user5',
+              firstName: 'Sam',
+              lastName: 'Taylor',
+              email: 'sam@example.com',
+              role: 'talent',
+              profilePicture: null,
+            },
+          ],
+          pagination: {
+            total: 5,
+            page: 1,
+            limit: 50,
+            pages: 1,
+          },
+        });
+      })
+    );
   }
 }

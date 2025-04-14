@@ -11,12 +11,18 @@ module.exports = {
 
   // Find or create a private room between 2 users
   createOrFindRoom: async (user1, user2) => {
+    console.log(`Creating or finding room for users: ${user1} and ${user2}`);
+
     const existing = await ChatRoom.findOne({
       members: { $all: [user1, user2], $size: 2 },
     });
 
-    if (existing) return existing;
+    if (existing) {
+      console.log(`Found existing room: ${existing._id}`);
+      return existing;
+    }
 
+    console.log(`Creating new room for users: ${user1} and ${user2}`);
     return ChatRoom.create({
       members: [user1, user2],
       unseen_count: [
@@ -53,5 +59,67 @@ module.exports = {
     }));
     room.last_message_at = new Date();
     return room.save();
+  },
+
+  /**
+   * Get chat history for a room
+   * @param {String} roomId - The room ID
+   * @param {Number} limit - Max number of messages to return
+   * @returns {Promise<Array>} - Array of message objects
+   */
+  getMessageHistory: async (roomId, limit = 50) => {
+    return ChatMessage.find({ room_id: roomId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .then((messages) => messages.reverse());
+  },
+
+  /**
+   * Get list of all users with last messages
+   * @param {String} userId - Current user ID
+   * @returns {Promise<Array>} - Array of user chat previews
+   */
+  getUserChats: async (userId) => {
+    // Find all rooms for the user
+    const rooms = await ChatRoom.find({ members: userId }).sort({
+      last_message_at: -1,
+    });
+
+    // For each room, get the other user and the last message
+    const chatPreviews = [];
+
+    for (const room of rooms) {
+      // Get the other user in the room
+      const otherUserId = room.members.find((id) => id !== userId);
+
+      // Get last message
+      const lastMessage = await ChatMessage.findOne({ room_id: room._id }).sort(
+        { createdAt: -1 }
+      );
+
+      // Get unread count for current user
+      let unreadCount = 0;
+      const userCountObj = room.unseen_count.find(
+        (item) => item.user_id === userId
+      );
+      if (userCountObj) {
+        unreadCount = userCountObj.count;
+      }
+
+      chatPreviews.push({
+        roomId: room._id,
+        userId: otherUserId,
+        lastMessage: lastMessage
+          ? {
+              text: lastMessage.text,
+              timestamp: lastMessage.createdAt,
+              senderId: lastMessage.from,
+            }
+          : null,
+        unreadCount,
+      });
+    }
+
+    return chatPreviews;
   },
 };

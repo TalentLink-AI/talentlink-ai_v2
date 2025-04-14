@@ -100,6 +100,18 @@ export class JobDetailComponent implements OnInit {
     });
   }
 
+  messageClient(): void {
+    if (!this.job || !this.job.clientId) {
+      console.error('No client ID available');
+      return;
+    }
+
+    // Navigate to chat with this client
+    this.router.navigate(['/chat'], {
+      queryParams: { contact: this.job.clientId },
+    });
+  }
+
   loadJobDetails(jobId: string): void {
     this.isLoading = true;
 
