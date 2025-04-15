@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "axios": "^1.8.4",
     "ngx-pagination": "^6.0.3"
   }
 }

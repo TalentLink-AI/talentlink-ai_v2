@@ -53,6 +53,11 @@ export class SocketService implements OnDestroy {
       return;
     }
 
+    if (!token || typeof token !== 'string') {
+      console.error('❌ Invalid token passed to socket connect:', token);
+      return;
+    }
+
     this.socket = io(environment.messagingServiceUrl, {
       extraHeaders: {
         Authorization: `Bearer ${token}`,
@@ -286,7 +291,7 @@ export class SocketService implements OnDestroy {
     });
 
     return this.http.post(
-      `${environment.apiUrl}/api/chat/attachments`,
+      `${environment.messagingServiceUrl}/api/chat/attachments`,
       formData
     );
   }
@@ -389,7 +394,10 @@ export class SocketService implements OnDestroy {
       search: searchQuery || '',
     };
 
-    return this.http.post(`${environment.apiUrl}/api/chat/list`, data);
+    return this.http.post(
+      `${environment.messagingServiceUrl}/api/chat/list`,
+      data
+    );
   }
 
   /**
@@ -397,7 +405,9 @@ export class SocketService implements OnDestroy {
    * @param roomId The room ID
    */
   getChatDetails(roomId: string): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/api/chat/chats/${roomId}`);
+    return this.http.get(
+      `${environment.messagingServiceUrl}/api/chat/chats/${roomId}`
+    );
   }
 
   /**
@@ -406,7 +416,7 @@ export class SocketService implements OnDestroy {
    */
   getChatRoomDetails(roomId: string): Observable<any> {
     return this.http.get(
-      `${environment.apiUrl}/api/chat/room/detail/${roomId}`
+      `${environment.messagingServiceUrl}/api/chat/room/detail/${roomId}`
     );
   }
 
@@ -417,8 +427,8 @@ export class SocketService implements OnDestroy {
    */
   getChatRoomFiles(roomId: string, searchQuery?: string): Observable<any> {
     const url = searchQuery
-      ? `${environment.apiUrl}/api/chat/room/files/${roomId}?keyword=${searchQuery}`
-      : `${environment.apiUrl}/api/chat/room/files/${roomId}`;
+      ? `${environment.messagingServiceUrl}/api/chat/room/files/${roomId}?keyword=${searchQuery}`
+      : `${environment.messagingServiceUrl}/api/chat/room/files/${roomId}`;
 
     return this.http.get(url);
   }
@@ -429,10 +439,13 @@ export class SocketService implements OnDestroy {
    * @param keyword Search keyword
    */
   searchMessages(roomId: string, keyword: string): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/api/chat/search`, {
-      room_id: roomId,
-      keyword,
-    });
+    return this.http.post(
+      `${environment.messagingServiceUrl}/api/chat/search`,
+      {
+        room_id: roomId,
+        keyword,
+      }
+    );
   }
 
   /**

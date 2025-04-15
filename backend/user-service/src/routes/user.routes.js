@@ -442,6 +442,51 @@ function checkProfileCompleteness(profile, role) {
   return false;
 }
 
+router.get("/lookup", authMiddleware, async (req, res) => {
+  try {
+    const search = req.query.search || "";
+    const limit = parseInt(req.query.limit) || 10;
+
+    const query = {
+      $or: [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ],
+    };
+
+    const users = await User.find(query)
+      .limit(limit)
+      .select("_id auth0Id firstName lastName email role profilePicture"); // Only send necessary fields
+
+    res.json({ users });
+  } catch (err) {
+    console.error("User lookup failed:", err);
+    res.status(500).json({ message: "User lookup failed" });
+  }
+});
+
+router.get("/api/users/auth0/:auth0Id", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findOne({ auth0Id: req.params.auth0Id });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Only send safe fields to the frontend
+    const safeUser = {
+      _id: user._id, // or `id` if you prefer
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      profile_image: user.profile_image,
+      is_online: user.is_online,
+    };
+
+    res.status(200).json({ user: safeUser });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching user" });
+  }
+});
+
 router.post(
   "/stripe/account",
   authMiddleware,

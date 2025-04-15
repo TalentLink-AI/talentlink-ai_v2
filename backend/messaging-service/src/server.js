@@ -38,6 +38,7 @@ app.get("/health", (req, res) => {
 
 // Socket controller
 require("./controllers/socket.controller")(io);
+app.use("/api/chat", require("./routes/chat.routes"));
 
 const PORT = process.env.PORT || 3005;
 server.listen(PORT, () => {

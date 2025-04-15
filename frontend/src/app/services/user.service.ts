@@ -529,4 +529,12 @@ export class UserService {
       })
     );
   }
+
+  getUsersForChat(search = '', limit = 10): Observable<any> {
+    const params = new HttpParams()
+      .set('search', search)
+      .set('limit', limit.toString());
+
+    return this.http.get<any>(`${this.apiUrl}/lookup`, { params });
+  }
 }

@@ -23,6 +23,37 @@
                 />
               </div>
 
+              <div class="user-search-container" *ngIf="!chatDetails">
+                <h3>Find someone to chat with</h3>
+                <div class="search-box">
+                  <input
+                    type="text"
+                    [(ngModel)]="userSearchQuery"
+                    placeholder="Search for users..."
+                    (keyup.enter)="searchUsers()"
+                  />
+                  <button (click)="searchUsers()">Find</button>
+                </div>
+
+                <div class="search-results" *ngIf="searchedUsers.length > 0">
+                  <div
+                    class="user-item"
+                    *ngFor="let user of searchedUsers"
+                    (click)="startChatWithUser(user.auth0Id)"
+                  >
+                    <div class="user-avatar">
+                      <span>{{
+                        getInitials(user.firstName, user.lastName)
+                      }}</span>
+                    </div>
+                    <div class="user-info">
+                      <h4>{{ user.firstName }} {{ user.lastName }}</h4>
+                      <p>{{ user.email }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Chat List -->
               <div class="all_chatList">
                 <ul>

@@ -18,7 +18,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { PickerModule } from '@ctrl/ngx-emoji-mart';
 import { UserService } from '../../../services/user.service';
-import { Subscription, Subject, debounceTime } from 'rxjs';
+import { Subscription, Subject, debounceTime, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ThemeService } from '../../../services/theme.service';
 import { environment } from '../../../../environments/environment';
@@ -139,6 +139,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Search
   searchQuery: string = '';
   searchResults: any[] = [];
+  userSearchQuery: string = '';
+  searchedUsers: any[] = [];
 
   // Destroy notifier
   private destroy$ = new Subject<void>();
@@ -179,25 +181,42 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.checkScreenSize();
 
     // Get user info from Auth0
-    this.auth.user$.pipe(takeUntil(this.destroy$)).subscribe((user) => {
-      if (user) {
-        this.currentUserId = user.sub || '';
-        this.currentUserName = user.name || '';
-        this.currentUserEmail = user.email || '';
-        this.userProfilePic = user.picture || '';
+    combineLatest([
+      this.auth.user$,
+      this.auth.getAccessTokenSilently({
+        audience: 'https://api.talentlink.com',
+        scope: 'openid profile email',
+      } as any), // 👈 Cast to any to suppress type errors
+    ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([user, token]) => {
+        if (user && typeof token === 'string') {
+          this.currentUserId = user.sub || '';
+          this.currentUserName = user.name || '';
+          this.currentUserEmail = user.email || '';
+          this.userProfilePic = user.picture || '';
 
-        // Load user details
-        this.loadUserDetails();
-
-        // Connect to socket after we have user info
-        this.auth.getAccessTokenSilently().subscribe((token) => {
+          this.loadUserDetails();
           this.socketService.connect(token);
-        });
-      }
-    });
+        } else {
+          console.error('❌ Failed to get Auth0 user or valid token:', {
+            user,
+            token,
+          });
+        }
+      });
 
     // Initialize chat
     this.initializeChat();
+    this.socketService
+      .onJoinRoom()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((roomId: string) => {
+        this.activeChat = roomId;
+        this.getChatDetails(roomId);
+        this.getChatRoom(roomId);
+        this.getChatRoomFiles(roomId);
+      });
 
     // Monitor typing input
     this.messageTxt.valueChanges
@@ -527,6 +546,45 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.searchResults = [];
       },
     });
+  }
+
+  searchUsers(): void {
+    if (!this.userSearchQuery.trim()) return;
+
+    this.userService.getUsersForChat(this.userSearchQuery, 10).subscribe({
+      next: (response) => {
+        this.searchedUsers = response.users || [];
+      },
+      error: (err) => {
+        console.error('Error searching users:', err);
+        this.searchedUsers = [];
+      },
+    });
+  }
+
+  startChatWithUser(auth0Id: string): void {
+    const sub = this.socketService.isConnected().subscribe((connected) => {
+      if (connected) {
+        this.socketService.joinRoom(auth0Id);
+
+        const joinSub = this.socketService
+          .onJoinRoom()
+          .subscribe((roomId: string) => {
+            this.activeChat = roomId;
+            this.getChatDetails(roomId);
+            this.getChatRoom(roomId);
+            this.getChatRoomFiles(roomId);
+
+            joinSub.unsubscribe();
+          });
+
+        sub.unsubscribe(); // cleanup
+      }
+    });
+  }
+
+  getInitials(firstName: string, lastName: string): string {
+    return (firstName?.charAt(0) || '') + (lastName?.charAt(0) || '');
   }
 
   /**
