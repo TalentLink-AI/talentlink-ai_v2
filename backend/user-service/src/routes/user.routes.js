@@ -27,13 +27,14 @@ router.get("/me", async (req, res) => {
     const auth0Id = req.auth.payload.sub;
     const accessToken = req.headers.authorization.split(" ")[1];
 
+    const baseUrl = process.env.AUTH0_ISSUER_BASE_URL.endsWith("/")
+      ? process.env.AUTH0_ISSUER_BASE_URL.slice(0, -1)
+      : process.env.AUTH0_ISSUER_BASE_URL;
+
     // Fetch from Auth0 UserInfo endpoint
-    const { data: userInfo } = await axios.get(
-      `${process.env.AUTH0_ISSUER_BASE_URL}/userinfo`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
+    const { data: userInfo } = await axios.get(`${baseUrl}/userinfo`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
     const email = userInfo.email;
 
     if (!auth0Id || !email) {

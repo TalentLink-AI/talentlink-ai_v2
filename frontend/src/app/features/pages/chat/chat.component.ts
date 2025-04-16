@@ -10,89 +10,32 @@ import {
   PLATFORM_ID,
   Inject,
   ChangeDetectorRef,
-  inject,
 } from '@angular/core';
-import { SocketService } from '../../../services/socket.service';
-import { AuthService } from '@auth0/auth0-angular';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { PickerModule } from '@ctrl/ngx-emoji-mart';
-import { UserService } from '../../../services/user.service';
-import { Subscription, Subject, debounceTime, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Subject, takeUntil, debounceTime } from 'rxjs';
+import { AuthService } from '@auth0/auth0-angular';
+
+import { ChatService } from '../../../services/chat.service';
+import { UserService } from '../../../services/user.service';
 import { ThemeService } from '../../../services/theme.service';
 import { environment } from '../../../../environments/environment';
-import { takeUntil } from 'rxjs/operators';
 
-interface Contact {
-  _id: string;
-  auth0Id: string;
+interface ChatFile {
   name: string;
-  fullName: string;
-  avatar?: string;
-  profileImage?: string;
-  email: string;
-  role: string;
-  isOnline: boolean;
-  lastSeen?: Date;
-  unseen_count?: number;
-  typing?: boolean;
-}
-
-interface ChatMessage {
-  _id?: string;
-  from_id?: string;
-  from?: string;
-  text?: string;
-  type?: string;
-  chat_type?: string;
-  room_id?: string;
-  createdAt: Date;
-  files?: Array<{
-    file: string;
-    type: string;
-  }>;
-  profile_image?: string;
-  reactions?: any[];
-}
-
-interface ChatRoom {
-  _id: string;
-  name?: string;
-  members: string[];
-  last_message_text: string;
-  last_message_at: Date;
-  other_member: Array<{
-    _id: string;
-    full_name: string;
-    profile_image?: string;
-    is_online: boolean;
-  }>;
-  unseen_count: number;
-}
-
-interface ChatRoomFiles {
-  files: Array<{
-    _id: string;
-    file: string;
-    type: string;
-    createdAt: Date;
-  }>;
-  links: Array<{
-    _id: string;
-    link: string;
-    from_user: string;
-    createdAt: Date;
-  }>;
+  ext: string;
+  file?: File;
 }
 
 @Component({
   selector: 'app-chat',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    CommonModule,
     PickerModule,
     RouterModule,
   ],
@@ -106,21 +49,19 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   // User information
   currentUserId: string = '';
-  currentUserEmail: string = '';
   currentUserName: string = '';
   userProfilePic: string = '';
   userDetails: any;
 
   // Chat state
   activeChat: string = '';
-  chatDetails: any;
-  chatRoomDetails: any = { notepad: '' };
-  chatRoomFilesDetails: ChatRoomFiles | null = null;
-  chatList: ChatRoom[] = [];
+  chatDetails: any = null;
+  chatRoomDetails: any = null;
+  chatRoomFilesDetails: any = null;
+  chatList: any[] = [];
 
   // UI state
   isLoading: boolean = true;
-  isMobileView: boolean = false;
   isDarkMode: boolean = false;
   activeClass: string = '';
 
@@ -131,25 +72,21 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   // File handling
   fileList: { name: string; file: File }[] = [];
-  showFile: { name: string; ext: string }[] = [];
+  showFile: ChatFile[] = [];
+
+  // Search
+  searchQuery: string = '';
+  userSearchQuery: string = '';
+  searchedUsers: any[] = [];
 
   // Media URLs
   imgBaseUrl = environment.apiUrl + '/api/media/';
 
-  // Search
-  searchQuery: string = '';
-  searchResults: any[] = [];
-  userSearchQuery: string = '';
-  searchedUsers: any[] = [];
-
   // Destroy notifier
   private destroy$ = new Subject<void>();
 
-  // Window reference
-  private windowObj: Window;
-
   constructor(
-    private socketService: SocketService,
+    private chatService: ChatService,
     private auth: AuthService,
     private userService: UserService,
     private themeService: ThemeService,
@@ -158,14 +95,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    this.windowObj = isPlatformBrowser(platformId) ? window : ({} as Window);
-
     // Check if URL has a specific chat to open
-    if (this.router.getCurrentNavigation()?.extras?.state) {
-      const state = this.router.getCurrentNavigation()?.extras?.state;
-      if (state && typeof state === 'string') {
-        this.activeChat = state;
-      }
+    const state = this.router.getCurrentNavigation()?.extras?.state;
+    if (state && typeof state === 'object' && 'chatId' in state) {
+      this.activeChat = state['chatId'] as string;
     }
   }
 
@@ -177,277 +110,142 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.isDarkMode = isDark;
       });
 
-    // Check screen size for mobile view
+    // Check screen size
     this.checkScreenSize();
 
-    // Get user info from Auth0
-    combineLatest([
-      this.auth.user$,
-      this.auth.getAccessTokenSilently({
-        audience: 'https://api.talentlink.com',
-        scope: 'openid profile email',
-      } as any), // 👈 Cast to any to suppress type errors
-    ])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(([user, token]) => {
-        if (user && typeof token === 'string') {
-          this.currentUserId = user.sub || '';
-          this.currentUserName = user.name || '';
-          this.currentUserEmail = user.email || '';
-          this.userProfilePic = user.picture || '';
+    // Get user info
+    this.auth.user$.pipe(takeUntil(this.destroy$)).subscribe((user) => {
+      if (user) {
+        this.currentUserId = user.sub || '';
+        this.currentUserName = user.name || '';
+        this.userProfilePic = user.picture || '';
 
-          this.loadUserDetails();
-          this.socketService.connect(token);
-        } else {
-          console.error('❌ Failed to get Auth0 user or valid token:', {
-            user,
-            token,
-          });
-        }
-      });
+        this.loadUserDetails();
+        this.loadChats();
+      }
+    });
 
-    // Initialize chat
-    this.initializeChat();
-    this.socketService
-      .onJoinRoom()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((roomId: string) => {
-        this.activeChat = roomId;
-        this.getChatDetails(roomId);
-        this.getChatRoom(roomId);
-        this.getChatRoomFiles(roomId);
-      });
-
-    // Monitor typing input
+    // Monitor typing input for sending typing status
     this.messageTxt.valueChanges
       .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe((value) => {
         if (this.activeChat && value) {
-          this.socketService.sendTyping(this.activeChat, 'start');
+          this.chatService.sendTyping(this.activeChat, 'start');
 
-          // Clear previous timeout
           clearTimeout(this.typingTimeout);
-
-          // Set new timeout
           this.typingTimeout = setTimeout(() => {
-            this.socketService.sendTyping(this.activeChat, 'end');
+            this.chatService.sendTyping(this.activeChat, 'end');
           }, 1000);
         }
+      });
+
+    // Subscribe to chat service events
+    this.chatService
+      .getActiveRoom()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((roomId) => {
+        if (roomId && roomId !== this.activeChat) {
+          this.activeChat = roomId;
+
+          const otherUserId = this.extractOtherUserId(roomId);
+          this.loadChatDetails(roomId, otherUserId);
+        }
+      });
+
+    this.chatService
+      .getAllEvents()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((event) => {
+        this.handleChatEvent(event);
+      });
+
+    this.chatService
+      .getMessageEvents()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((message) => {
+        this.handleNewMessage(message);
+      });
+  }
+
+  ngAfterViewChecked(): void {
+    this.scrollToBottom();
+  }
+
+  ngOnDestroy(): void {
+    clearTimeout(this.typingTimeout);
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  @HostListener('window:resize')
+  checkScreenSize(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      // Implement responsive behavior if needed
+    }
+  }
+
+  /**
+   * Load user details
+   */
+  loadUserDetails(): void {
+    this.userService
+      .getCurrentUser()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          if (data) {
+            this.userDetails = data.user;
+          }
+        },
+        error: (err) => {
+          console.error('Error loading user details:', err);
+        },
       });
   }
 
   /**
-   * Load user details from the user service
+   * Load all chats
    */
-  loadUserDetails(): void {
-    this.userService.getCurrentUser().subscribe({
-      next: (data) => {
-        if (data) {
-          this.userDetails = data.user;
-          this.socketService
-            .getChatEvents()
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(this.handleChatEvents.bind(this));
-        }
-      },
-      error: (err) => {
-        console.error('Error loading user details:', err);
-      },
-    });
-  }
-
-  /**
-   * Initialize chat data
-   */
-  initializeChat(): void {
-    // Load chat list
+  loadChats(): void {
+    this.isLoading = true;
     this.getAllChats();
 
-    // Load specific chat if available in URL
     if (this.activeChat) {
-      this.getChatDetails(this.activeChat);
-      this.getChatRoom(this.activeChat);
-      this.getChatRoomFiles(this.activeChat);
+      const otherUserId = this.extractOtherUserId(this.activeChat);
+      this.loadChatDetails(this.activeChat, otherUserId);
     }
   }
 
-  /**
-   * Handle all chat events from socket
-   */
-  handleChatEvents(eventData: any): void {
-    switch (eventData.type) {
-      case 'typingStatus':
-        this.handleTypingStatus(eventData.data);
-        break;
-
-      case 'IncomingMessage':
-        this.handleIncomingMessage(eventData.data);
-        break;
-
-      case 'reactionStatus':
-        this.handleReactionStatus(eventData.data);
-        break;
-
-      case 'seenEvent':
-        this.handleSeenEvent(eventData.data);
-        break;
-
-      case 'IncomingTyping':
-        this.handleIncomingTyping(eventData.data);
-        break;
-
-      case 'ChatCountReload':
-      case 'NotificationCountReload':
-        this.updateUnreadCount();
-        break;
+  extractOtherUserId(roomId: string): string {
+    const parts = roomId.split('_');
+    if (parts.length >= 5) {
+      const user1 = parts[1] + '|' + parts[2];
+      const user2 = parts[3] + '|' + parts[4];
+      return user1 === this.currentUserId ? user2 : user1;
     }
+    return '';
   }
 
   /**
-   * Handle typing status event
-   */
-  handleTypingStatus(data: any): void {
-    if (data.from_id !== this.userDetails._id) {
-      this.getAllChats();
-      if (this.activeChat === data.room_id) {
-        if (data.status === 'start') {
-          this.chatDetails?.chats.push(data);
-          this.scrollToBottom();
-        }
-      }
-    }
-  }
-
-  /**
-   * Handle incoming message event
-   */
-  handleIncomingMessage(data: any): void {
-    if (data.reaction || data.seen) {
-      if (data.seen && data.seen === true) {
-        const index = this.chatList.findIndex((chat) => chat._id === data.room);
-        if (index > -1) {
-          this.chatList[index].unseen_count = 0;
-        }
-      } else {
-        const index = this.chatDetails?.chats.findIndex(
-          (msg: any) => msg._id === data._id
-        );
-        if (index && index > -1 && this.chatDetails?.chats[index]) {
-          this.chatDetails.chats[index].reactions = data.reactions;
-        }
-      }
-    } else {
-      const index = this.chatList.findIndex((chat) => chat._id === data.room);
-
-      if (index > -1 && data.latestMessage) {
-        this.chatList[index] = data.latestMessage;
-        this.chatList.sort((a, b) =>
-          new Date(a.last_message_at) < new Date(b.last_message_at) ? 1 : -1
-        );
-      }
-
-      if (this.activeChat === data.room) {
-        if (data.type === 'file') {
-          this.getChatRoomFiles(this.activeChat);
-        }
-
-        if (this.chatDetails && this.chatDetails.chats) {
-          this.chatDetails.chats.push(data);
-          this.scrollToBottom();
-
-          // Mark as seen if we're in the chat
-          setTimeout(() => {
-            this.socketService.markSeen(this.activeChat);
-          }, 0);
-        }
-      }
-
-      // Update unread count
-      this.updateUnreadCount();
-    }
-  }
-
-  /**
-   * Handle reaction status event
-   */
-  handleReactionStatus(data: any): void {
-    this.getAllChats();
-    if (this.activeChat === data.room_id) {
-      this.getChatDetails(this.activeChat, true);
-    }
-  }
-
-  /**
-   * Handle seen event
-   */
-  handleSeenEvent(data: any): void {
-    this.getAllChats();
-    if (this.activeChat === data.room_id) {
-      this.getChatDetails(this.activeChat, true);
-    }
-
-    // Update unread count
-    setTimeout(() => {
-      this.updateUnreadCount();
-    }, 100);
-  }
-
-  /**
-   * Handle incoming typing event
-   */
-  handleIncomingTyping(data: any): void {
-    if (data.from_id !== this.userDetails?._id) {
-      const index = this.chatList.findIndex((chat) => chat._id === data.room);
-
-      if (index > -1 && data.latestMessage) {
-        // Add typing property to ChatRoom interface if needed
-        (this.chatList[index] as any).typing = data.latestMessage.typing;
-      }
-
-      if (
-        this.activeChat === data.room &&
-        this.chatDetails &&
-        this.chatDetails.chats
-      ) {
-        if (data.status !== 'end') {
-          this.chatDetails.chats.push(data);
-          this.scrollToBottom();
-        } else {
-          const msgIndex = this.chatDetails.chats.findIndex(
-            (msg: any) => msg._id === data._id
-          );
-          if (msgIndex > -1) {
-            this.chatDetails.chats.splice(msgIndex, 1);
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Get total unread message count
-   */
-  updateUnreadCount(): void {
-    const totalUnseen = this.chatList.reduce((total, chat) => {
-      return total + (chat.unseen_count || 0);
-    }, 0);
-
-    // Emit the total count for other components (like header)
-    // You would normally use an event service or similar here
-  }
-
-  /**
-   * Get all chats
+   * Get all chats for the user
    */
   getAllChats(searchString?: string): void {
-    this.isLoading = true;
-
-    this.socketService.getAllChats(searchString).subscribe({
+    this.chatService.getAllChats(searchString).subscribe({
       next: (res: any) => {
         if (res?.status === 200) {
-          this.chatList = res.data;
-          this.isLoading = false;
+          this.chatList = res.data || [];
+
+          // Calculate total unread count
+          const totalUnread = this.chatList.reduce((total, chat) => {
+            const userCount = (chat.unseen_count || []).find(
+              (item: any) => item.user_id === this.currentUserId
+            );
+            return total + (userCount?.count || 0);
+          }, 0);
+
+          this.chatService.updateUnreadCount(totalUnread);
         }
+        this.isLoading = false;
       },
       error: (err) => {
         console.error('Error loading chats:', err);
@@ -458,31 +256,95 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
+   * Load chat details by room ID
+   */
+  loadChatDetails(roomId: string, otherUserId: string): void {
+    this.activeChat = roomId;
+
+    this.chatService.joinRoom(otherUserId);
+
+    this.getChatDetails(roomId);
+    this.getChatRoom(roomId);
+    this.getChatRoomFiles(roomId);
+  }
+
+  /**
+   * Handle chat events from service
+   */
+  handleChatEvent(event: any): void {
+    switch (event.type) {
+      case 'messageReceive':
+        if (this.activeChat === event.data.room_id) {
+          this.scrollToBottom();
+        }
+        break;
+
+      case 'typing':
+        // Handle typing indicators
+        break;
+
+      case 'seen':
+        // Update seen status
+        this.getAllChats();
+        break;
+
+      case 'joinedRoom':
+        // Room joined successfully
+        break;
+    }
+  }
+
+  /**
+   * Handle new message received
+   */
+  handleNewMessage(message: any): void {
+    if (this.chatDetails && this.activeChat === message.room_id) {
+      // Add message to chat if not already present
+      const exists = this.chatDetails.chats?.some(
+        (msg: any) => msg._id === message._id
+      );
+
+      if (!exists && this.chatDetails.chats) {
+        this.chatDetails.chats.push(message);
+        this.scrollToBottom();
+
+        // Mark as seen
+        setTimeout(() => {
+          this.chatService.markSeen(this.activeChat);
+        }, 300);
+      }
+    }
+
+    // Refresh chat list to update last message
+    this.getAllChats();
+  }
+
+  /**
    * Get chat details
    */
-  getChatDetails(id: string, noReload?: boolean): void {
-    if (!id) return;
+  getChatDetails(roomId: string, noReload?: boolean): void {
+    if (!roomId) return;
 
-    this.activeChat = id;
+    this.activeChat = roomId;
 
-    this.socketService.getChatDetails(id).subscribe({
+    this.chatService.getChatDetails(roomId).subscribe({
       next: (res: any) => {
         if (res?.status === 200) {
           this.chatDetails = res.data;
 
+          // ✅ JOIN SOCKET ROOM using the other user's Auth0 ID
+          const otherId = this.chatDetails.chatDetail?.other_member?.[0]?._id;
+          if (otherId) {
+            this.chatService.joinRoom(otherId);
+          }
+
           if (!noReload) {
             // Mark messages as seen
             setTimeout(() => {
-              this.socketService.markSeen(this.activeChat);
-
-              // Update total unread count
-              setTimeout(() => {
-                this.updateUnreadCount();
-              }, 100);
-            }, 0);
+              this.chatService.markSeen(roomId);
+            }, 300);
           }
 
-          // Scroll to bottom after content loads
           setTimeout(() => {
             this.scrollToBottom();
           }, 100);
@@ -498,8 +360,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   /**
    * Get chat room details
    */
-  getChatRoom(id: string): void {
-    this.socketService.getChatRoomDetails(id).subscribe({
+  getChatRoom(roomId: string): void {
+    this.chatService.getChatRoomDetails(roomId).subscribe({
       next: (res: any) => {
         if (res?.status === 200) {
           this.chatRoomDetails = res.data;
@@ -507,7 +369,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       },
       error: (err) => {
         console.error('Error loading chat room details:', err);
-        this.chatRoomDetails = { notepad: '' };
+        this.chatRoomDetails = null;
       },
     });
   }
@@ -515,8 +377,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   /**
    * Get chat room files
    */
-  getChatRoomFiles(id: string): void {
-    this.socketService.getChatRoomFiles(id, this.searchQuery).subscribe({
+  getChatRoomFiles(roomId: string): void {
+    this.chatService.getChatRoomFiles(roomId, this.searchQuery).subscribe({
       next: (res: any) => {
         if (res?.status === 200) {
           this.chatRoomFilesDetails = res.data;
@@ -530,30 +392,14 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Search messages by keyword
+   * Search for users to chat with
    */
-  searchMessages(keyword: string): void {
-    if (!this.activeChat || !keyword) return;
-
-    this.socketService.searchMessages(this.activeChat, keyword).subscribe({
-      next: (res: any) => {
-        if (res?.status === 200) {
-          this.searchResults = res.data;
-        }
-      },
-      error: (err) => {
-        console.error('Error searching messages:', err);
-        this.searchResults = [];
-      },
-    });
-  }
-
   searchUsers(): void {
     if (!this.userSearchQuery.trim()) return;
 
-    this.userService.getUsersForChat(this.userSearchQuery, 10).subscribe({
-      next: (response) => {
-        this.searchedUsers = response.users || [];
+    this.userService.getUsersForChat(this.userSearchQuery).subscribe({
+      next: (res: any) => {
+        this.searchedUsers = res.users || [];
       },
       error: (err) => {
         console.error('Error searching users:', err);
@@ -562,66 +408,83 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  /**
+   * Start a chat with a user
+   */
   startChatWithUser(auth0Id: string): void {
-    const sub = this.socketService.isConnected().subscribe((connected) => {
-      if (connected) {
-        this.socketService.joinRoom(auth0Id);
+    if (!auth0Id) return;
 
-        const joinSub = this.socketService
-          .onJoinRoom()
-          .subscribe((roomId: string) => {
-            this.activeChat = roomId;
-            this.getChatDetails(roomId);
-            this.getChatRoom(roomId);
-            this.getChatRoomFiles(roomId);
-
-            joinSub.unsubscribe();
-          });
-
-        sub.unsubscribe(); // cleanup
-      }
-    });
+    this.chatService.joinRoom(auth0Id);
   }
 
-  getInitials(firstName: string, lastName: string): string {
-    return (firstName?.charAt(0) || '') + (lastName?.charAt(0) || '');
+  /**
+   * Send a message
+   */
+  sendMessage(): void {
+    if (!this.activeChat) return;
+
+    const text = this.messageTxt.value || '';
+
+    if (this.fileList.length > 0) {
+      // Send message with files
+      const files = this.fileList.map((item) => item.file);
+
+      this.chatService
+        .sendMessageWithFiles(this.activeChat, text, files)
+        .subscribe({
+          next: () => {
+            this.resetMessageInput();
+          },
+          error: (err) => {
+            console.error('Error sending message with files:', err);
+          },
+        });
+    } else if (text.trim()) {
+      // Send text message
+      this.chatService.sendMessage(text);
+      this.resetMessageInput();
+    }
+  }
+
+  /**
+   * Reset message input after sending
+   */
+  resetMessageInput(): void {
+    this.messageTxt.reset();
+    this.showEmojiPicker = false;
+    this.showFile = [];
+    this.fileList = [];
   }
 
   /**
    * Handle file input change
    */
   fileInputChange(event: any): void {
-    this.fileChangeInit(event.target.files);
-  }
+    const files: FileList = event.target.files;
+    if (!files || files.length === 0) return;
 
-  /**
-   * Process files for upload
-   */
-  fileChangeInit(files: FileList): void {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const fileIndex = this.fileList.findIndex((f) => f.name === file.name);
 
-      if (fileIndex === -1 && file.name?.includes('.')) {
+      if (fileIndex === -1) {
+        const fileExt = file.name.split('.').pop() || '';
+
         this.showFile.push({
           name: file.name,
-          ext: file.name.split('.').pop() || '',
+          ext: fileExt,
         });
 
         this.fileList.push({
           name: file.name,
           file: file,
         });
-      } else {
-        // File already exists
-        console.warn('File already exists:', file.name);
-        // You could show a toast/alert here
       }
     }
   }
 
   /**
-   * Remove a file from the upload list
+   * Remove a file from upload list
    */
   removeFile(index: number): void {
     this.showFile.splice(index, 1);
@@ -634,100 +497,30 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   toggleEmojiPicker(): void {
     this.showEmojiPicker = !this.showEmojiPicker;
 
-    // Close other drawers if open
     if (this.showEmojiPicker && this.activeClass) {
       this.activeClass = '';
     }
   }
 
   /**
-   * Add emoji to message input
+   * Add emoji to message
    */
   addEmoji(event: any): void {
     if (event?.emoji?.native) {
-      const currentValue = this.messageTxt.value || '';
-      this.messageTxt.patchValue(currentValue + event.emoji.native);
+      const message = this.messageTxt.value || '';
+      this.messageTxt.setValue(message + event.emoji.native);
     }
   }
 
   /**
-   * Add space remover method with proper typing
+   * Prevent empty spaces at start of message
    */
   addSpaceRemover(event: KeyboardEvent, target: EventTarget | null): void {
     const input = target as HTMLInputElement;
-    if (!input || !input.value) return;
+    if (!input) return;
 
     if (event.code === 'Space' && input.value.length === 0) {
-      input.value = input.value.trim();
       event.preventDefault();
-    }
-  }
-
-  /**
-   * Send a message
-   */
-  sendMessage(): void {
-    // If we have text and no files, send directly
-    if (
-      this.messageTxt.value &&
-      this.fileList &&
-      this.fileList.length === 0 &&
-      this.activeChat
-    ) {
-      const data = {
-        room: this.activeChat,
-        text: this.messageTxt.value,
-      };
-
-      this.socketService.sendMessage(this.activeChat, this.messageTxt.value);
-      this.messageTxt.reset();
-      this.showEmojiPicker = false;
-    }
-    // If we have files, send with files
-    else if (this.fileList && this.fileList.length > 0 && this.activeChat) {
-      const data = {
-        room: this.activeChat,
-        text: this.messageTxt.value || '',
-      };
-
-      // Create a new array to hold valid files
-      const validFiles: File[] = [];
-
-      // Safely iterate over fileList
-      for (let i = 0; i < this.fileList.length; i++) {
-        const item = this.fileList[i];
-        // Only add file if it exists
-        if (item && item.file) {
-          validFiles.push(item.file);
-        }
-      }
-
-      // Check if we have any valid files
-      if (validFiles.length === 0) {
-        console.error('No valid files to send');
-        return;
-      }
-
-      const request = this.socketService.sendMessageWithFiles(data, validFiles);
-      if (!request) {
-        console.warn('Not running in browser — skipping file upload.');
-        return;
-      }
-
-      request.subscribe({
-        next: (res: any) => {
-          console.log('Files sent successfully');
-        },
-        error: (err) => {
-          console.error('Error sending files:', err);
-        },
-        complete: () => {
-          this.messageTxt.reset();
-          this.showEmojiPicker = false;
-          this.showFile = [];
-          this.fileList = [];
-        },
-      });
     }
   }
 
@@ -738,31 +531,24 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (!event.clipboardData) return;
 
     const items = event.clipboardData.items;
-    let blob: File | null = null;
 
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') === 0) {
-        blob = items[i].getAsFile();
+        const blob = items[i].getAsFile();
 
         if (blob) {
-          const fileIndex = this.fileList.findIndex(
-            (f) => f.name === blob!.name
-          );
+          const now = new Date();
+          const fileName = `pasted_image_${now.getTime()}.png`;
 
-          if (fileIndex === -1 && blob.name?.includes('.')) {
-            this.showFile.push({
-              name: blob.name,
-              ext: blob.name.split('.').pop() || '',
-            });
+          this.showFile.push({
+            name: fileName,
+            ext: 'png',
+          });
 
-            this.fileList.push({
-              name: blob.name,
-              file: blob,
-            });
-          } else {
-            // File already exists
-            console.warn('File already exists:', blob.name);
-          }
+          this.fileList.push({
+            name: fileName,
+            file: new File([blob], fileName, { type: blob.type }),
+          });
         }
       }
     }
@@ -772,22 +558,35 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
    * Toggle side drawer (files, links)
    */
   toggleSideDrawer(type: string): void {
-    if (this.activeClass === type) {
-      this.activeClass = '';
-    } else {
-      this.activeClass = type;
+    this.activeClass = this.activeClass === type ? '' : type;
 
-      // Close emoji picker if open
-      if (this.showEmojiPicker) {
-        this.showEmojiPicker = false;
-      }
+    if (this.activeClass && this.showEmojiPicker) {
+      this.showEmojiPicker = false;
     }
   }
 
   /**
-   * Check if URL is in the text
+   * Download file
    */
-  checkForUrl(text: string | undefined): string | boolean {
+  downloadFile(fileUrl: string, filename: string): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    // Create a temporary link to download the file
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = filename.includes('@')
+      ? filename.substring(filename.indexOf('@') + 1)
+      : filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
+   * Check if text contains URL
+   */
+  checkForUrl(text: string | undefined): string | false {
     if (!text) return false;
 
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -802,83 +601,43 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Download file from server
+   * Get contact name
    */
-  downloadFile(fileUrl: string, filename: string): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+  getContactName(chat: any): string {
+    if (!chat) return 'Unknown Contact';
 
-    fetch(fileUrl)
-      .then((response) => response.blob())
-      .then((blob) => {
-        // Use window directly since TypeScript definition might be incomplete
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      })
-      .catch((err) => {
-        console.error('Error downloading file:', err);
-      });
+    // Try to get name from other_member
+    if (chat.other_member && chat.other_member.length > 0) {
+      return chat.other_member[0].full_name || 'Unknown Contact';
+    }
+
+    // Fallback to room name
+    return chat.name || 'Unknown Contact';
   }
 
   /**
-   * Get contact name from chat room
-   * Safely handles potentially undefined properties
+   * Get user initials for avatar
    */
-  getContactName(chat: ChatRoom | any): string {
-    if (!chat) {
-      return 'Unknown Contact';
-    }
+  getInitials(firstName?: string, lastName?: string): string {
+    if (!firstName && !lastName) return '?';
 
-    // Check if other_member exists and has items
-    if (!chat.other_member || chat.other_member.length === 0) {
-      return chat.name || 'Unknown Contact';
-    }
+    const first = firstName ? firstName.charAt(0).toUpperCase() : '';
+    const last = lastName ? lastName.charAt(0).toUpperCase() : '';
 
-    // Return formatted name
-    if (chat.name) {
-      return `${chat.name} - ${chat.other_member[0].full_name}`;
-    }
-
-    return chat.other_member[0].full_name || 'Unknown Contact';
+    return first + last;
   }
 
   /**
-   * Track screen size for responsive layout
-   */
-  @HostListener('window:resize')
-  checkScreenSize(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    this.isMobileView = window.innerWidth < 768;
-  }
-
-  /**
-   * Scroll to bottom of message container
+   * Scroll to bottom of messages
    */
   scrollToBottom(): void {
     if (!this.messageContainer || !isPlatformBrowser(this.platformId)) return;
 
-    setTimeout(() => {
+    try {
       const element = this.messageContainer.nativeElement;
       element.scrollTop = element.scrollHeight;
-    }, 0);
-  }
-
-  ngAfterViewChecked(): void {
-    this.scrollToBottom();
-  }
-
-  ngOnDestroy(): void {
-    // Clean up subscriptions
-    this.destroy$.next();
-    this.destroy$.complete();
-
-    // Clear timeouts
-    clearTimeout(this.typingTimeout);
+    } catch (err) {
+      console.error('Error scrolling to bottom:', err);
+    }
   }
 }

@@ -3,12 +3,12 @@
   <div class="wrapper_mainDetails">
     <div class="container">
       <div class="title_wrapper">
-        <h1>Chats</h1>
+        <h1>Messages</h1>
       </div>
 
       <div class="message_mainSection">
         <div class="row">
-          <!-- Contact List / Left Sidebar -->
+          <!-- Left Sidebar - Contact List -->
           <div class="col-lg-4">
             <div class="wrapper_chatLeft">
               <h3>Conversations</h3>
@@ -17,12 +17,13 @@
               <div class="search_fld">
                 <input
                   type="text"
-                  placeholder="Search"
+                  placeholder="Search conversations..."
                   [(ngModel)]="searchQuery"
-                  (keydown.enter)="getAllChats(searchQuery || '')"
+                  (keydown.enter)="getAllChats(searchQuery)"
                 />
               </div>
 
+              <!-- User Search Section (When no active chat) -->
               <div class="user-search-container" *ngIf="!chatDetails">
                 <h3>Find someone to chat with</h3>
                 <div class="search-box">
@@ -35,6 +36,7 @@
                   <button (click)="searchUsers()">Find</button>
                 </div>
 
+                <!-- User Search Results -->
                 <div class="search-results" *ngIf="searchedUsers.length > 0">
                   <div
                     class="user-item"
@@ -60,18 +62,14 @@
                   <li
                     *ngFor="let chat of chatList"
                     [attr.id]="chat._id"
-                    (click)="
-                      getChatDetails(chat._id);
-                      getChatRoom(chat._id);
-                      getChatRoomFiles(chat._id)
-                    "
+                    (click)="loadChatDetails(chat._id, chat.other_member?.[0]?._id)"
                   >
                     <a
                       href="javascript:void(0);"
                       [class.active]="activeChat === chat._id"
                     >
                       <figure>
-                        <!-- Safe Image URL -->
+                        <!-- Contact Avatar -->
                         <img
                           [src]="
                             chat.other_member &&
@@ -99,6 +97,7 @@
                         ></span>
                       </figure>
 
+                      <!-- Contact Info -->
                       <div class="txtWrap_chatLft">
                         <div class="wrapper_infoChat">
                           <h4>{{ getContactName(chat) }}</h4>
@@ -130,7 +129,7 @@
                     class="not-found"
                     *ngIf="chatList.length === 0 && !isLoading"
                   >
-                    No Result Found
+                    No conversations found
                   </li>
 
                   <!-- Loading State -->
@@ -145,9 +144,9 @@
             </div>
           </div>
 
-          <!-- Chat Area / Right Side -->
-          <div class="col-lg-8 position-relative-1">
-            <!-- Welcome Screen - No Chat Selected -->
+          <!-- Right Side - Chat Area -->
+          <div class="col-lg-8">
+            <!-- Welcome Screen (No Active Chat) -->
             <div class="wrapper_chatRight no-content-div" *ngIf="!chatDetails">
               <div class="initial-state-img-holder">
                 <img
@@ -168,7 +167,6 @@
               <div class="topMsg_bar">
                 <div class="wrapper_leftInfobar">
                   <figure>
-                    <!-- Safe image access with null checks -->
                     <img
                       *ngIf="
                         chatDetails.chatDetail &&
@@ -218,7 +216,7 @@
                       (click)="toggleSideDrawer('file')"
                       [ngClass]="{ active: activeClass === 'file' }"
                     >
-                      <img src="assets/images/btnIcon_msg2.svg" alt="Files" />
+                      <i class="material-icons">insert_drive_file</i>
                     </button>
 
                     <!-- Files Sidebar -->
@@ -232,10 +230,7 @@
                           type="button"
                           (click)="toggleSideDrawer('file')"
                         >
-                          <img
-                            src="assets/images/small_closeIcon1.svg"
-                            alt="Close"
-                          />
+                          <i class="material-icons">close</i>
                         </button>
                       </div>
 
@@ -258,11 +253,12 @@
                               [src]="imgBaseUrl + 'chat/' + file.file"
                               alt="Image File"
                             />
-                            <img
+                            <i
                               *ngIf="!(file && file.type === 'image')"
-                              src="assets/images/icolPropsldi_icdjd1.svg"
-                              alt="File Icon"
-                            />
+                              class="material-icons"
+                            >
+                              insert_drive_file
+                            </i>
                           </i>
                           <div class="txtWrap_pdfFile file_list">
                             <h4
@@ -298,7 +294,7 @@
                       >
                         <div class="singleWrapper_filelinks">
                           <div class="txtWrap_pdfFile">
-                            <h4>No File Available</h4>
+                            <h4>No files available</h4>
                           </div>
                         </div>
                       </div>
@@ -311,7 +307,7 @@
                       (click)="toggleSideDrawer('links')"
                       [ngClass]="{ active: activeClass === 'links' }"
                     >
-                      <img src="assets/images/btnIcon_msg3.svg" alt="Links" />
+                      <i class="material-icons">link</i>
                     </button>
 
                     <!-- Links Sidebar -->
@@ -325,10 +321,7 @@
                           type="button"
                           (click)="toggleSideDrawer('links')"
                         >
-                          <img
-                            src="assets/images/small_closeIcon1.svg"
-                            alt="Close"
-                          />
+                          <i class="material-icons">close</i>
                         </button>
                       </div>
 
@@ -363,7 +356,7 @@
                         "
                       >
                         <div class="singleAll_filelinks">
-                          <h4>No Link Available</h4>
+                          <h4>No links available</h4>
                         </div>
                       </div>
                     </div>
@@ -379,7 +372,6 @@
                     !chatDetails.chats || chatDetails.chats.length === 0
                 }"
                 #messageContainer
-                id="chat_scroll"
               >
                 <div class="wrapper_innerOuter">
                   <!-- Message Items -->
@@ -440,13 +432,9 @@
                                   *ngIf="file && file.type === 'application'"
                                 >
                                   <span>
-                                    <i>
-                                      <img
-                                        style="height: 22px"
-                                        src="assets/images/icolPropsldi_icdjd1.svg"
-                                        alt="File Icon"
-                                      />
-                                    </i>
+                                    <i class="material-icons"
+                                      >insert_drive_file</i
+                                    >
                                     {{
                                       file.file
                                         ? file.file.substring(
@@ -576,13 +564,9 @@
                                   *ngIf="file && file.type === 'application'"
                                 >
                                   <span>
-                                    <i>
-                                      <img
-                                        style="height: 22px"
-                                        src="assets/images/icolPropsldi_icdjd1.svg"
-                                        alt="File Icon"
-                                      />
-                                    </i>
+                                    <i class="material-icons"
+                                      >insert_drive_file</i
+                                    >
                                     {{
                                       file.file
                                         ? file.file.substring(
@@ -644,9 +628,9 @@
                     *ngIf="!chatDetails.chats || chatDetails.chats.length === 0"
                   >
                     <h3>
-                      Start your chatting
+                      Start your conversation
                       {{
-                        chatRoomDetails && chatRoomDetails.room_name
+                        chatDetails.chatDetail && chatDetails.chatDetail.name
                           ? "in"
                           : "with"
                       }}
@@ -686,10 +670,7 @@
               ></emoji-mart>
 
               <!-- Message Input Area -->
-              <div
-                class="wrapper_all_sendBar"
-                [ngClass]="{ show: showFile && showFile.length === 1 }"
-              >
+              <div class="wrapper_all_sendBar">
                 <input
                   type="text"
                   [formControl]="messageTxt"
@@ -702,9 +683,7 @@
                 <div class="Btn_wrapperSendBar">
                   <!-- Emoji Button -->
                   <button (click)="toggleEmojiPicker()">
-                    <label class="file-type">
-                      <img src="assets/images/smily.svg" alt="Emoji" />
-                    </label>
+                    <i class="material-icons">sentiment_satisfied_alt</i>
                   </button>
 
                   <!-- File Upload Button -->
@@ -716,10 +695,7 @@
                         #fileInput
                         (change)="fileInputChange($event)"
                       />
-                      <img
-                        src="assets/images/addFile_btnWrapicons1.svg"
-                        alt="Add File"
-                      />
+                      <i class="material-icons">attach_file</i>
                     </label>
                   </button>
 
@@ -733,16 +709,13 @@
                         (change)="fileInputChange($event)"
                         accept="image/*"
                       />
-                      <img
-                        src="assets/images/cameraFilemsg_icons.svg"
-                        alt="Add Image"
-                      />
+                      <i class="material-icons">photo_camera</i>
                     </label>
                   </button>
 
                   <!-- Send Button -->
                   <button class="submit_btn" (click)="sendMessage()">
-                    <img src="assets/images/sendMsg_btnIcons.svg" alt="Send" />
+                    <i class="material-icons">send</i>
                   </button>
                 </div>
               </div>
