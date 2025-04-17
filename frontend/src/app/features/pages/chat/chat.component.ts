@@ -10,6 +10,7 @@ import {
   PLATFORM_ID,
   Inject,
   ChangeDetectorRef,
+  NgZone,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
@@ -64,6 +65,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   isLoading: boolean = true;
   isDarkMode: boolean = false;
   activeClass: string = '';
+  scrollOnNextRender: boolean = false;
 
   // Message input
   messageTxt = new FormControl('');
@@ -78,6 +80,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   searchQuery: string = '';
   userSearchQuery: string = '';
   searchedUsers: any[] = [];
+  isSearching: boolean = false;
 
   // Media URLs
   imgBaseUrl = environment.apiUrl + '/api/media/';
@@ -93,6 +96,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     // Check if URL has a specific chat to open
@@ -109,9 +113,6 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       .subscribe((isDark) => {
         this.isDarkMode = isDark;
       });
-
-    // Check screen size
-    this.checkScreenSize();
 
     // Get user info
     this.auth.user$.pipe(takeUntil(this.destroy$)).subscribe((user) => {
@@ -148,7 +149,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.activeChat = roomId;
 
           const otherUserId = this.extractOtherUserId(roomId);
-          this.loadChatDetails(roomId, otherUserId);
+          if (otherUserId) {
+            this.ngZone.run(() => {
+              this.loadChatDetails(roomId, otherUserId);
+            });
+          }
         }
       });
 
@@ -157,11 +162,6 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       .pipe(takeUntil(this.destroy$))
       .subscribe((event) => {
         this.handleChatEvent(event);
-
-        if (event.type === 'historyLoaded') {
-          if (!this.chatDetails) this.chatDetails = {};
-          this.chatDetails.chats = event.data || [];
-        }
       });
 
     this.chatService
@@ -173,7 +173,10 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   ngAfterViewChecked(): void {
-    this.scrollToBottom();
+    if (this.scrollOnNextRender) {
+      this.scrollToBottom();
+      this.scrollOnNextRender = false;
+    }
   }
 
   ngOnDestroy(): void {
@@ -184,9 +187,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   @HostListener('window:resize')
   checkScreenSize(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      // Implement responsive behavior if needed
-    }
+    // Mobile/responsive adjustments if needed
   }
 
   /**
@@ -195,7 +196,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   loadUserDetails(): void {
     this.userService
       .getCurrentUser()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(take(1))
       .subscribe({
         next: (data) => {
           if (data) {
@@ -209,10 +210,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Updated method from ChatComponent to ensure consistent parameter counts
+   * Load chat list and active chat details
    */
-
-  // For ngOnInit or loadChats
   loadChats(): void {
     this.isLoading = true;
     this.getAllChats();
@@ -220,26 +219,27 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.activeChat) {
       const otherUserId = this.extractOtherUserId(this.activeChat);
       if (otherUserId) {
-        // Use the correct parameter count
-        this.loadChatDetails(this.activeChat, otherUserId, false);
+        this.loadChatDetails(this.activeChat, otherUserId);
       }
     }
   }
 
+  /**
+   * Extract other user ID from room ID
+   */
   extractOtherUserId(roomId: string): string {
     if (!roomId) return '';
 
+    // First try direct extraction
     const parts = roomId.split('_');
-    if (parts.length < 3) return '';
+    if (parts.length < 3) {
+      return '';
+    }
 
     const normalizedCurrentUserId = this.currentUserId.replace(/[|]/g, '_');
     const otherId = parts.find(
       (id) => id && id !== 'room' && !id.includes(normalizedCurrentUserId)
     );
-
-    if (!otherId) {
-      console.warn(`Could not extract other user ID from roomId: ${roomId}`);
-    }
 
     return otherId || '';
   }
@@ -255,10 +255,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
           // Calculate total unread count
           const totalUnread = this.chatList.reduce((total, chat) => {
-            const userCount = (chat.unseen_count || []).find(
-              (item: any) => item.user_id === this.currentUserId
-            );
-            return total + (userCount?.count || 0);
+            return total + (chat.unseen_count || 0);
           }, 0);
 
           this.chatService.updateUnreadCount(totalUnread);
@@ -273,46 +270,39 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  /**
+   * Load chat details
+   */
   loadChatDetails(
     roomId: string,
     otherUserId: string,
-    noReload: boolean = false
+    joinRoom: boolean = true
   ): void {
-    // Prevent loading if we're already on this chat and noReload is true
-    if (noReload && this.activeChat === roomId && this.chatDetails) {
-      console.log('Skip reloading chat details for current active chat');
-      return;
-    }
-
     this.activeChat = roomId;
 
-    // Only join the room if we're not already in it
-    if (!noReload) {
+    // Only join the room if requested (to avoid circular joins)
+    if (joinRoom) {
       this.chatService.joinRoom(otherUserId);
     }
 
     this.getChatDetails(roomId);
-    this.getChatRoom(roomId);
+    this.getChatRoomDetails(roomId);
     this.getChatRoomFiles(roomId);
   }
 
   /**
-   * Handle chat events from service
-   * Modified to prevent infinite loops and fix method signature issues
+   * Handle chat events
    */
   handleChatEvent(event: any): void {
-    // Add loop prevention logging
-    console.log('Chat event received:', event?.type);
-
     switch (event.type) {
       case 'messageReceive':
         if (this.activeChat === event.data.room_id) {
-          this.scrollToBottom();
+          this.scrollOnNextRender = true;
         }
         break;
 
       case 'typing':
-        // Handle typing indicators
+        // Handle typing indicators (could add UI for this)
         break;
 
       case 'seen':
@@ -321,51 +311,58 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         break;
 
       case 'joinedRoom':
-        // Critical: check if we're already in this room to prevent loops
-        const newRoomId =
-          typeof event.data === 'string' ? event.data : event.data.roomId;
-        if (this.activeChat === newRoomId) {
-          console.log(
-            'Already in this room, ignoring join event to prevent loops'
-          );
-          return;
-        }
-
-        const otherUserId =
-          typeof event.data === 'object' ? event.data.otherUserId : null;
-        console.log(`Joined room: ${newRoomId} with user: ${otherUserId}`);
-
-        // Set active chat
-        this.activeChat = newRoomId;
-
-        // Load chat details only once - fix method signature issue
-        if (otherUserId) {
-          // Use the correct parameter count (roomId, otherUserId, noReload)
-          this.loadChatDetails(newRoomId, otherUserId, true);
+        if (this.activeChat !== event.data.roomId) {
+          this.activeChat = event.data.roomId;
         }
         break;
+
+      case 'historyLoaded':
+        if (!this.chatDetails) this.chatDetails = {};
+        this.chatDetails.chats = event.data || [];
+        this.scrollOnNextRender = true;
+        break;
     }
+
+    this.cdr.detectChanges();
   }
 
   /**
    * Handle new message received
    */
   handleNewMessage(message: any): void {
+    console.log('Message received:', message);
+
     if (this.chatDetails && this.activeChat === message.room_id) {
+      // Log current messages
+      console.log(
+        'Current chat messages:',
+        this.chatDetails.chats?.length || 0
+      );
+
       // Add message to chat if not already present
       const exists = this.chatDetails.chats?.some(
         (msg: any) => msg._id === message._id
       );
 
+      console.log('Message exists?', exists);
+
       if (!exists && this.chatDetails.chats) {
+        console.log('Adding message to chat');
         this.chatDetails.chats.push(message);
-        this.scrollToBottom();
+        this.scrollOnNextRender = true;
+
+        // Force change detection
+        this.cdr.detectChanges();
 
         // Mark as seen
         setTimeout(() => {
           this.chatService.markSeen(this.activeChat);
         }, 300);
       }
+    } else {
+      console.log(
+        'Message is for a different room or no chat details available'
+      );
     }
 
     // Refresh chat list to update last message
@@ -373,44 +370,22 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Get chat details with debouncing to prevent repeated calls
+   * Get chat details
    */
-  private lastApiCallMap = new Map<string, number>();
-  private apiDebounceTime = 1000; // 1 second
-
-  getChatDetails(roomId: string, noReload?: boolean): void {
+  getChatDetails(roomId: string): void {
     if (!roomId) return;
-
-    // Check if we've made this call recently
-    const now = Date.now();
-    const lastCallTime = this.lastApiCallMap.get(`chat_${roomId}`) || 0;
-    if (now - lastCallTime < this.apiDebounceTime) {
-      console.log(
-        `Skipping duplicate API call for chat details - room ${roomId}`
-      );
-      return;
-    }
-
-    // Record this call
-    this.lastApiCallMap.set(`chat_${roomId}`, now);
-
-    this.activeChat = roomId;
 
     this.chatService.getChatDetails(roomId).subscribe({
       next: (res: any) => {
         if (res?.status === 200) {
           this.chatDetails = res.data;
 
-          if (!noReload) {
-            // Mark messages as seen once after loading
-            setTimeout(() => {
-              this.chatService.markSeen(roomId);
-            }, 300);
-          }
-
+          // Mark messages as seen
           setTimeout(() => {
-            this.scrollToBottom();
-          }, 100);
+            this.chatService.markSeen(roomId);
+          }, 300);
+
+          this.scrollOnNextRender = true;
         }
       },
       error: (err) => {
@@ -421,22 +396,9 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Get chat room details with debouncing
+   * Get chat room details
    */
-  getChatRoom(roomId: string): void {
-    // Check if we've made this call recently
-    const now = Date.now();
-    const lastCallTime = this.lastApiCallMap.get(`room_${roomId}`) || 0;
-    if (now - lastCallTime < this.apiDebounceTime) {
-      console.log(
-        `Skipping duplicate API call for room details - room ${roomId}`
-      );
-      return;
-    }
-
-    // Record this call
-    this.lastApiCallMap.set(`room_${roomId}`, now);
-
+  getChatRoomDetails(roomId: string): void {
     this.chatService.getChatRoomDetails(roomId).subscribe({
       next: (res: any) => {
         if (res?.status === 200) {
@@ -451,22 +413,9 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   /**
-   * Get chat room files with debouncing
+   * Get chat room files
    */
   getChatRoomFiles(roomId: string): void {
-    // Check if we've made this call recently
-    const now = Date.now();
-    const lastCallTime = this.lastApiCallMap.get(`files_${roomId}`) || 0;
-    if (now - lastCallTime < this.apiDebounceTime) {
-      console.log(
-        `Skipping duplicate API call for room files - room ${roomId}`
-      );
-      return;
-    }
-
-    // Record this call
-    this.lastApiCallMap.set(`files_${roomId}`, now);
-
     this.chatService.getChatRoomFiles(roomId, this.searchQuery).subscribe({
       next: (res: any) => {
         if (res?.status === 200) {
@@ -486,15 +435,17 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   searchUsers(): void {
     if (!this.userSearchQuery.trim()) return;
 
-    console.log(`Searching for users with query: ${this.userSearchQuery}`);
+    this.isSearching = true;
+
     this.userService.getUsersForChat(this.userSearchQuery).subscribe({
       next: (res: any) => {
-        console.log('Search results:', res);
         this.searchedUsers = res.users || [];
+        this.isSearching = false;
       },
       error: (err) => {
         console.error('Error searching users:', err);
         this.searchedUsers = [];
+        this.isSearching = false;
       },
     });
   }
@@ -508,30 +459,26 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
-    console.log(`Starting chat with user: ${userId}`);
-
     // Clear current chat to indicate we're loading
     this.chatDetails = null;
     this.isLoading = true;
 
-    // Only call joinRoom once
+    // Call joinRoom to create/find the room
     this.chatService.joinRoom(userId);
+
+    // Clear search results
+    this.searchedUsers = [];
+    this.userSearchQuery = '';
   }
 
   /**
    * Send a message
    */
   sendMessage(): void {
-    if (!this.activeChat) {
-      console.warn('❌ Cannot send: activeChat not set');
-      return;
-    }
+    if (!this.activeChat) return;
 
     const text = this.messageTxt.value?.trim() || '';
-    if (!text && this.fileList.length === 0) {
-      console.warn('❌ Cannot send: no text or files');
-      return;
-    }
+    if (!text && this.fileList.length === 0) return;
 
     this.chatService
       .isConnected()
@@ -542,7 +489,6 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
           return;
         }
 
-        // Proceed if connected
         if (this.fileList.length > 0) {
           const files = this.fileList.map((item) => item.file);
 

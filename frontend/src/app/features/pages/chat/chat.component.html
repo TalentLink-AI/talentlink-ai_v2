@@ -22,6 +22,7 @@
                   (keydown.enter)="getAllChats(searchQuery)"
                 />
               </div>
+
               <!-- User Search Section -->
               <div class="search-section">
                 <h3>Find someone to chat with</h3>
@@ -32,7 +33,9 @@
                     placeholder="Search for users..."
                     (keyup.enter)="searchUsers()"
                   />
-                  <button (click)="searchUsers()">Find</button>
+                  <button (click)="searchUsers()" [disabled]="isSearching">
+                    {{ isSearching ? "Searching..." : "Find" }}
+                  </button>
                 </div>
 
                 <!-- User Search Results -->
@@ -114,9 +117,9 @@
                             class="unseen_count_rtt"
                             *ngIf="chat.unseen_count > 0"
                           >
-                            <span class="unseen_count"
-                              ><strong>{{ chat.unseen_count }}</strong></span
-                            >
+                            <span class="unseen_count">{{
+                              chat.unseen_count
+                            }}</span>
                           </div>
                         </div>
                       </div>
@@ -233,7 +236,7 @@
                         </button>
                       </div>
 
-                      <!-- Files List or empty state -->
+                      <!-- Files List -->
                       <div
                         class="wrapper_innerAllFile"
                         *ngIf="
@@ -330,7 +333,7 @@
                           <!-- Text Message -->
                           <span
                             *ngIf="
-                              message.chat_type === 'text' &&
+                              (message.chat_type || message.type) === 'text' &&
                               !checkForUrl(message.text)
                             "
                           >
@@ -340,7 +343,7 @@
                           <!-- URL Message -->
                           <span
                             *ngIf="
-                              message.chat_type === 'text' &&
+                              (message.chat_type || message.type) === 'text' &&
                               checkForUrl(message.text)
                             "
                             [innerHTML]="checkForUrl(message.text)"
@@ -456,7 +459,7 @@
                           <!-- Text Message -->
                           <span
                             *ngIf="
-                              message.chat_type === 'text' &&
+                              (message.chat_type || message.type) === 'text' &&
                               !checkForUrl(message.text)
                             "
                           >
@@ -466,7 +469,7 @@
                           <!-- URL Message -->
                           <span
                             *ngIf="
-                              message.chat_type === 'text' &&
+                              (message.chat_type || message.type) === 'text' &&
                               checkForUrl(message.text)
                             "
                             [innerHTML]="checkForUrl(message.text)"

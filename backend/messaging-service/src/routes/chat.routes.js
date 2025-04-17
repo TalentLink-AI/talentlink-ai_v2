@@ -5,7 +5,7 @@ const logger = require("../../logger");
 const requireAuth = require("../middlewares/auth");
 const ChatRoom = require("../models/chat-room.model");
 const ChatMessage = require("../models/chat-message.model");
-const chatRepo = require("../models/chat-repo"); // <-- missing
+const chatRepo = require("../models/chat-repo");
 const { getUserByAuth0Id } = require("../utils/userClient");
 const { Types } = require("mongoose");
 
@@ -17,48 +17,58 @@ const assertValidId = (id) => {
   }
 };
 
-// Debug middleware
-router.use((req, res, next) => {
-  logger.info(`Chat route accessed: ${req.method} ${req.originalUrl}`);
-  next();
-});
-
 // Route to get all chats for a user
 router.get("/list", requireAuth, async (req, res) => {
-  const userId = req.auth.payload.sub;
-  const search = (req.query.search || "").toLowerCase();
+  try {
+    const userId = req.auth.payload.sub;
+    const search = (req.query.search || "").toLowerCase();
 
-  const rooms = await ChatRoom.find({ members: userId }).sort({
-    last_message_at: -1,
-  });
+    const rooms = await ChatRoom.find({ members: userId }).sort({
+      last_message_at: -1,
+    });
 
-  // Build response
-  const data = await Promise.all(
-    rooms.map(async (room) => {
-      let otherUser = null;
-      try {
-        otherUser = await getUserByAuth0Id(otherId);
-      } catch {}
+    // Build response
+    const data = await Promise.all(
+      rooms.map(async (room) => {
+        // Extract the other user ID from members array
+        const otherUserId = room.members.find(
+          (memberId) => memberId !== userId
+        );
 
-      return {
-        _id: room._id,
-        members: room.members,
-        last_message_text: room.last_message_text,
-        last_message_at: room.last_message_at,
-        unseen_count: room.unseen_count,
-        other_member: otherUser ? [otherUser] : [],
-      };
-    })
-  );
+        let otherUser = null;
+        try {
+          if (otherUserId) {
+            otherUser = await getUserByAuth0Id(otherUserId);
+          }
+        } catch (err) {
+          logger.error(`Error fetching user details: ${err.message}`);
+        }
 
-  // Optional search filter (by name)
-  const filtered = search
-    ? data.filter((c) =>
-        c.other_member[0]?.full_name?.toLowerCase().includes(search)
-      )
-    : data;
+        return {
+          _id: room._id,
+          members: room.members,
+          last_message_text: room.last_message_text,
+          last_message_at: room.last_message_at,
+          unseen_count:
+            room.unseen_count.find((item) => item.user_id === userId)?.count ||
+            0,
+          other_member: otherUser ? [otherUser] : [],
+        };
+      })
+    );
 
-  res.json({ status: 200, data: filtered });
+    // Optional search filter (by name)
+    const filtered = search
+      ? data.filter((c) =>
+          c.other_member[0]?.full_name?.toLowerCase().includes(search)
+        )
+      : data;
+
+    res.json({ status: 200, data: filtered });
+  } catch (err) {
+    logger.error(`Error fetching chat list: ${err.message}`);
+    res.status(500).json({ message: "Failed to fetch chat list" });
+  }
 });
 
 // Route to get chat details
@@ -97,23 +107,41 @@ router.get("/room/detail/:id", requireAuth, async (req, res, next) => {
     assertValidId(req.params.id);
     const room = await ChatRoom.findById(req.params.id);
     if (!room) return res.status(404).json({ message: "room_not_found" });
-    res.json(room);
+    res.status(200).json({ status: 200, data: room });
   } catch (err) {
     next(err);
   }
 });
 
 // Route to get room files
-router.get("/room/files/:id", requireAuth, (req, res) => {
+router.get("/room/files/:id", requireAuth, async (req, res) => {
   try {
     const roomId = req.params.id;
     logger.info(`Getting room files for room: ${roomId}`);
 
-    // Mock response
+    const files = await ChatMessage.find({
+      room_id: roomId,
+      chat_type: "file",
+    }).sort({ createdAt: -1 });
+
+    const fileData = files.map((msg) => ({
+      files: msg.files || [],
+      createdAt: msg.createdAt,
+      from_user: msg.from,
+    }));
+
+    const allFiles = fileData.flatMap((msg) =>
+      msg.files.map((f) => ({
+        ...f,
+        createdAt: msg.createdAt,
+        from_user: msg.from_user,
+      }))
+    );
+
     res.status(200).json({
       status: 200,
       data: {
-        files: [],
+        files: allFiles,
         links: [],
       },
     });
@@ -128,7 +156,8 @@ router.post("/attachments", requireAuth, (req, res) => {
   try {
     logger.info(`File upload request received`);
 
-    // Mock response
+    // TODO: Implement real file upload handling
+    // For now, return a mock response
     res.status(200).json({
       status: 200,
       message: "Files uploaded successfully",

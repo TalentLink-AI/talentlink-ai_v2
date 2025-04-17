@@ -11,6 +11,7 @@ const client = jwksClient({
   cache: true,
   rateLimit: true,
   jwksRequestsPerMinute: 5,
+  timeout: 10000, // 10 second timeout
 });
 
 // Function to get the signing key
@@ -39,35 +40,39 @@ function getKey(header, callback) {
 exports.verifyToken = (token) => {
   return new Promise((resolve, reject) => {
     if (!token || typeof token !== "string") {
-      logger.error(`Invalid token passed to verifyToken: ${typeof token}`);
-      return reject(new Error("Invalid token passed to verifyToken"));
+      logger.error(`Invalid token format: ${typeof token}`);
+      return reject(new Error("Invalid token format"));
     }
 
-    // Debug token format
-    logger.info(`Verifying token: ${token.substring(0, 10)}...`);
-
-    // Extract issuer from token without verifying
+    // Extract issuer and audience from token without verification first
     let decodedWithoutVerify;
     try {
       decodedWithoutVerify = jwt.decode(token);
-      logger.info(`Decoded token issuer: ${decodedWithoutVerify?.iss}`);
+
+      if (!decodedWithoutVerify) {
+        logger.error("Token could not be decoded");
+        return reject(new Error("Invalid token format - could not decode"));
+      }
     } catch (decodeErr) {
-      logger.warn(
-        `Could not decode token for issuer check: ${decodeErr.message}`
-      );
+      logger.error(`Could not decode token: ${decodeErr.message}`);
+      return reject(new Error("Token decode failed"));
     }
 
-    // Use the issuer from the token itself (if available) or fallback to env variable
+    // Use the issuer from the token (if available) or fallback to env variable
     const tokenIssuer =
       decodedWithoutVerify?.iss || process.env.AUTH0_ISSUER_BASE_URL;
+    const tokenAudience =
+      decodedWithoutVerify?.aud ||
+      process.env.AUTH0_AUDIENCE ||
+      "https://api.talentlink.com";
 
     const options = {
-      audience: process.env.AUTH0_AUDIENCE || "https://api.talentlink.com",
+      audience: tokenAudience,
       issuer: tokenIssuer,
       algorithms: ["RS256"],
     };
 
-    logger.info(`JWT verification options: ${JSON.stringify(options)}`);
+    logger.debug(`Verifying token with options: ${JSON.stringify(options)}`);
 
     jwt.verify(token, getKey, options, (err, decoded) => {
       if (err) {

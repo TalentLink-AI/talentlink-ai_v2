@@ -729,7 +729,7 @@
   .msgWrapper_main {
     height: 400px;
     flex: 1;
-    overflow-y: hidden;
+    overflow-y: auto;
     position: relative;
     background-color: vars.$color-gray-100;
     

@@ -1,13 +1,9 @@
 // backend/messaging-service/src/middlewares/auth.js
-
 const { verifyToken } = require("../utils/auth0");
 const logger = require("../../logger");
 
 module.exports = async (req, res, next) => {
   try {
-    // Log the request headers for debugging
-    logger.info(`Auth headers: ${JSON.stringify(req.headers)}`);
-
     const authHeader = req.headers.authorization || "";
     const token = authHeader.split(" ")[1];
 
@@ -21,25 +17,7 @@ module.exports = async (req, res, next) => {
     }
 
     try {
-      // For development: attempt to decode token without verification first
-      const jwt = require("jsonwebtoken");
-      try {
-        const decoded = jwt.decode(token);
-        logger.info(
-          `Token claims without verification: ${JSON.stringify({
-            sub: decoded?.sub,
-            iss: decoded?.iss,
-            aud: decoded?.aud,
-            exp: decoded?.exp
-              ? new Date(decoded.exp * 1000).toISOString()
-              : "not set",
-          })}`
-        );
-      } catch (decodeErr) {
-        logger.warn(`Could not decode token: ${decodeErr.message}`);
-      }
-
-      // Now verify the token properly
+      // Verify the token properly
       const decoded = await verifyToken(token);
 
       if (!decoded || !decoded.sub) {
@@ -49,25 +27,31 @@ module.exports = async (req, res, next) => {
 
       // Store the decoded token in req.auth (Auth0 format)
       req.auth = { payload: decoded };
+
+      // Store user ID for easier access
+      req.user = {
+        sub: decoded.sub,
+        email: decoded.email || "",
+      };
+
       logger.info(`Successfully authenticated user: ${decoded.sub}`);
       next();
     } catch (verifyError) {
       logger.error(`Token verification error: ${verifyError.message}`);
 
-      // For debugging in dev environments, we can still proceed with the request
-      // but let's only do this if explicitly enabled
+      // For debugging in dev environments only
       if (
-        process.env.DEBUG_AUTH === "true" ||
-        process.env.NODE_ENV === "development"
+        process.env.NODE_ENV === "development" &&
+        process.env.DEBUG_AUTH === "true"
       ) {
         logger.warn("Proceeding despite auth failure (DEBUG_AUTH mode)");
-        // Create a placeholder auth object
         req.auth = {
           payload: {
             sub: "debug-user",
             iss: "debug-issuer",
           },
         };
+        req.user = { sub: "debug-user" };
         next();
         return;
       }
