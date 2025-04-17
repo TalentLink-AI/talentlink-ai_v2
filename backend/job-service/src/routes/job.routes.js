@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const Job = require("../models/job.model");
 const jobController = require("../controllers/job.controller");
+const savedSearchController = require("../controllers/saved-search.controller");
 const {
   validateRequest,
   isJobOwner,
@@ -18,6 +19,36 @@ const {
   jobStatusSchema,
   milestoneSchema,
 } = require("../validators/job.validator");
+
+// Saved search routes
+router.get(
+  "/saved-searches",
+  isTalent(),
+  savedSearchController.getSavedSearches
+);
+router.post(
+  "/saved-searches",
+  isTalent(),
+  savedSearchController.createSavedSearch
+);
+router.put(
+  "/saved-searches/:id",
+  isTalent(),
+  savedSearchController.updateSavedSearch
+);
+router.delete(
+  "/saved-searches/:id",
+  isTalent(),
+  savedSearchController.deleteSavedSearch
+);
+router.get(
+  "/saved-searches/:id/run",
+  isTalent(),
+  savedSearchController.runSavedSearch
+);
+
+// Add the recommended jobs endpoint
+router.get("/recommended", isTalent(), jobController.getRecommendedJobs);
 
 // Get all jobs (with filtering) - allow both clients and talents
 router.get("/", setUserRole(), jobController.getJobs);

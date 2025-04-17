@@ -7,6 +7,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const logger = require("./utils/logger");
 const rateLimit = require("express-rate-limit");
+const { scheduleAlertProcessors } = require("./jobs/job-alerts");
 
 // Import routes
 const jobRoutes = require("./routes/job.routes");
@@ -84,6 +85,9 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   logger.info(`Job service listening on port ${PORT}`);
   console.log(`Job service listening on port ${PORT}`);
+  if (process.env.NODE_ENV === "production") {
+    scheduleAlertProcessors();
+  }
 });
 
 module.exports = app;

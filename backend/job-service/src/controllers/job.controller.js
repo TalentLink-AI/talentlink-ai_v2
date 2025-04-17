@@ -28,6 +28,95 @@ const callPaymentService = async (endpoint, data) => {
 /**
  * Get all jobs with filtering
  */
+// exports.getJobs = async (req, res) => {
+//   try {
+//     const {
+//       status,
+//       category,
+//       minBudget,
+//       maxBudget,
+//       search,
+//       sort = "createdAt",
+//       order = "desc",
+//       page = 1,
+//       limit = 10,
+//     } = req.query;
+
+//     // Get the user role from the request (set by middleware)
+//     const userRole = req.userRole || "guest";
+//     const userId = req.auth.payload.sub;
+
+//     // Build filter query
+//     const filter = {};
+
+//     // If user is a talent, only show published jobs they can apply to
+//     if (userRole === "talent") {
+//       filter.status = "published";
+//     }
+//     // If user is a client, show their own jobs
+//     else if (userRole === "client") {
+//       filter.clientId = userId;
+//     }
+//     // If specific status requested and user is allowed to filter by it
+//     else if (
+//       status &&
+//       (userRole === "admin" ||
+//         (userRole === "client" && userId === filter.clientId))
+//     ) {
+//       filter.status = status;
+//     }
+
+//     if (category) {
+//       filter.category = category;
+//     }
+
+//     if (minBudget) {
+//       filter.budget = { ...filter.budget, $gte: parseFloat(minBudget) };
+//     }
+
+//     if (maxBudget) {
+//       filter.budget = { ...filter.budget, $lte: parseFloat(maxBudget) };
+//     }
+
+//     if (search) {
+//       filter.$or = [
+//         { title: { $regex: search, $options: "i" } },
+//         { description: { $regex: search, $options: "i" } },
+//       ];
+//     }
+
+//     // Calculate pagination
+//     const skip = (parseInt(page) - 1) * parseInt(limit);
+
+//     // Get total count for pagination
+//     const total = await Job.countDocuments(filter);
+
+//     // Execute query with sorting and pagination
+//     const jobs = await Job.find(filter)
+//       .sort({ [sort]: order === "desc" ? -1 : 1 })
+//       .skip(skip)
+//       .limit(parseInt(limit));
+
+//     res.json({
+//       success: true,
+//       userRole: userRole, // Include user role in response
+//       data: {
+//         jobs,
+//         pagination: {
+//           total,
+//           page: parseInt(page),
+//           limit: parseInt(limit),
+//           pages: Math.ceil(total / parseInt(limit)),
+//         },
+//       },
+//     });
+//   } catch (error) {
+//     logger.error(`Error getting jobs: ${error.message}`, {
+//       stack: error.stack,
+//     });
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 exports.getJobs = async (req, res) => {
   try {
     const {
@@ -36,6 +125,9 @@ exports.getJobs = async (req, res) => {
       minBudget,
       maxBudget,
       search,
+      skills, // New: filter by skills (array)
+      location, // New: filter by location
+      timeline, // New: filter by timeline
       sort = "createdAt",
       order = "desc",
       page = 1,
@@ -49,16 +141,12 @@ exports.getJobs = async (req, res) => {
     // Build filter query
     const filter = {};
 
-    // If user is a talent, only show published jobs they can apply to
+    // Role-based filtering (keeping existing logic)
     if (userRole === "talent") {
       filter.status = "published";
-    }
-    // If user is a client, show their own jobs
-    else if (userRole === "client") {
+    } else if (userRole === "client") {
       filter.clientId = userId;
-    }
-    // If specific status requested and user is allowed to filter by it
-    else if (
+    } else if (
       status &&
       (userRole === "admin" ||
         (userRole === "client" && userId === filter.clientId))
@@ -66,6 +154,7 @@ exports.getJobs = async (req, res) => {
       filter.status = status;
     }
 
+    // Apply existing filters
     if (category) {
       filter.category = category;
     }
@@ -78,6 +167,23 @@ exports.getJobs = async (req, res) => {
       filter.budget = { ...filter.budget, $lte: parseFloat(maxBudget) };
     }
 
+    // New filters
+    if (skills && skills.length) {
+      // Parse if it comes as a string
+      const skillsArray =
+        typeof skills === "string" ? skills.split(",") : skills;
+      filter.skills = { $in: skillsArray };
+    }
+
+    if (location) {
+      filter.location = location;
+    }
+
+    if (timeline) {
+      filter.timeline = timeline;
+    }
+
+    // Text search across title and description
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -99,7 +205,7 @@ exports.getJobs = async (req, res) => {
 
     res.json({
       success: true,
-      userRole: userRole, // Include user role in response
+      userRole: userRole,
       data: {
         jobs,
         pagination: {
@@ -118,6 +224,105 @@ exports.getJobs = async (req, res) => {
   }
 };
 
+// Add to job.controller.js
+exports.getRecommendedJobs = async (req, res) => {
+  try {
+    const talentId = req.auth.payload.sub;
+
+    // 1. Get talent profile from user service
+    const userServiceUrl =
+      process.env.USER_SERVICE_URL || "http://user-service:3001";
+    const token = await getAuth0AccessToken(); // Reuse existing function
+
+    const { data: talentData } = await axios.get(
+      `${userServiceUrl}/api/users/profile/talent/${talentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-internal-api-key": process.env.INTERNAL_API_KEY || "no-key-set",
+        },
+      }
+    );
+
+    if (!talentData || !talentData.skills || talentData.skills.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Talent profile not found or has no skills defined",
+      });
+    }
+
+    // 2. Find jobs matching talent skills with scoring system
+    const talentSkills = talentData.skills;
+    const allJobs = await Job.find({
+      status: "published",
+      // Exclude jobs the talent has already applied to
+      _id: {
+        $nin: await Application.distinct("jobId", { talentId }),
+      },
+    })
+      .sort({ createdAt: -1 })
+      .limit(100); // Get recent jobs
+
+    // 3. Score and rank jobs
+    const scoredJobs = allJobs.map((job) => {
+      let score = 0;
+
+      // Score based on skill match (most important)
+      if (job.skills && job.skills.length) {
+        const matchingSkills = job.skills.filter((skill) =>
+          talentSkills.includes(skill)
+        );
+        score += (matchingSkills.length / job.skills.length) * 10;
+      }
+
+      // Score based on hourly rate match if applicable
+      if (job.budget && talentData.hourlyRate) {
+        // Higher score if budget is higher than talent's rate
+        if (job.budget >= talentData.hourlyRate) {
+          score += 3;
+        } else if (job.budget >= talentData.hourlyRate * 0.8) {
+          // Within 20% of talent's rate
+          score += 1;
+        }
+      }
+
+      // Location preference matching
+      if (
+        job.location === talentData.location?.remote &&
+        talentData.location?.remote
+      ) {
+        score += 2;
+      }
+
+      // Recency bonus (newer jobs get higher scores)
+      const daysSinceCreation = Math.floor(
+        (Date.now() - job.createdAt) / (1000 * 60 * 60 * 24)
+      );
+      score += Math.max(0, 5 - daysSinceCreation / 7); // Bonus for jobs less than 5 weeks old
+
+      return { job, score };
+    });
+
+    // Sort by score (highest first) and return top matches
+    const recommendedJobs = scoredJobs
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+      .map((item) => ({
+        ...item.job.toObject(),
+        matchScore: Math.round(item.score * 10), // Round to nearest integer
+      }));
+
+    res.json({
+      success: true,
+      data: recommendedJobs,
+    });
+  } catch (error) {
+    logger.error(`Error getting recommended jobs: ${error.message}`, {
+      stack: error.stack,
+    });
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 /**
  * Get jobs posted by the current client
  */
