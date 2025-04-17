@@ -1,10 +1,21 @@
-// Replace or update backend/messaging-service/src/routes/chat.routes.js
+// backend/messaging-service/src/routes/chat.routes.js
 const express = require("express");
 const router = express.Router();
-const chatController = require("../controllers/chat.controller");
-const { verifyToken } = require("../utils/auth0");
-const requireAuth = require("../middlewares/auth");
 const logger = require("../../logger");
+const requireAuth = require("../middlewares/auth");
+const ChatRoom = require("../models/chat-room.model");
+const ChatMessage = require("../models/chat-message.model");
+const chatRepo = require("../models/chat-repo"); // <-- missing
+const { getUserByAuth0Id } = require("../utils/userClient");
+const { Types } = require("mongoose");
+
+const assertValidId = (id) => {
+  if (!Types.ObjectId.isValid(id)) {
+    const err = new Error("invalid_room_id");
+    err.status = 400;
+    throw err;
+  }
+};
 
 // Debug middleware
 router.use((req, res, next) => {
@@ -14,99 +25,91 @@ router.use((req, res, next) => {
 
 // Route to get all chats for a user
 router.get("/list", requireAuth, async (req, res) => {
-  try {
-    const userId = req.auth.payload.sub;
-    const searchQuery = req.query.search || "";
+  const userId = req.auth.payload.sub;
+  const search = (req.query.search || "").toLowerCase();
 
-    logger.info(
-      `Getting chat list for user: ${userId}, search: ${searchQuery}`
-    );
+  const rooms = await ChatRoom.find({ members: userId }).sort({
+    last_message_at: -1,
+  });
 
-    // Mock response for testing
-    res.status(200).json({
-      status: 200,
-      data: [
-        {
-          _id: "67fec8386390a1854ba2025d",
-          members: [userId, "auth0|otheruser123"],
-          last_message_text: "Hello, how are you?",
-          last_message_at: new Date(),
-          unseen_count: 0,
-          other_member: [
-            {
-              _id: "auth0|otheruser123",
-              full_name: "John Doe",
-              profile_image: null,
-              is_online: true,
-            },
-          ],
-        },
-      ],
-    });
-  } catch (error) {
-    logger.error(`Error getting chat list: ${error.message}`);
-    res.status(500).json({ message: "Failed to get chat list" });
-  }
+  // Build response
+  const data = await Promise.all(
+    rooms.map(async (room) => {
+      let otherUser = null;
+      try {
+        otherUser = await getUserByAuth0Id(otherId);
+      } catch {}
+
+      return {
+        _id: room._id,
+        members: room.members,
+        last_message_text: room.last_message_text,
+        last_message_at: room.last_message_at,
+        unseen_count: room.unseen_count,
+        other_member: otherUser ? [otherUser] : [],
+      };
+    })
+  );
+
+  // Optional search filter (by name)
+  const filtered = search
+    ? data.filter((c) =>
+        c.other_member[0]?.full_name?.toLowerCase().includes(search)
+      )
+    : data;
+
+  res.json({ status: 200, data: filtered });
 });
 
-// These MUST match frontend requests exactly
-router.get("/chats/:id", requireAuth, (req, res) => {
-  try {
-    const roomId = req.params.id;
-    logger.info(`Getting chat details for room: ${roomId}`);
-
-    // Mock response for testing
-    res.status(200).json({
-      status: 200,
-      data: {
-        chatDetail: {
-          _id: roomId,
-          members: [req.auth.payload.sub, "auth0|otheruser123"],
-          other_member: [
-            {
-              _id: "auth0|otheruser123",
-              full_name: "John Doe",
-              profile_image: null,
-              is_online: true,
-            },
-          ],
-        },
-        chats: [],
-      },
-    });
-  } catch (error) {
-    logger.error(`Error getting chat details: ${error.message}`);
-    res.status(500).json({ message: "Failed to get chat details" });
-  }
-});
-
-router.get("/room/detail/:id", requireAuth, (req, res) => {
+// Route to get chat details
+router.get("/chats/:id", requireAuth, async (req, res) => {
   try {
     const roomId = req.params.id;
-    logger.info(`Getting room details for room: ${roomId}`);
+    assertValidId(roomId);
+    const userId = req.auth.payload.sub; // current user
 
-    // Mock response for testing
-    res.status(200).json({
-      status: 200,
-      data: {
-        _id: roomId,
-        members: [req.auth.payload.sub, "auth0|otheruser123"],
-        last_message_at: new Date(),
-        unseen_count: [],
-      },
-    });
-  } catch (error) {
-    logger.error(`Error getting room details: ${error.message}`);
-    res.status(500).json({ message: "Failed to get room details" });
+    let room = await ChatRoom.findById(roomId);
+
+    if (!room) {
+      return res.status(404).json({ status: 404, message: "Room not found" });
+    }
+
+    const chats = await chatRepo.getMessageHistory(roomId, 50);
+
+    const otherUserId = room.members.find((m) => m !== userId);
+    const otherUser = otherUserId ? await getUserByAuth0Id(otherUserId) : null;
+
+    const chatDetail = {
+      ...room.toObject(),
+      other_member: otherUser ? [otherUser] : [],
+    };
+
+    return res.json({ status: 200, data: { chatDetail, chats } });
+  } catch (err) {
+    console.error("get chat detail error:", err);
+    return res.status(500).json({ message: "Failed to get chat details" });
   }
 });
 
+// Route to get room details
+router.get("/room/detail/:id", requireAuth, async (req, res, next) => {
+  try {
+    assertValidId(req.params.id);
+    const room = await ChatRoom.findById(req.params.id);
+    if (!room) return res.status(404).json({ message: "room_not_found" });
+    res.json(room);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Route to get room files
 router.get("/room/files/:id", requireAuth, (req, res) => {
   try {
     const roomId = req.params.id;
     logger.info(`Getting room files for room: ${roomId}`);
 
-    // Mock response for testing
+    // Mock response
     res.status(200).json({
       status: 200,
       data: {
@@ -125,7 +128,7 @@ router.post("/attachments", requireAuth, (req, res) => {
   try {
     logger.info(`File upload request received`);
 
-    // Mock response for testing
+    // Mock response
     res.status(200).json({
       status: 200,
       message: "Files uploaded successfully",

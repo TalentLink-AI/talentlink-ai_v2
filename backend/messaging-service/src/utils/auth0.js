@@ -1,5 +1,4 @@
-// Replace or update your backend/messaging-service/src/utils/auth0.js
-
+// backend/messaging-service/src/utils/auth0.js
 const jwt = require("jsonwebtoken");
 const jwksClient = require("jwks-rsa");
 const logger = require("../../logger");
@@ -8,7 +7,7 @@ const logger = require("../../logger");
 const client = jwksClient({
   jwksUri:
     process.env.AUTH0_JWKS_URI ||
-    "https://your-tenant.auth0.com/.well-known/jwks.json",
+    `${process.env.AUTH0_ISSUER_BASE_URL}/.well-known/jwks.json`,
   cache: true,
   rateLimit: true,
   jwksRequestsPerMinute: 5,
@@ -47,10 +46,24 @@ exports.verifyToken = (token) => {
     // Debug token format
     logger.info(`Verifying token: ${token.substring(0, 10)}...`);
 
+    // Extract issuer from token without verifying
+    let decodedWithoutVerify;
+    try {
+      decodedWithoutVerify = jwt.decode(token);
+      logger.info(`Decoded token issuer: ${decodedWithoutVerify?.iss}`);
+    } catch (decodeErr) {
+      logger.warn(
+        `Could not decode token for issuer check: ${decodeErr.message}`
+      );
+    }
+
+    // Use the issuer from the token itself (if available) or fallback to env variable
+    const tokenIssuer =
+      decodedWithoutVerify?.iss || process.env.AUTH0_ISSUER_BASE_URL;
+
     const options = {
       audience: process.env.AUTH0_AUDIENCE || "https://api.talentlink.com",
-      issuer:
-        process.env.AUTH0_ISSUER_BASE_URL || "https://your-tenant.auth0.com/",
+      issuer: tokenIssuer,
       algorithms: ["RS256"],
     };
 

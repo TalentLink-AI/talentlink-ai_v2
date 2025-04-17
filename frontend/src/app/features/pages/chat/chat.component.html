@@ -1,4 +1,4 @@
-<!-- src/app/features/pages/chat/chat.component.html -->
+<!-- frontend/src/app/features/pages/chat/chat.component.html -->
 <div class="chat-page" [ngClass]="{ 'dark-theme': isDarkMode }">
   <div class="wrapper_mainDetails">
     <div class="container">
@@ -22,9 +22,8 @@
                   (keydown.enter)="getAllChats(searchQuery)"
                 />
               </div>
-
-              <!-- User Search Section (When no active chat) -->
-              <div class="user-search-container" *ngIf="!chatDetails">
+              <!-- User Search Section -->
+              <div class="search-section">
                 <h3>Find someone to chat with</h3>
                 <div class="search-box">
                   <input
@@ -234,7 +233,7 @@
                         </button>
                       </div>
 
-                      <!-- Files List -->
+                      <!-- Files List or empty state -->
                       <div
                         class="wrapper_innerAllFile"
                         *ngIf="
@@ -300,67 +299,6 @@
                       </div>
                     </div>
                   </div>
-
-                  <!-- Links Button -->
-                  <div class="all_btnWrap">
-                    <button
-                      (click)="toggleSideDrawer('links')"
-                      [ngClass]="{ active: activeClass === 'links' }"
-                    >
-                      <i class="material-icons">link</i>
-                    </button>
-
-                    <!-- Links Sidebar -->
-                    <div
-                      class="settingsbox_editCmn smallBox"
-                      [ngClass]="{ active: activeClass === 'links' }"
-                    >
-                      <div class="wrapper_txtClose_icons">
-                        <h3>Links</h3>
-                        <button
-                          type="button"
-                          (click)="toggleSideDrawer('links')"
-                        >
-                          <i class="material-icons">close</i>
-                        </button>
-                      </div>
-
-                      <!-- Links List -->
-                      <div
-                        class="wrapper_innerAllLinks"
-                        *ngIf="
-                          chatRoomFilesDetails &&
-                          chatRoomFilesDetails.links &&
-                          chatRoomFilesDetails.links.length > 0
-                        "
-                      >
-                        <div
-                          class="singleAll_filelinks link_list"
-                          *ngFor="let link of chatRoomFilesDetails.links"
-                        >
-                          <a [href]="link.link" target="_blank">{{
-                            link.link || "Unknown Link"
-                          }}</a>
-                          <h4>{{ link.from_user || "Unknown User" }}</h4>
-                          <p>{{ link.createdAt | date }}</p>
-                        </div>
-                      </div>
-
-                      <!-- No Links Message -->
-                      <div
-                        class="wrapper_innerAllLinks"
-                        *ngIf="
-                          !chatRoomFilesDetails ||
-                          !chatRoomFilesDetails.links ||
-                          chatRoomFilesDetails.links.length === 0
-                        "
-                      >
-                        <div class="singleAll_filelinks">
-                          <h4>No links available</h4>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -386,11 +324,7 @@
                       <!-- Outgoing Messages (sent by current user) -->
                       <div
                         class="sender_msgDetails"
-                        *ngIf="
-                          userDetails &&
-                          message &&
-                          userDetails._id === message.from_id
-                        "
+                        *ngIf="message && message.from === currentUserId"
                       >
                         <div class="msg_detailSender msg_url">
                           <!-- Text Message -->
@@ -491,11 +425,8 @@
                         <i>
                           <img
                             [src]="
-                              userDetails.profile_image
-                                ? imgBaseUrl +
-                                  'user/profile_pic/' +
-                                  userDetails.profile_image
-                                : 'assets/images/placeholder_image.jpg'
+                              userProfilePic ||
+                              'assets/images/placeholder_image.jpg'
                             "
                             alt="User Avatar"
                           />
@@ -505,11 +436,7 @@
                       <!-- Incoming Messages -->
                       <div
                         class="userRecv_msgDetails"
-                        *ngIf="
-                          userDetails &&
-                          message &&
-                          userDetails._id !== message.from_id
-                        "
+                        *ngIf="message && message.from !== currentUserId"
                       >
                         <!-- Contact Avatar -->
                         <i>

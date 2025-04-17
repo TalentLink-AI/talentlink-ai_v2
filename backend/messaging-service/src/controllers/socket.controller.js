@@ -1,19 +1,21 @@
-// Updated backend/messaging-service/src/controllers/socket.controller.js
-
+// backend/messaging-service/src/controllers/socket.controller.js
 const { verifyToken } = require("../utils/auth0");
 const chatRepo = require("../models/chat-repo");
+const { Types } = require("mongoose");
+const ChatMessage = require("../models/chat-message.model");
+
 const logger = require("../../logger");
 
 // Track user rooms - this will persist across reconnections
 const userRooms = new Map();
 const connectedUsers = new Map();
+const activeJoins = new Map();
 
 module.exports = (io) => {
   // Middleware for socket authentication
   io.use(async (socket, next) => {
     try {
-      // Get token from Authorization header
-      //const authHeader = socket.handshake.headers["authorization"] || "";
+      // Get token from auth object
       const token = socket.handshake.auth?.token;
 
       if (!token || typeof token !== "string") {
@@ -78,33 +80,39 @@ module.exports = (io) => {
       // 🔸 Join Room
       socket.on("join", async ({ otherUserId }) => {
         try {
-          // Validate the incoming data
           if (!otherUserId) {
-            logger.error(`Missing otherUserId in join request from ${userId}`);
             socket.emit("error", { message: "Missing otherUserId" });
             return;
           }
 
-          logger.info(
-            `User ${userId} requesting to join room with ${otherUserId}`
-          );
+          // 1️⃣  make sure a room exists (or get the existing one)
+          const roomDoc = await chatRepo.createOrFindRoom(userId, otherUserId);
+          const roomId = roomDoc._id.toString(); // <-- real Mongo id
 
-          // Create mock room for testing
-          const roomId = generateRoomId(currentUserId, otherUserId);
+          // 2️⃣  rate‑limit duplicate joins (unchanged)
+          const joinKey = `${userId}:${otherUserId}`;
+          if (activeJoins.get(joinKey)) return;
+          activeJoins.set(joinKey, true);
+          setTimeout(() => activeJoins.delete(joinKey), 2_000);
 
-          socket.join(roomId);
-
-          // Track this room for the user for auto-rejoining
-          let userActiveRooms = userRooms.get(userId) || [];
-          if (!userActiveRooms.includes(roomId)) {
-            userActiveRooms.push(roomId);
-            userRooms.set(userId, userActiveRooms);
+          // 3️⃣  already in the room?
+          if (socket.rooms.has(roomId)) {
+            socket.emit("joined-room", { roomId, otherUserId });
+            return;
           }
 
-          logger.info(`${userId} joined room ${roomId}`);
-          socket.emit("joined-room", roomId);
-        } catch (error) {
-          logger.error(`Error joining room: ${error.message}`);
+          // 4️⃣  join & track
+          socket.join(roomId);
+          let rooms = userRooms.get(userId) || [];
+          if (!rooms.includes(roomId)) {
+            rooms.push(roomId);
+            userRooms.set(userId, rooms);
+          }
+
+          socket.emit("joined-room", { roomId, otherUserId });
+          logger.info(`${userId} joined mongo room ${roomId}`);
+        } catch (err) {
+          logger.error(`Error joining room: ${err.message}`);
           socket.emit("error", { message: "Failed to join room" });
         }
       });
@@ -112,6 +120,9 @@ module.exports = (io) => {
       // 🔸 Send Message
       socket.on("message", async ({ roomId, text }) => {
         try {
+          logger.info(
+            `[SRV] msg event from ${socket.userId} in ${roomId}: "${text}"`
+          );
           // Validate the incoming data
           if (!roomId || !text) {
             logger.error(`Missing roomId or text in message from ${userId}`);
@@ -185,27 +196,13 @@ module.exports = (io) => {
         try {
           if (!roomId) {
             logger.warn(`Missing roomId in get-history from ${userId}`);
-            callback([]);
-            return;
+            return callback([]);
           }
 
-          logger.info(
-            `Getting chat history for room ${roomId} by user ${userId}`
-          );
-
-          // Mock history for testing
-          const messages = [
-            {
-              _id: `msg_${Date.now() - 1000}`,
-              room_id: roomId,
-              from: userId,
-              from_id: userId,
-              text: "Hello, this is a test message",
-              type: "text",
-              chat_type: "text",
-              createdAt: new Date(Date.now() - 1000),
-            },
-          ];
+          logger.info(`Fetching chat history for room ${roomId}`);
+          const messages = await ChatMessage.find({ room_id: roomId })
+            .sort({ createdAt: 1 })
+            .lean();
 
           callback(messages);
         } catch (error) {

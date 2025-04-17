@@ -11,20 +11,15 @@ module.exports = {
 
   // Find or create a private room between 2 users
   createOrFindRoom: async (user1, user2) => {
-    console.log(`Creating or finding room for users: ${user1} and ${user2}`);
+    const memberPair = [user1, user2].sort();
 
-    const existing = await ChatRoom.findOne({
-      members: { $all: [user1, user2], $size: 2 },
+    let room = await ChatRoom.findOne({
+      members: { $all: memberPair, $size: 2 },
     });
+    if (room) return room;
 
-    if (existing) {
-      console.log(`Found existing room: ${existing._id}`);
-      return existing;
-    }
-
-    console.log(`Creating new room for users: ${user1} and ${user2}`);
     return ChatRoom.create({
-      members: [user1, user2],
+      members: memberPair,
       unseen_count: [
         { user_id: user1, count: 0 },
         { user_id: user2, count: 0 },

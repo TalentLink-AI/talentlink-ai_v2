@@ -94,7 +94,7 @@
     border-bottom: 1px solid vars.$color-gray-200;
 
     .dark-theme & {
-      border-color: vars.$color-black(255, 255, 255, 0.1);
+      border-color: vars.$color-black;
     }
 
     input {
@@ -111,7 +111,7 @@
 
       .dark-theme & {
         background-color: vars.$color-secondary-light;
-        border-color: vars.$color-black(255, 255, 255, 0.1);
+        border-color: vars.$color-black;
         color: vars.$color-text-light;
         
         &::placeholder {
@@ -134,7 +134,7 @@
         border-bottom: 1px solid vars.$color-gray-200;
         
         .dark-theme & {
-          border-color: vars.$color-black(255, 255, 255, 0.05);
+          border-color: vars.$color-black;
         }
         
         &:last-child {
@@ -607,7 +607,7 @@
                 background-color: vars.$color-gray-100;
                 
                 .dark-theme & {
-                  background-color: vars.$color-black(255, 255, 255, 0.05);
+                  background-color: vars.$color-black;
                 }
               }
               
@@ -676,7 +676,7 @@
               border-bottom: 1px solid vars.$color-gray-200;
               
               .dark-theme & {
-                border-color: vars.$color-black(255, 255, 255, 0.05);
+                border-color: vars.$color-black;
               }
               
               &:last-child {
@@ -727,6 +727,7 @@
   
   // Message container area
   .msgWrapper_main {
+    height: 400px;
     flex: 1;
     overflow-y: hidden;
     position: relative;
@@ -937,7 +938,7 @@
                   border-radius: vars.$border-radius-sm;
                   
                   .dark-theme & {
-                    background-color: vars.$color-black(255, 255, 255, 0.05);
+                    background-color: vars.$color-black;
                   }
                   
                   span {
@@ -1078,102 +1079,107 @@
   
   // Message input area
   .wrapper_all_sendBar {
+    padding: 1rem;
     display: flex;
-    align-items: center;
-    padding: vars.$spacing-3 vars.$spacing-5;
-    border-top: 1px solid vars.$color-gray-200;
-    
-    .dark-theme & {
-      border-color: vars.$color-black(255, 255, 255, 0.1);
-    }
+    border-top: 1px solid var(--color-gray-200);
     
     input {
       flex: 1;
-      height: 44px;
-      border-radius: vars.$border-radius-full;
-      border: 1px solid vars.$color-gray-300;
-      padding: 0 vars.$spacing-4;
-      font-size: vars.$font-size-base;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: 1.5rem;
+      margin-right: 0.75rem;
       
       &:focus {
         outline: none;
-        border-color: vars.$color-primary;
-      }
-      
-      .dark-theme & {
-        background-color: vars.$color-secondary-light;
-        border-color: vars.$color-black(255, 255, 255, 0.1);
-        color: vars.$color-text-light;
-        
-        &::placeholder {
-          color: vars.$color-gray-400;
-        }
+        border-color: var(--color-primary);
       }
     }
     
     .Btn_wrapperSendBar {
       display: flex;
-      align-items: center;
-      margin-left: vars.$spacing-3;
       
       button {
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background-color: vars.$color-gray-100;
-        border: none;
-        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-right: vars.$spacing-2;
-        transition: background-color 0.2s ease;
-        
-        .dark-theme & {
-          background-color: vars.$color-secondary-light;
-        }
+        background-color: var(--color-gray-100);
+        border: none;
+        margin-right: 0.5rem;
+        cursor: pointer;
         
         &:last-child {
           margin-right: 0;
         }
         
         &:hover {
-          background-color: vars.$color-gray-200;
-          
-          .dark-theme & {
-            background-color: vars.$color-black(255, 255, 255, 0.1);
-          }
+          background-color: var(--color-gray-200);
         }
         
         &.submit_btn {
-          background-color: vars.$color-primary;
-          
-          .dark-theme & {
-            background-color: vars.$color-primary-light;
-          }
+          background-color: var(--color-primary);
+          color: var(--color-primary);
           
           &:hover {
-            background-color: vars.$color-primary-dark;
-            
-            .dark-theme & {
-              background-color: vars.$color-primary;
-            }
+            background-color: var(--color-primary-dark);
           }
         }
         
-        img {
-          width: 18px;
-          height: 18px;
+        i {
+          font-size: 18px;
         }
         
         .file-type {
+          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
+          width: 100%;
+          height: 100%;
           
           input[type="file"] {
             display: none;
+          }
+        }
+      }
+    }
+  }
+  .dark-theme {
+    .wrapper_all_sendBar {
+      border-top: 1px solid var(--color-gray-700);
+      
+      input {
+        background-color: var(--color-secondary-light);
+        border-color: var(--color-gray-700);
+        color: var(--color-text-light);
+        
+        &::placeholder {
+          color: var(--color-gray-500);
+        }
+        
+        &:focus {
+          border-color: var(--color-primary-light);
+        }
+      }
+      
+      .Btn_wrapperSendBar {
+        button {
+          background-color: var(--color-secondary-light);
+          color: var(--color-text-light);
+          
+          &:hover {
+            background-color: var(--color-secondary);
+          }
+          
+          &.submit_btn {
+            background-color: var(--color-primary);
+            
+            &:hover {
+              background-color: var(--color-primary-light);
+            }
           }
         }
       }
@@ -1226,4 +1232,5 @@
       color: vars.$color-gray-400;
     }
   }
+  
 }

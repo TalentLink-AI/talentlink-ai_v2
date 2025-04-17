@@ -1,4 +1,4 @@
-// Replace or update backend/messaging-service/src/server.js
+// backend/messaging-service/src/server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -6,9 +6,28 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const logger = require("../logger");
+const path = require("path");
 
 // Load environment variables
-dotenv.config();
+const envPath = path.resolve(process.cwd(), ".env");
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  logger.warn(`Warning: .env file not found at ${envPath}`);
+  console.warn(`Warning: .env file not found at ${envPath}`);
+} else {
+  logger.info(`Loaded environment from: ${envPath}`);
+  console.log(`Loaded environment from: ${envPath}`);
+}
+
+// Print Auth0 configuration for debugging
+logger.info("Auth0 Configuration:");
+logger.info(`AUTH0_DOMAIN: ${process.env.AUTH0_DOMAIN || "not set"}`);
+logger.info(`AUTH0_AUDIENCE: ${process.env.AUTH0_AUDIENCE || "not set"}`);
+logger.info(
+  `AUTH0_ISSUER_BASE_URL: ${process.env.AUTH0_ISSUER_BASE_URL || "not set"}`
+);
+logger.info(`AUTH0_JWKS_URI: ${process.env.AUTH0_JWKS_URI || "not set"}`);
 
 // Initialize Express app
 const app = express();
@@ -59,16 +78,17 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Debug endpoint
+// Debug endpoint with enhanced information
 app.get("/debug/config", (req, res) => {
   res.status(200).json({
     service: "messaging-service",
     version: "1.0.0",
     env: process.env.NODE_ENV,
     authConfig: {
-      domain: process.env.AUTH0_DOMAIN,
-      audience: process.env.AUTH0_AUDIENCE,
-      issuerBaseUrl: process.env.AUTH0_ISSUER_BASE_URL,
+      domain: process.env.AUTH0_DOMAIN || "not set",
+      audience: process.env.AUTH0_AUDIENCE || "not set",
+      issuerBaseUrl: process.env.AUTH0_ISSUER_BASE_URL || "not set",
+      jwksUri: process.env.AUTH0_JWKS_URI || "not set",
     },
     mongodb: {
       uri: mongoUri.replace(/mongodb:\/\/.*@/, "mongodb://[redacted]@"), // Hide credentials
