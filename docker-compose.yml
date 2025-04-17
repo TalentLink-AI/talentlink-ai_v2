@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Frontend service
   frontend:
@@ -21,7 +19,6 @@ services:
       - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
     #command: npm start
     command: sh -c "npm install && npm start"
-
 
   # API Gateway - Entry point for all API requests
   api-gateway:
@@ -60,18 +57,18 @@ services:
       - ./backend/user-service:/app
       - /app/node_modules
     environment:
-    - NODE_ENV=development
-    - PORT=3001
-    - MONGODB_URI=${MONGODB_URI}
-    - AUTH0_DOMAIN=${AUTH0_DOMAIN}
-    - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
-    - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
-    - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
-    - AUTH0_ISSUER_BASE_URL=${AUTH0_ISSUER_BASE_URL}
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=${MONGODB_URI}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+      - AUTH0_ISSUER_BASE_URL=${AUTH0_ISSUER_BASE_URL}
     depends_on:
       - mongodb
-  
-# Payment Service
+
+  # Payment Service
   payment-service:
     build:
       context: ./backend/payment-service
@@ -94,7 +91,7 @@ services:
     depends_on:
       - mongodb
 
-# Job Service
+  # Job Service
   job-service:
     build:
       context: ./backend/job-service
@@ -119,7 +116,7 @@ services:
       - payment-service
       - user-service
 
-# Message Service
+  # Message Service
   messaging-service:
     build:
       context: ./backend/messaging-service
@@ -152,7 +149,7 @@ services:
       - mongodb-data:/data/db
     environment:
       - MONGO_INITDB_DATABASE=talentlink
-      
+
 volumes:
   mongodb-data:
   node_modules:
