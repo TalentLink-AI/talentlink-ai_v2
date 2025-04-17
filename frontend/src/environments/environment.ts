@@ -1,8 +1,8 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:3001',
-  apiUrlJob: 'http://localhost:3002',
-  apiUrlpayment: 'http://localhost:3003',
+  apiUrlJob: 'http://localhost:3003',
+  apiUrlpayment: 'http://localhost:3002',
   messagingServiceUrl: 'http://localhost:3004',
   socketUrl: 'ws://localhost:3004',
   auth0: {
